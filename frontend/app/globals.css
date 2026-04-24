@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Tell Tailwind to use .dark class toggled by next-themes, not OS media query */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+/* Dark mode colours driven by the .dark class on <html> */
+.dark {
+  --background: #030712;
+  --foreground: #f1f5f9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Strip antd Dragger's own border/background — our DropZone provides the visuals */
+.docflow-dropzone .ant-upload.ant-upload-drag {
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  padding: 0;
+}
+.docflow-dropzone .ant-upload.ant-upload-drag:hover {
+  border: none;
+}
+.docflow-dropzone .ant-upload-drag-container {
+  display: block;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Smooth transition for all theme-sensitive elements */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
