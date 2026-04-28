@@ -32,6 +32,7 @@ class DocFlowState(TypedDict):
     extraction_results: Optional[dict]    # Filled by extract_node
     confidence_score: Optional[float]     # Filled by validate_node (overall)
     field_confidences: Optional[dict]     # Filled by validate_node (per-field)
+    human_review_required: Optional[bool]  # Set by awaiting_review_node
     status: str                   # "processing" → "completed" | "awaiting_review" | "failed"
     error: Optional[str]          # Only populated on failure
 
@@ -96,7 +97,7 @@ async def completed_node(state: DocFlowState) -> DocFlowState:
 
 async def awaiting_review_node(state: DocFlowState) -> DocFlowState:
     """Terminal node: confidence too low — flag for human review."""
-    return {**state, "status": "awaiting_review"}
+    return {**state, "status": "awaiting_review", "human_review_required": True}
 
 
 async def failed_node(state: DocFlowState) -> DocFlowState:
