@@ -15,7 +15,7 @@ from typing import TypedDict, Optional
 from langgraph.graph import StateGraph, START, END
 
 from backend.agents.parser import extract_text_from_pdf
-from backend.agents.validator import validate_invoice_fields
+from backend.agents.validator import validate_fields
 from backend.core.config import settings
 
 
@@ -76,24 +76,16 @@ async def validate_node(state: DocFlowState) -> DocFlowState:
     Node 3: Independent per-field confidence scoring.
     A second LLM call verifies each extracted field against the raw text.
     This prevents Agent 2 from grading its own work.
+    Works for any document type — field_scores is a generic dict.
     """
-    validation = await validate_invoice_fields(
+    validation = await validate_fields(
         raw_text=state["raw_text"],
         extracted_fields=state["extraction_results"],
     )
-    # Collect per-field confidence scores as a simple dict
-    field_confidences = {
-        "vendor_name": validation.vendor_name,
-        "invoice_number": validation.invoice_number,
-        "invoice_date": validation.invoice_date,
-        "due_date": validation.due_date,
-        "total_amount": validation.total_amount,
-        "currency": validation.currency,
-    }
     return {
         **state,
         "confidence_score": validation.overall_confidence,
-        "field_confidences": field_confidences,
+        "field_confidences": validation.field_scores,  # generic dict — works for any doc type
     }
 
 

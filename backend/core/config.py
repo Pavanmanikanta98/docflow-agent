@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     redis_url: str = Field(..., env="REDIS_URL")
 
     # App
+    api_key: str = Field(..., env="API_KEY")
     confidence_threshold: float = Field(..., env="CONFIDENCE_THRESHOLD")
     max_upload_size_mb: int = Field(..., env="MAX_UPLOAD_SIZE_MB")
     environment: str = Field(..., env="ENVIRONMENT")

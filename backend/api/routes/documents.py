@@ -1,9 +1,9 @@
 """Routes: POST /upload, GET /status/{job_id}."""
-
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
-from sqlalchemy.orm import Session
 from redis import Redis
 from typing import Optional
+from sqlalchemy.orm import Session
+from fastapi.responses import Response
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
 
 from backend.api.deps import get_db, get_redis
 from backend.models.db import Document, DocumentStatus
@@ -16,6 +16,7 @@ from backend.models.schemas import (
     Document as DocumentSchema
 )
 from backend.queue.jobs import enqueue_process_document
+
 
 router = APIRouter(prefix='/documents', tags=['documents'])
 
@@ -150,7 +151,6 @@ async def review_document(
         extraction_results=doc.extraction_results,
         confidence_score=doc.confidence_score,
     )
-from fastapi.responses import Response
 
 @router.get('/{document_id}/file')
 async def download_document_file(document_id: int, db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):

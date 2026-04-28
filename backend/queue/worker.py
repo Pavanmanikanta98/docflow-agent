@@ -17,7 +17,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
     db: Session = SessionLocal()
     try:
-        # 1. Mark documnet as processing
+        # 1. Mark document as processing
         doc = db.get(Document, document_id)
         if not doc:
             return
