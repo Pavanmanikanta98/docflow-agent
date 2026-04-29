@@ -1,4 +1,4 @@
-"""Routes: POST /upload, GET /status/{job_id}."""
+"""Routes: upload, list, status, download."""
 from redis import Redis
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -8,9 +8,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Q
 from backend.api.deps import get_db, get_redis
 from backend.models.db import Document, DocumentStatus
 from backend.models.schemas import (
-    DocumentUploadResponse, 
-    DocumentReviewRequest, 
-    DocumentReviewResponse,
+    DocumentUploadResponse,
     DocumentStatusResponse,
     DocumentListResponse,
     Document as DocumentSchema
@@ -109,48 +107,6 @@ async def get_document(
         human_review_rejection_reason=doc.human_review_rejection_reason,
     )
 
-
-@router.post("/{document_id}/review", response_model=DocumentReviewResponse)
-async def review_document(
-    document_id: int,
-    review: DocumentReviewRequest,
-    db: Session = Depends(get_db),
-):
-    from backend.models.db import HumanReviewStatus
-
-    doc = db.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    if doc.status not in (DocumentStatus.awaiting_review, DocumentStatus.completed):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Document is not reviewable. Current status: {doc.status.value}"
-        )
-
-    doc.human_review_comments = review.review_comments
-    doc.human_review_rejection_reason = review.human_review_rejection_reason
-
-    if review.human_review_status == HumanReviewStatus.approved:
-        doc.human_review_status = HumanReviewStatus.approved
-        doc.status = DocumentStatus.completed
-    else:
-        doc.human_review_status = HumanReviewStatus.rejected
-        doc.status = DocumentStatus.awaiting_review
-
-    db.commit()
-
-    return DocumentReviewResponse(
-        status=doc.status.value,
-        message=f"Review recorded: {review.human_review_status}",
-        document_type=doc.document_type,
-        document_id=str(doc.id),
-        document_url=doc.document_url,
-        document_size=doc.document_size,
-        document_mime_type=doc.document_mime_type,
-        extraction_results=doc.extraction_results,
-        confidence_score=doc.confidence_score,
-    )
 
 @router.get('/{document_id}/file')
 async def download_document_file(document_id: int, db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
