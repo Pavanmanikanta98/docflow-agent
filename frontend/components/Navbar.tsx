@@ -29,11 +29,23 @@ export function Navbar() {
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-gray-600 dark:text-gray-300">
             <Link
-              href="/"
+              href="/#upload"
               data-tour="nav-upload"
               className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
               Upload
+            </Link>
+            <Link
+              href="/#how-it-works"
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/#capabilities"
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              Capabilities
             </Link>
             <Link
               href="/documents"
@@ -41,6 +53,12 @@ export function Navbar() {
               className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
               Documents
+            </Link>
+            <Link
+              href="/#contact"
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              Contact
             </Link>
           </nav>
         </div>

@@ -9,7 +9,13 @@ import api from '@/lib/api';
 import type { DocumentType } from '@/lib/types';
 import { DropZone } from '@/components/common/DropZone';
 
-export default function DocumentUploader() {
+interface DocumentUploaderProps {
+  variant?: 'default' | 'embedded';
+}
+
+export default function DocumentUploader({
+  variant = 'default',
+}: DocumentUploaderProps) {
   const router = useRouter();
   const { notification } = App.useApp();
   const [docType, setDocType] = useState<DocumentType>('invoice');
@@ -47,8 +53,8 @@ export default function DocumentUploader() {
     }
   };
 
-  return (
-    <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+  const content = (
+    <>
       <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <span className="font-semibold text-sm flex items-center gap-2 text-slate-700 dark:text-slate-300">
           <FileText className="w-4 h-4 text-indigo-500" />
@@ -72,6 +78,16 @@ export default function DocumentUploader() {
         uploading={uploading}
         accept=".pdf,.png,.jpg,.jpeg"
       />
+    </>
+  );
+
+  if (variant === 'embedded') {
+    return content;
+  }
+
+  return (
+    <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+      {content}
     </Card>
   );
 }
