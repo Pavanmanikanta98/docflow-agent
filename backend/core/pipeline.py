@@ -17,6 +17,7 @@ from langgraph.graph import StateGraph, START, END
 from backend.agents.parser import extract_text_from_pdf
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
+from backend.core.llm import llm_client
 
 
 # ---------------------------------------------------------------------------
@@ -26,6 +27,7 @@ from backend.core.config import settings
 class DocFlowState(TypedDict):
     """All data the pipeline needs and produces."""
     document_id: int
+    tenant_id: str                # Needed for BYOK key lookup
     document_type: str
     file_bytes: bytes             # Raw PDF bytes read from Redis
     raw_text: str                 # Filled by parse_node
@@ -52,41 +54,64 @@ async def parse_node(state: DocFlowState) -> DocFlowState:
     return {**state, "raw_text": raw_text}
 
 
+def _resolve_model(document_id: int):
+    """Resolve the LLM model for this extraction request.
+
+    Priority order:
+      1. Temp key in Redis (user provided X-LLM-Key header at upload time)
+      2. Global fallback (.env GROQ_API_KEY)
+
+    The temp key lives in Redis for max 1 hour alongside the document bytes
+    and is auto-deleted after use. It's never persisted to the database.
+    """
+    from backend.core.db import redis_client
+
+    # Check for user-provided key (stored temporarily during upload)
+    temp_key = redis_client.get(f"llm_key:{document_id}")
+    if temp_key:
+        raw_key = temp_key.decode() if isinstance(temp_key, bytes) else temp_key
+        # Clean up immediately after reading — single use
+        redis_client.delete(f"llm_key:{document_id}")
+        return llm_client.get_model(api_key=raw_key)
+
+    # No user key — use global .env defaults
+    return llm_client.get_model()
+
+
 async def extract_node(state: DocFlowState) -> DocFlowState:
     """
     Node 2: Send raw text to LLM via pydantic-ai.
-    Returns structured InvoiceFields stored in state.
+    Resolves tenant's BYOK key if available, otherwise falls back to .env.
     """
 
     from backend.plugins import get_plugin
     from backend.agents.extractor import extract_fields
 
     plugin = get_plugin(state["document_type"])
+    model = _resolve_model(state["document_id"])
 
-    fields = await extract_fields(state["raw_text"], plugin)
+    fields = await extract_fields(state["raw_text"], plugin, model=model)
     return {
         **state,
         "extraction_results": fields.model_dump(exclude={"confidence_score"}),
-        # Note: we do NOT set confidence_score here.
-        # The validator (Node 3) sets it independently.
     }
 
 
 async def validate_node(state: DocFlowState) -> DocFlowState:
     """
     Node 3: Independent per-field confidence scoring.
-    A second LLM call verifies each extracted field against the raw text.
-    This prevents Agent 2 from grading its own work.
-    Works for any document type — field_scores is a generic dict.
+    Uses tenant's BYOK key if available, otherwise falls back to .env.
     """
+    model = _resolve_model(state["document_id"])
     validation = await validate_fields(
         raw_text=state["raw_text"],
         extracted_fields=state["extraction_results"],
+        model=model,
     )
     return {
         **state,
         "confidence_score": validation.overall_confidence,
-        "field_confidences": validation.field_scores,  # generic dict — works for any doc type
+        "field_confidences": validation.field_scores,
     }
 
 

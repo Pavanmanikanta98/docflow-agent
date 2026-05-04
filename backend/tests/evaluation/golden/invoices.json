@@ -1,0 +1,171 @@
+[
+    {
+        "case_id": "inv_001_standard",
+        "description": "Clean, well-formatted invoice with all fields present",
+        "input": "INVOICE #INV-2026-0042\nDate: 2026-04-15\nDue: 2026-05-15\n\nFrom: Acme Corp\nTo: Widget Inc.\n\nItems:\n- Widget A  x10  $50.00\n- Widget B  x5   $30.00\n\nSubtotal: $650.00\nTax (10%): $65.00\nTotal: $715.00\nCurrency: USD",
+        "expected": {
+            "vendor_name": "Acme Corp",
+            "invoice_number": "INV-2026-0042",
+            "invoice_date": "2026-04-15",
+            "due_date": "2026-05-15",
+            "total_amount": 715.00,
+            "currency": "USD",
+            "line_items": ["Widget A  x10  $50.00", "Widget B  x5   $30.00"]
+        }
+    },
+    {
+        "case_id": "inv_002_missing_due_date",
+        "description": "Invoice without a due date — tests graceful null handling",
+        "input": "Invoice Number: 88921\nInvoice Date: March 3, 2026\n\nBill From: TechServe Solutions Ltd.\nBill To: GlobalRetail Co.\n\nDescription: Monthly SaaS subscription (Enterprise)\nAmount: EUR 2,450.00\n\nTotal Due: EUR 2,450.00",
+        "expected": {
+            "vendor_name": "TechServe Solutions Ltd.",
+            "invoice_number": "88921",
+            "invoice_date": "2026-03-03",
+            "due_date": null,
+            "total_amount": 2450.00,
+            "currency": "EUR",
+            "line_items": ["Monthly SaaS subscription (Enterprise)"]
+        }
+    },
+    {
+        "case_id": "inv_003_multiple_items",
+        "description": "Invoice with 5 line items — tests list extraction",
+        "input": "COMMERCIAL INVOICE\nRef: CI-2026/1107\nDate: 01 Jan 2026\nPayment Due: 31 Jan 2026\n\nSeller: Pacific Trading Co.\nBuyer: Atlantic Imports LLC\n\n1. Raw cotton bales (Grade A) — $12,000.00\n2. Silk fabric rolls (50m each) — $8,500.00\n3. Polyester blend sheets — $3,200.00\n4. Dye chemicals (industrial) — $1,800.00\n5. Shipping & handling — $950.00\n\nSubtotal: $26,450.00\nInsurance: $400.00\nTotal: $26,850.00\nCurrency: USD",
+        "expected": {
+            "vendor_name": "Pacific Trading Co.",
+            "invoice_number": "CI-2026/1107",
+            "invoice_date": "2026-01-01",
+            "due_date": "2026-01-31",
+            "total_amount": 26850.00,
+            "currency": "USD",
+            "line_items": [
+                "Raw cotton bales (Grade A) — $12,000.00",
+                "Silk fabric rolls (50m each) — $8,500.00",
+                "Polyester blend sheets — $3,200.00",
+                "Dye chemicals (industrial) — $1,800.00",
+                "Shipping & handling — $950.00"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_004_non_usd_currency",
+        "description": "Invoice in Indian Rupees — tests currency detection",
+        "input": "Tax Invoice\nGSTIN: 27AABCT1234F1ZX\nInvoice No: GST/2026/04/098\nDate: 12-Apr-2026\nDue Date: 12-May-2026\n\nFrom: Tata Consultancy Services\nTo: Infosys Limited\n\nServices Rendered:\n- Cloud migration consulting (160 hrs) — INR 8,00,000\n- Data architecture review — INR 2,50,000\n\nSubtotal: INR 10,50,000\nGST (18%): INR 1,89,000\nTotal: INR 12,39,000",
+        "expected": {
+            "vendor_name": "Tata Consultancy Services",
+            "invoice_number": "GST/2026/04/098",
+            "invoice_date": "2026-04-12",
+            "due_date": "2026-05-12",
+            "total_amount": 1239000.00,
+            "currency": "INR",
+            "line_items": [
+                "Cloud migration consulting (160 hrs) — INR 8,00,000",
+                "Data architecture review — INR 2,50,000"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_005_messy_formatting",
+        "description": "Poorly formatted invoice with inconsistent spacing — stress test",
+        "input": "inv# 5567\n  date:2026/02/28\n\n  vendor: Joe's Plumbing & Repair\n\n  bathroom fixture install....$340\n  pipe replacement............$275\n  labor (4hrs @ $85).........$340\n  parts........................$128\n\n  TOTAL    $1,083.00\n  payment due upon receipt",
+        "expected": {
+            "vendor_name": "Joe's Plumbing & Repair",
+            "invoice_number": "5567",
+            "invoice_date": "2026-02-28",
+            "due_date": null,
+            "total_amount": 1083.00,
+            "currency": "USD",
+            "line_items": [
+                "bathroom fixture install....$340",
+                "pipe replacement............$275",
+                "labor (4hrs @ $85).........$340",
+                "parts........................$128"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_006_minimal",
+        "description": "Bare-minimum invoice — only vendor, amount, number present",
+        "input": "Quick Invoice\nFrom: Sarah's Design Studio\nInvoice 2026-77\nTotal: $500.00",
+        "expected": {
+            "vendor_name": "Sarah's Design Studio",
+            "invoice_number": "2026-77",
+            "invoice_date": null,
+            "due_date": null,
+            "total_amount": 500.00,
+            "currency": "USD",
+            "line_items": null
+        }
+    },
+    {
+        "case_id": "inv_007_european_format",
+        "description": "European number format (comma as decimal separator)",
+        "input": "Rechnung Nr. RE-2026-0891\nDatum: 15.03.2026\nFällig: 15.04.2026\n\nVon: München Digital GmbH\nAn: Berlin Analytics AG\n\nLeistungen:\n- Webentwicklung (80 Std.) — 9.600,00 EUR\n- UX Design — 3.200,00 EUR\n\nZwischensumme: 12.800,00 EUR\nMwSt. (19%): 2.432,00 EUR\nGesamtbetrag: 15.232,00 EUR",
+        "expected": {
+            "vendor_name": "München Digital GmbH",
+            "invoice_number": "RE-2026-0891",
+            "invoice_date": "2026-03-15",
+            "due_date": "2026-04-15",
+            "total_amount": 15232.00,
+            "currency": "EUR",
+            "line_items": [
+                "Webentwicklung (80 Std.) — 9.600,00 EUR",
+                "UX Design — 3.200,00 EUR"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_008_large_amount",
+        "description": "High-value enterprise invoice",
+        "input": "ENTERPRISE LICENSE INVOICE\nInvoice ID: EL-2026-00003\nIssue Date: January 1, 2026\nPayment Terms: Net 60 (Due: March 2, 2026)\n\nVendor: Salesforce, Inc.\nClient: JPMorgan Chase & Co.\n\nEnterprise CRM License (2000 seats) — $1,200,000.00\nPremium Support Package — $180,000.00\nData Migration Service — $95,000.00\n\nTotal: $1,475,000.00 USD",
+        "expected": {
+            "vendor_name": "Salesforce, Inc.",
+            "invoice_number": "EL-2026-00003",
+            "invoice_date": "2026-01-01",
+            "due_date": "2026-03-02",
+            "total_amount": 1475000.00,
+            "currency": "USD",
+            "line_items": [
+                "Enterprise CRM License (2000 seats) — $1,200,000.00",
+                "Premium Support Package — $180,000.00",
+                "Data Migration Service — $95,000.00"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_009_freelancer",
+        "description": "Casual freelancer invoice with narrative style",
+        "input": "Hi! Here's my invoice for the logo work.\n\nFrom: Maria Chen (Freelance Designer)\nInvoice #MC-42\nDate: April 20, 2026\n\nLogo design (3 concepts + revisions): $800\nBrand guidelines document: $400\nSocial media kit: $300\n\nTotal amount due: $1,500.00 USD\nPlease pay within 14 days (by May 4, 2026).\n\nThanks!\nMaria",
+        "expected": {
+            "vendor_name": "Maria Chen",
+            "invoice_number": "MC-42",
+            "invoice_date": "2026-04-20",
+            "due_date": "2026-05-04",
+            "total_amount": 1500.00,
+            "currency": "USD",
+            "line_items": [
+                "Logo design (3 concepts + revisions): $800",
+                "Brand guidelines document: $400",
+                "Social media kit: $300"
+            ]
+        }
+    },
+    {
+        "case_id": "inv_010_no_currency_symbol",
+        "description": "Invoice with amount but no explicit currency symbol or code",
+        "input": "INVOICE\nNumber: 10234\nDate: 2026-06-01\nDue: 2026-07-01\n\nFrom: CloudHost Pro\nTo: StartupXYZ\n\nMonthly hosting (dedicated server): 450.00\nSSL certificate renewal: 29.99\nDomain registration (2 years): 35.98\n\nTotal: 515.97",
+        "expected": {
+            "vendor_name": "CloudHost Pro",
+            "invoice_number": "10234",
+            "invoice_date": "2026-06-01",
+            "due_date": "2026-07-01",
+            "total_amount": 515.97,
+            "currency": null,
+            "line_items": [
+                "Monthly hosting (dedicated server): 450.00",
+                "SSL certificate renewal: 29.99",
+                "Domain registration (2 years): 35.98"
+            ]
+        }
+    }
+]
