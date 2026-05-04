@@ -12,8 +12,6 @@ def test_config_loads(monkeypatch: pytest.MonkeyPatch) -> None:
     env = {
         "DATABASE_URL": "postgresql://test:test@localhost:5432/test_db",
         "REDIS_URL": "redis://localhost:6379/0",
-        "ENCRYPTION_KEY": "dGVzdGtleXRoYXRpczMyYnl0ZXNsb25nISE=",  # fake Fernet key
-        "API_KEY": "test-api-key-12345",
         "CONFIDENCE_THRESHOLD": "0.7",
         "MAX_UPLOAD_SIZE_MB": "10",
         "ENVIRONMENT": "test",
@@ -36,7 +34,6 @@ def test_config_loads(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert settings.database_url == env["DATABASE_URL"]
     assert settings.redis_url == env["REDIS_URL"]
-    assert settings.api_key == env["API_KEY"]
     assert settings.confidence_threshold == float(env["CONFIDENCE_THRESHOLD"])
     assert settings.max_upload_size_mb == int(env["MAX_UPLOAD_SIZE_MB"])
     assert settings.environment == env["ENVIRONMENT"]
@@ -53,8 +50,6 @@ def test_config_missing_required_var(monkeypatch: pytest.MonkeyPatch) -> None:
     # Set everything *except* DATABASE_URL
     env = {
         "REDIS_URL": "redis://localhost:6379/0",
-        "ENCRYPTION_KEY": "dGVzdGtleXRoYXRpczMyYnl0ZXNsb25nISE=",
-        "API_KEY": "test-api-key-12345",
         "CONFIDENCE_THRESHOLD": "0.7",
         "MAX_UPLOAD_SIZE_MB": "10",
         "ENVIRONMENT": "test",

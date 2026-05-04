@@ -26,9 +26,6 @@ class Settings(BaseSettings):
     # Redis / ARQ
     redis_url: str = Field(..., env="REDIS_URL")
 
-    # Security
-    api_key: str = Field(..., env="API_KEY")
-
     # Rate limiting
     rate_limit_per_session: int = Field(10, env="RATE_LIMIT_PER_SESSION")   # per session per day
     rate_limit_per_ip: int = Field(30, env="RATE_LIMIT_PER_IP")             # per IP per day
