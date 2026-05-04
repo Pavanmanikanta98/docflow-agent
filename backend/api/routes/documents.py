@@ -3,7 +3,7 @@ from redis import Redis
 from typing import Optional
 from sqlalchemy.orm import Session
 from fastapi.responses import Response
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query, Request
 
 from backend.api.deps import get_db, get_redis
 from backend.models.db import Document, DocumentStatus
@@ -20,6 +20,7 @@ router = APIRouter(prefix='/documents', tags=['documents'])
 
 @router.post('/upload', response_model=DocumentUploadResponse)
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     tenant_id: str = Form(...),
     document_type: str = Form(...),
@@ -49,6 +50,13 @@ async def upload_document(
 
     redis_key = f"doc_bytes:{new_doc.id}"
     redis.setex(redis_key, 3600, file_bytes)
+
+    # If user provided their own LLM key, store it temporarily in Redis
+    # alongside the doc bytes (same 1-hour TTL). The async pipeline worker
+    # will read it once and delete it. Never persisted to the database.
+    user_llm_key = request.headers.get("x-llm-key")
+    if user_llm_key:
+        redis.setex(f"llm_key:{new_doc.id}", 3600, user_llm_key)
 
     await enqueue_process_document(new_doc.id)
     

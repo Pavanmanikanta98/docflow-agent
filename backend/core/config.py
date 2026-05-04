@@ -12,12 +12,13 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY from old BYOK)
     )
 
-    # LLM
-    llm_provider: str = Field(..., env="LLM_PROVIDER")
-    llm_model: str = Field(..., env="LLM_MODEL")
-    groq_api_key: str = Field(..., env="GROQ_API_KEY")
+    # LLM (used for all demo requests; users can override via X-LLM-Key header)
+    llm_provider: str = Field("groq", env="LLM_PROVIDER")
+    llm_model: str = Field("llama-3.1-8b-instant", env="LLM_MODEL")
+    groq_api_key: str = Field("", env="GROQ_API_KEY")
 
     # Database
     database_url: str = Field(..., env="DATABASE_URL")
@@ -25,9 +26,16 @@ class Settings(BaseSettings):
     # Redis / ARQ
     redis_url: str = Field(..., env="REDIS_URL")
 
+    # Security
+    api_key: str = Field(..., env="API_KEY")
+
+    # Rate limiting
+    rate_limit_per_session: int = Field(10, env="RATE_LIMIT_PER_SESSION")   # per session per day
+    rate_limit_per_ip: int = Field(30, env="RATE_LIMIT_PER_IP")             # per IP per day
+    rate_limit_global: int = Field(500, env="RATE_LIMIT_GLOBAL")            # global daily cap
+
     # App
     allowed_origins: str = Field("http://localhost:3000", env="ALLOWED_ORIGINS")
-    api_key: str = Field(..., env="API_KEY")
     confidence_threshold: float = Field(..., env="CONFIDENCE_THRESHOLD")
     max_upload_size_mb: int = Field(..., env="MAX_UPLOAD_SIZE_MB")
     environment: str = Field(..., env="ENVIRONMENT")
