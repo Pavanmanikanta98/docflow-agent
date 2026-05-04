@@ -8,7 +8,6 @@ This prevents the LLM from grading its own extraction work.
 from typing import Any
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from backend.core.llm import llm_client
 
 
 # ---------------------------------------------------------------------------
@@ -65,11 +64,8 @@ _SYSTEM_PROMPT = (
     "  - field_scores must contain exactly the same keys as the extracted values dict."
 )
 
-_validator_agent = Agent(
-    model=llm_client.get_model(),
-    output_type=ValidatorOutput,
-    system_prompt=_SYSTEM_PROMPT,
-)
+# NOTE: No module-level Agent instance here. The agent is created per-call
+# to support per-tenant BYOK keys (each tenant may use a different model).
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +75,7 @@ _validator_agent = Agent(
 async def validate_fields(
     raw_text: str,
     extracted_fields: dict[str, Any],
+    model: Any,
 ) -> ValidatorOutput:
     """
     Validate extracted document fields against the raw source text.
@@ -89,10 +86,17 @@ async def validate_fields(
     Args:
         raw_text: The raw text extracted from the PDF by Agent 1 (parser).
         extracted_fields: The structured dict returned by Agent 2 (extractor).
+        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK or fallback).
 
     Returns:
         ValidatorOutput with per-field scores dict and overall_confidence.
     """
+    agent = Agent(
+        model=model,
+        output_type=ValidatorOutput,
+        system_prompt=_SYSTEM_PROMPT,
+    )
+
     field_list = "\n".join(f"  - {k}: {v}" for k, v in extracted_fields.items())
     prompt = (
         f"Raw document text:\n{raw_text}\n\n"
@@ -101,7 +105,7 @@ async def validate_fields(
         "field_scores must contain exactly these keys: "
         f"{list(extracted_fields.keys())}."
     )
-    result = await _validator_agent.run(prompt)
+    result = await agent.run(prompt)
     return result.output
 
 
@@ -112,6 +116,7 @@ async def validate_fields(
 async def validate_invoice_fields(
     raw_text: str,
     extracted_fields: dict[str, Any],
+    model: Any,
 ) -> ValidatorOutput:
     """Deprecated alias — use validate_fields() instead."""
-    return await validate_fields(raw_text, extracted_fields)
+    return await validate_fields(raw_text, extracted_fields, model=model)
