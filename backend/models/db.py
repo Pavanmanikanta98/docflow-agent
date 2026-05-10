@@ -63,3 +63,7 @@ class Document(Base):
     updated_at = Column(DateTime, nullable=True, onupdate=lambda: datetime.now(timezone.utc))
 
 
+# NOTE: The tenant_api_keys table still exists in the DB from migration
+# fbb366fea798. It's no longer used — BYOK was replaced with client-side
+# key passthrough (X-LLM-Key header). The table can be dropped in a
+# future migration if desired.

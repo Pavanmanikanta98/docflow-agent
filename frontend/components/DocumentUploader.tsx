@@ -42,12 +42,23 @@ export default function DocumentUploader({
       router.push('/documents');
     } catch (err: unknown) {
       onError?.(err as Error);
-      const detail = (err as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail;
-      notification.error({
-        title: 'Upload failed',
-        description: detail || 'Something went wrong.',
-      });
+      const axiosErr = err as { response?: { status?: number; data?: { detail?: string; message?: string } } };
+      const status = axiosErr?.response?.status;
+      const detail = axiosErr?.response?.data?.detail;
+      const message = axiosErr?.response?.data?.message;
+
+      if (status === 429) {
+        notification.warning({
+          message: 'Demo limit reached',
+          description: message || 'You\'ve used all free extractions. Click the usage badge in the navbar to add your own API key.',
+          duration: 8,
+        });
+      } else {
+        notification.error({
+          message: 'Upload failed',
+          description: detail || 'Something went wrong.',
+        });
+      }
     } finally {
       setUploading(false);
     }

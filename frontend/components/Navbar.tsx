@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { Button } from 'antd';
 import { Sun, Moon, FileText } from 'lucide-react';
 import { TourTrigger } from '@/components/AppTour';
+import { UsageBanner } from '@/components/SettingsModal';
 
 export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -65,6 +66,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {mounted && <TourTrigger />}
+          {mounted && <UsageBanner />}
           {mounted && (
             <Button
               data-tour="theme-toggle"

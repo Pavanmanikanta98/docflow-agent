@@ -54,9 +54,9 @@ const steps = [
     selector: '[data-tour="settings"]',
     content: (
       <div>
-        <strong className="block text-base mb-1">API Key Settings ⚙️</strong>
+        <strong className="block text-base mb-1">Usage & API Key ⚡</strong>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Update your workspace API key here at any time. It's stored locally in your browser and never sent anywhere except your API calls.
+          Track your remaining free extractions here. You get 10 per day. Need more? Paste your own Groq API key for unlimited access.
         </p>
       </div>
     ),

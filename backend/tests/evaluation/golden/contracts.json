@@ -1,0 +1,198 @@
+[
+    {
+        "case_id": "con_001_standard",
+        "description": "Clean service agreement with all major fields",
+        "input": "SERVICE AGREEMENT\n\nThis Service Agreement ('Agreement') is entered into as of January 15, 2026 ('Effective Date') by and between:\n\n1. Acme Consulting Group ('Provider')\n2. Widget Manufacturing Inc. ('Client')\n\nTerm: This Agreement shall commence on January 15, 2026 and terminate on December 31, 2026, unless terminated earlier per Section 8.\n\nScope: Provider shall deliver management consulting services including operational audits, process optimization, and quarterly business reviews.\n\nCompensation: Client agrees to pay Provider a total contract value of $240,000 USD, payable in equal monthly installments of $20,000.\n\nGoverning Law: This Agreement shall be governed by the laws of the State of New York.\n\nTermination: Either party may terminate with 30 days written notice. In case of material breach, the non-breaching party may terminate immediately upon written notice.\n\nKey Obligations:\n- Provider shall deliver monthly progress reports\n- Provider shall maintain professional liability insurance of not less than $1M\n- Client shall provide reasonable access to facilities and personnel\n- Both parties shall maintain confidentiality of proprietary information",
+        "expected": {
+            "parties": ["Acme Consulting Group", "Widget Manufacturing Inc."],
+            "effective_date": "2026-01-15",
+            "expiry_date": "2026-12-31",
+            "contract_value": 240000.00,
+            "currency": "USD",
+            "jurisdiction": "State of New York",
+            "key_obligations": [
+                "Provider shall deliver monthly progress reports",
+                "Provider shall maintain professional liability insurance of not less than $1M",
+                "Client shall provide reasonable access to facilities and personnel",
+                "Both parties shall maintain confidentiality of proprietary information"
+            ],
+            "termination_clause": "Either party may terminate with 30 days written notice. Immediate termination for material breach."
+        }
+    },
+    {
+        "case_id": "con_002_software_license",
+        "description": "SaaS license agreement with auto-renewal",
+        "input": "SOFTWARE LICENSE AGREEMENT\n\nEffective Date: March 1, 2026\n\nLicensor: DataStream Analytics, Inc. (Delaware corporation)\nLicensee: HealthFirst Hospital Network\n\nGrant of License: Licensor grants Licensee a non-exclusive, non-transferable license to use the DataStream Platform for a period of 36 months.\n\nExpiration: February 28, 2029\n\nFees: Annual license fee of $85,000 USD. Total contract value: $255,000 USD.\n\nGoverning Law: State of Delaware.\n\nAuto-Renewal: This agreement shall automatically renew for successive 12-month periods unless either party provides 90 days written notice of non-renewal.\n\nObligations:\n- Licensor shall provide 99.9% uptime SLA\n- Licensor shall deliver security patches within 48 hours of discovery\n- Licensee shall not reverse engineer the software\n- Licensee shall restrict access to authorized personnel only",
+        "expected": {
+            "parties": ["DataStream Analytics, Inc.", "HealthFirst Hospital Network"],
+            "effective_date": "2026-03-01",
+            "expiry_date": "2029-02-28",
+            "contract_value": 255000.00,
+            "currency": "USD",
+            "jurisdiction": "State of Delaware",
+            "key_obligations": [
+                "Licensor shall provide 99.9% uptime SLA",
+                "Licensor shall deliver security patches within 48 hours of discovery",
+                "Licensee shall not reverse engineer the software",
+                "Licensee shall restrict access to authorized personnel only"
+            ],
+            "termination_clause": "Auto-renews for 12-month periods unless 90 days written notice of non-renewal is provided."
+        }
+    },
+    {
+        "case_id": "con_003_employment",
+        "description": "Employment contract — tests party extraction with individual names",
+        "input": "EMPLOYMENT AGREEMENT\n\nDate: February 1, 2026\n\nEmployer: Quantum Technologies Pvt. Ltd.\nEmployee: Rajesh Kumar Sharma\n\nPosition: Senior Software Engineer\nStart Date: February 15, 2026\nEnd Date: This is a permanent position with no fixed end date.\n\nCompensation: Annual salary of INR 24,00,000 (Twenty-Four Lakhs Indian Rupees).\n\nProbation: 6-month probation period ending August 14, 2026.\n\nGoverning Law: Laws of India, jurisdiction of courts in Bangalore, Karnataka.\n\nTermination: During probation, either party may terminate with 1 week notice. Post-probation, 2 months notice required from either side. Employer may terminate immediately for gross misconduct.\n\nObligations:\n- Employee shall maintain confidentiality during and after employment\n- Employee agrees to 12-month non-compete within India\n- Employer shall provide health insurance coverage\n- Employee shall not engage in competing business activities",
+        "expected": {
+            "parties": ["Quantum Technologies Pvt. Ltd.", "Rajesh Kumar Sharma"],
+            "effective_date": "2026-02-15",
+            "expiry_date": null,
+            "contract_value": 2400000.00,
+            "currency": "INR",
+            "jurisdiction": "Bangalore, Karnataka, India",
+            "key_obligations": [
+                "Employee shall maintain confidentiality during and after employment",
+                "Employee agrees to 12-month non-compete within India",
+                "Employer shall provide health insurance coverage",
+                "Employee shall not engage in competing business activities"
+            ],
+            "termination_clause": "During probation: 1 week notice. Post-probation: 2 months notice. Immediate termination for gross misconduct."
+        }
+    },
+    {
+        "case_id": "con_004_nda",
+        "description": "NDA with no monetary value — tests null handling for contract_value",
+        "input": "NON-DISCLOSURE AGREEMENT\n\nThis Non-Disclosure Agreement is entered into on April 10, 2026.\n\nDisclosing Party: FutureAI Labs Inc.\nReceiving Party: BrightMinds Research Foundation\n\nPurpose: The parties wish to explore a potential research collaboration and may need to share confidential information.\n\nTerm: This NDA is effective from April 10, 2026 and shall remain in force for 3 years, expiring April 9, 2029.\n\nGoverning Law: State of California, United States.\n\nTermination: This NDA cannot be terminated early. Confidentiality obligations survive for 5 years after expiration.\n\nObligations:\n- Receiving Party shall use Confidential Information solely for the stated Purpose\n- Receiving Party shall limit disclosure to employees with need-to-know\n- Receiving Party shall return or destroy all materials upon request\n- Neither party shall disclose the existence of this NDA publicly",
+        "expected": {
+            "parties": ["FutureAI Labs Inc.", "BrightMinds Research Foundation"],
+            "effective_date": "2026-04-10",
+            "expiry_date": "2029-04-09",
+            "contract_value": null,
+            "currency": null,
+            "jurisdiction": "State of California",
+            "key_obligations": [
+                "Receiving Party shall use Confidential Information solely for the stated Purpose",
+                "Receiving Party shall limit disclosure to employees with need-to-know",
+                "Receiving Party shall return or destroy all materials upon request",
+                "Neither party shall disclose the existence of this NDA publicly"
+            ],
+            "termination_clause": "Cannot be terminated early. Confidentiality obligations survive 5 years after expiration."
+        }
+    },
+    {
+        "case_id": "con_005_construction",
+        "description": "Construction contract with milestone payments",
+        "input": "CONSTRUCTION CONTRACT\n\nProject: Office Renovation — Building C, Floor 3\n\nOwner: Metropolitan Real Estate Holdings\nContractor: BuildRight Construction LLC\n\nContract Date: May 1, 2026\nProject Completion Deadline: October 31, 2026\n\nTotal Contract Price: $1,850,000 USD\n\nPayment Schedule:\n- 20% upon signing ($370,000)\n- 30% at framing completion ($555,000)\n- 30% at mechanical/electrical completion ($555,000)\n- 20% upon final inspection ($370,000)\n\nGoverning Law: State of Texas\n\nTermination: Owner may terminate for convenience with 14 days notice; Contractor entitled to payment for work completed plus 10% of remaining contract value. Termination for cause (safety violations, abandonment) is immediate.\n\nKey Obligations:\n- Contractor shall obtain all necessary permits\n- Contractor shall maintain workers compensation insurance\n- Owner shall provide site access during business hours\n- Contractor shall complete punch list items within 30 days of substantial completion\n- All work shall comply with local building codes",
+        "expected": {
+            "parties": ["Metropolitan Real Estate Holdings", "BuildRight Construction LLC"],
+            "effective_date": "2026-05-01",
+            "expiry_date": "2026-10-31",
+            "contract_value": 1850000.00,
+            "currency": "USD",
+            "jurisdiction": "State of Texas",
+            "key_obligations": [
+                "Contractor shall obtain all necessary permits",
+                "Contractor shall maintain workers compensation insurance",
+                "Owner shall provide site access during business hours",
+                "Contractor shall complete punch list items within 30 days of substantial completion",
+                "All work shall comply with local building codes"
+            ],
+            "termination_clause": "Owner may terminate for convenience with 14 days notice; Contractor paid for completed work plus 10%. Immediate termination for safety violations or abandonment."
+        }
+    },
+    {
+        "case_id": "con_006_european_consulting",
+        "description": "European consulting contract in EUR with GDPR references",
+        "input": "BERATUNGSVERTRAG (Consulting Agreement)\n\nBetween:\n1. Schneider & Weber Unternehmensberatung GmbH ('Consultant')\n2. AutoTech Europe AG ('Client')\n\nEffective: 1 June 2026\nDuration: 18 months, ending 30 November 2027\n\nScope: Digital transformation consulting for manufacturing operations across 3 EU facilities.\n\nCompensation: EUR 480,000 total, paid quarterly (EUR 80,000 per quarter).\n\nGoverning Law: German law, courts of Frankfurt am Main.\n\nTermination: Either party may terminate with 60 days written notice. Client may terminate immediately if Consultant breaches data protection obligations under GDPR.\n\nObligations:\n- Consultant shall comply with GDPR and Client's data protection policies\n- Consultant shall provide bi-weekly status reports\n- Client shall designate a project sponsor with decision-making authority\n- Consultant shall not subcontract without prior written consent",
+        "expected": {
+            "parties": ["Schneider & Weber Unternehmensberatung GmbH", "AutoTech Europe AG"],
+            "effective_date": "2026-06-01",
+            "expiry_date": "2027-11-30",
+            "contract_value": 480000.00,
+            "currency": "EUR",
+            "jurisdiction": "Frankfurt am Main, Germany",
+            "key_obligations": [
+                "Consultant shall comply with GDPR and Client's data protection policies",
+                "Consultant shall provide bi-weekly status reports",
+                "Client shall designate a project sponsor with decision-making authority",
+                "Consultant shall not subcontract without prior written consent"
+            ],
+            "termination_clause": "Either party may terminate with 60 days written notice. Immediate termination for GDPR breaches."
+        }
+    },
+    {
+        "case_id": "con_007_minimal",
+        "description": "Very short informal agreement — tests handling of sparse data",
+        "input": "AGREEMENT\n\nJohn's Lawn Care agrees to provide weekly lawn maintenance services to 456 Oak Street for Mrs. Patricia Williams.\n\nStarting: July 1, 2026\nRate: $150 per visit, estimated 30 visits = $4,500 total.\n\nEither party can cancel anytime with 1 week notice.",
+        "expected": {
+            "parties": ["John's Lawn Care", "Patricia Williams"],
+            "effective_date": "2026-07-01",
+            "expiry_date": null,
+            "contract_value": 4500.00,
+            "currency": "USD",
+            "jurisdiction": null,
+            "key_obligations": null,
+            "termination_clause": "Either party can cancel anytime with 1 week notice."
+        }
+    },
+    {
+        "case_id": "con_008_multi_party",
+        "description": "Joint venture agreement with 3 parties",
+        "input": "JOINT VENTURE AGREEMENT\n\nThis Agreement is made effective as of September 1, 2026, among:\n\n1. Pacific Ventures Capital LLC ('PVC')\n2. Green Energy Solutions Corp ('GES')\n3. Asian Development Partners Ltd. ('ADP')\n\n(collectively, the 'Parties')\n\nPurpose: Establishment of a solar panel manufacturing facility in Vietnam.\n\nTerm: 5 years from Effective Date, expiring August 31, 2031.\n\nCapital Contribution: Total initial investment of $12,500,000 USD.\n- PVC: $5,000,000 (40%)\n- GES: $4,375,000 (35%)\n- ADP: $3,125,000 (25%)\n\nGoverning Law: Laws of Singapore. Disputes via ICC Arbitration.\n\nTermination: Requires unanimous written consent of all parties. In case of insolvency of any party, the remaining parties may buy out the insolvent party's share at fair market value.\n\nKey Obligations:\n- PVC shall manage financial operations and reporting\n- GES shall provide technical expertise and equipment sourcing\n- ADP shall manage local government relations and permits\n- All parties shall contribute proportionally to operating costs\n- Quarterly board meetings mandatory with 2/3 quorum",
+        "expected": {
+            "parties": ["Pacific Ventures Capital LLC", "Green Energy Solutions Corp", "Asian Development Partners Ltd."],
+            "effective_date": "2026-09-01",
+            "expiry_date": "2031-08-31",
+            "contract_value": 12500000.00,
+            "currency": "USD",
+            "jurisdiction": "Singapore",
+            "key_obligations": [
+                "PVC shall manage financial operations and reporting",
+                "GES shall provide technical expertise and equipment sourcing",
+                "ADP shall manage local government relations and permits",
+                "All parties shall contribute proportionally to operating costs",
+                "Quarterly board meetings mandatory with 2/3 quorum"
+            ],
+            "termination_clause": "Requires unanimous written consent. Insolvency triggers buyout at fair market value."
+        }
+    },
+    {
+        "case_id": "con_009_zero_value",
+        "description": "Pro-bono / volunteer agreement with zero contract value",
+        "input": "VOLUNTEER SERVICE AGREEMENT\n\nOrganization: City Community Food Bank\nVolunteer: Alex Thompson\n\nEffective Date: March 15, 2026\nEnd Date: March 14, 2027\n\nThis is a voluntary, unpaid position. No compensation or benefits are provided.\n\nJurisdiction: State of Oregon.\n\nTermination: Either party may end this agreement at any time without notice.\n\nVolunteer agrees to:\n- Complete assigned tasks with reasonable care\n- Follow food safety protocols\n- Report injuries immediately to supervisor",
+        "expected": {
+            "parties": ["City Community Food Bank", "Alex Thompson"],
+            "effective_date": "2026-03-15",
+            "expiry_date": "2027-03-14",
+            "contract_value": 0.0,
+            "currency": null,
+            "jurisdiction": "State of Oregon",
+            "key_obligations": [
+                "Complete assigned tasks with reasonable care",
+                "Follow food safety protocols",
+                "Report injuries immediately to supervisor"
+            ],
+            "termination_clause": "Either party may end this agreement at any time without notice."
+        }
+    },
+    {
+        "case_id": "con_010_retainer",
+        "description": "Legal retainer with hourly + fixed components",
+        "input": "LEGAL SERVICES RETAINER AGREEMENT\n\nAttorney: Morrison & Associates, PLLC\nClient: Brightwave Semiconductor Ltd.\n\nCommencement: July 1, 2026\nInitial Term: 12 months ending June 30, 2027\n\nMonthly retainer: $7,500 USD (covers up to 20 hours)\nAdditional hours: $425/hour\nEstimated annual value: $90,000 USD (retainer only)\n\nGoverning Law: State of Massachusetts.\n\nTermination: Client may terminate with 30 days notice. Attorney may withdraw per applicable Rules of Professional Conduct.\n\nObligations:\n- Attorney shall provide monthly billing statements\n- Attorney shall maintain attorney-client privilege\n- Client shall respond to document requests within 5 business days\n- Attorney shall disclose any conflicts of interest promptly",
+        "expected": {
+            "parties": ["Morrison & Associates, PLLC", "Brightwave Semiconductor Ltd."],
+            "effective_date": "2026-07-01",
+            "expiry_date": "2027-06-30",
+            "contract_value": 90000.00,
+            "currency": "USD",
+            "jurisdiction": "State of Massachusetts",
+            "key_obligations": [
+                "Attorney shall provide monthly billing statements",
+                "Attorney shall maintain attorney-client privilege",
+                "Client shall respond to document requests within 5 business days",
+                "Attorney shall disclose any conflicts of interest promptly"
+            ],
+            "termination_clause": "Client may terminate with 30 days notice. Attorney may withdraw per Rules of Professional Conduct."
+        }
+    }
+]

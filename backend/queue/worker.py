@@ -33,12 +33,14 @@ async def process_document(ctx: dict, document_id: int) -> None:
         # 3 & 4. Run the full LangGraph pipeline: parse → extract → route
         initial_state: DocFlowState = {
             "document_id": document_id,
+            "tenant_id": doc.tenant_id,
             "document_type": doc.document_type,
             "file_bytes": file_bytes,
             "raw_text": "",
             "extraction_results": None,
             "confidence_score": None,
             "field_confidences": None,
+            "human_review_required": None,
             "status": "processing",
             "error": None,
         }
