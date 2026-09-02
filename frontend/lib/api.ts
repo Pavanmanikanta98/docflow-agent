@@ -10,7 +10,6 @@ const api = axios.create({
 // ---------------------------------------------------------------------------
 
 const SESSION_KEY = 'docflow_session_id';
-const LLM_KEY_STORAGE = 'docflow_llm_key';
 
 export function getSessionId(): string {
   if (typeof window === 'undefined') return 'ssr';
@@ -22,33 +21,13 @@ export function getSessionId(): string {
   return id;
 }
 
-export function getUserLlmKey(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(LLM_KEY_STORAGE);
-}
-
-export function setUserLlmKey(key: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(LLM_KEY_STORAGE, key);
-}
-
-export function clearUserLlmKey(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(LLM_KEY_STORAGE);
-}
-
 // ---------------------------------------------------------------------------
-// Request interceptor — attach session ID + optional LLM key to every request
+// Request interceptor — attach session ID to every request
 // ---------------------------------------------------------------------------
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     config.headers['X-Session-Id'] = getSessionId();
-
-    const llmKey = getUserLlmKey();
-    if (llmKey) {
-      config.headers['X-LLM-Key'] = llmKey;
-    }
   }
   return config;
 });

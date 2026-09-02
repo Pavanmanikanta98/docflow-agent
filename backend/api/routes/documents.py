@@ -13,8 +13,10 @@ from backend.models.schemas import (
     DocumentListResponse,
     Document as DocumentSchema
 )
+from backend.core.config import settings
 from backend.queue.jobs import enqueue_process_document
 
+ALLOWED_MIMES = {"application/pdf", "image/png", "image/jpeg"}
 
 router = APIRouter(prefix='/documents', tags=['documents'])
 
@@ -28,7 +30,29 @@ async def upload_document(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis)
 ):
+    # --- Validate file MIME type ---
+    if file.content_type not in ALLOWED_MIMES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported file type: {file.content_type}. Only PDF and image files are accepted."
+        )
+
+    # --- Validate document type against known plugins ---
+    if document_type not in ("invoice", "contract"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported document type: {document_type}. Supported: invoice, contract."
+        )
+
     file_bytes = await file.read()
+
+    # --- Enforce upload size limit ---
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    if len(file_bytes) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large ({len(file_bytes) / (1024*1024):.1f}MB). Maximum: {settings.max_upload_size_mb}MB."
+        )
     
     new_doc = Document(
         tenant_id=tenant_id,
@@ -117,9 +141,14 @@ async def get_document(
 
 
 @router.get('/{document_id}/file')
-async def download_document_file(document_id: int, db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
+async def download_document_file(
+    document_id: int,
+    tenant_id: str = Query('demo-tenant-id', description="Tenant ID for access control"),
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
     doc = db.get(Document, document_id)
-    if not doc:
+    if not doc or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Document not found")
         
     redis_key = f"doc_bytes:{doc.id}"

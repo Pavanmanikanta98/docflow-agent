@@ -76,8 +76,9 @@ async def process_document(ctx: dict, document_id: int) -> None:
                 pass
                     
 
-        # 6. clean up Redis - bytes no longer needed
+        # 6. clean up Redis - bytes and any user-provided LLM key no longer needed
         redis_client.delete(redis_key)
+        redis_client.delete(f"llm_key:{document_id}")
 
     except Exception as e:
 
@@ -88,6 +89,8 @@ async def process_document(ctx: dict, document_id: int) -> None:
             # Mark as failed and log error
             doc.status = DocumentStatus.failed
             db.commit()
+        # Best-effort key cleanup on failure too — TTL is the safety net.
+        redis_client.delete(f"llm_key:{document_id}")
         raise e
 
     finally:

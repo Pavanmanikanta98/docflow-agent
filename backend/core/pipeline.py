@@ -61,8 +61,10 @@ def _resolve_model(document_id: int):
       1. Temp key in Redis (user provided X-LLM-Key header at upload time)
       2. Global fallback (.env GROQ_API_KEY)
 
-    The temp key lives in Redis for max 1 hour alongside the document bytes
-    and is auto-deleted after use. It's never persisted to the database.
+    The key is read but NOT deleted here — both extract_node and validate_node
+    call this function and need the same key. The worker deletes it once the
+    pipeline finishes (success or failure paths in worker.py). The 1h Redis
+    TTL is the safety net if cleanup is missed.
     """
     from backend.core.db import redis_client
 
@@ -70,8 +72,6 @@ def _resolve_model(document_id: int):
     temp_key = redis_client.get(f"llm_key:{document_id}")
     if temp_key:
         raw_key = temp_key.decode() if isinstance(temp_key, bytes) else temp_key
-        # Clean up immediately after reading — single use
-        redis_client.delete(f"llm_key:{document_id}")
         return llm_client.get_model(api_key=raw_key)
 
     # No user key — use global .env defaults
