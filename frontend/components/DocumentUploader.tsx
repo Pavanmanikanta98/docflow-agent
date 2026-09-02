@@ -49,13 +49,13 @@ export default function DocumentUploader({
 
       if (status === 429) {
         notification.warning({
-          message: 'Demo limit reached',
-          description: message || 'You\'ve used all free extractions. Click the usage badge in the navbar to add your own API key.',
+          title: 'Demo limit reached',
+          description: message || 'You\'ve used all free extractions for today. Try again after UTC midnight, or contact me for production access.',
           duration: 8,
         });
       } else {
         notification.error({
-          message: 'Upload failed',
+          title: 'Upload failed',
           description: detail || 'Something went wrong.',
         });
       }

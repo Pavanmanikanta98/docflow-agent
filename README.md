@@ -2,7 +2,7 @@
 
 Multi-agent document processing pipeline that extracts structured data from invoices and contracts, validates confidence, and routes low-confidence fields to human review before export.
 
-**Demo:** [link] | **Video:** [2-min walkthrough]
+**Demo and walkthrough video:** _coming soon — links added once deployed._
 
 ---
 
@@ -53,14 +53,15 @@ Invoice / Contract
 
 ## Extraction Accuracy
 
-Measured with DeepEval on 20+ real documents:
+Accuracy is measured with the in-repo evaluation suite (`backend/tests/evaluation/`):
+10 gold-standard invoices and 10 gold-standard contracts, scored field-by-field
+against the real LLM. Run on demand — see `evaluation_walkthrough.md`.
 
-| Document type | Accuracy | HITL flag rate |
-|---|---|---|
-| Invoices | 89%+ | ~15% |
-| Contracts | 85%+ | ~18% |
+Fields scoring below `CONFIDENCE_THRESHOLD` (default 0.75) are automatically
+flagged for human review before export.
 
-Fields below `CONFIDENCE_THRESHOLD` (default 0.75) are automatically flagged for human review.
+> Live accuracy numbers will be published here once the demo is deployed and
+> the eval suite has been run against the production model and prompts.
 
 ---
 

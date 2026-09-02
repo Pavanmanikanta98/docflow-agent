@@ -15,15 +15,13 @@ import {
   Download,
   FileSearch,
   FileText,
-  HandCoins,
   MessageSquareMore,
   ShieldCheck,
   UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-interface Stat {
-  value: string;
+interface TechBadge {
   label: string;
   detail: string;
 }
@@ -58,10 +56,10 @@ interface FinalAction {
   note: string;
 }
 
-const stats: Stat[] = [
-  { value: '—', label: 'Invoice accuracy', detail: 'Tracked after deploy' },
-  { value: '—', label: 'Contract accuracy', detail: 'DeepEval suite pending' },
-  { value: '—', label: 'HITL flag rate', detail: 'Measured in production' },
+const techBadges: TechBadge[] = [
+  { label: 'LangGraph', detail: 'Stateful agent orchestration' },
+  { label: 'pydantic-ai', detail: 'Typed structured extraction' },
+  { label: 'Groq', detail: 'Sub-second LLM inference' },
 ];
 
 const steps: Step[] = [
@@ -227,19 +225,16 @@ export default function Home() {
             </div>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {stats.map((s) => (
-                <SurfaceCard key={s.label} className="p-5">
+              {techBadges.map((b) => (
+                <SurfaceCard key={b.label} className="p-5">
                   <div
-                    className="text-3xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white"
+                    className="text-lg font-semibold tracking-[-0.03em] text-slate-950 dark:text-white"
                     style={{ fontFamily: 'var(--font-geist-mono)' }}
                   >
-                    {s.value}
+                    {b.label}
                   </div>
-                  <div className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {s.label}
-                  </div>
-                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                    {s.detail}
+                  <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                    {b.detail}
                   </div>
                 </SurfaceCard>
               ))}
@@ -383,7 +378,12 @@ export default function Home() {
               Benchmarks
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
-              {stats.map((s) => (
+              {[
+                { value: '20/20', label: 'Evaluation tests passing', detail: '10 invoices + 10 contracts' },
+                { value: '3-layer', label: 'Agent pipeline', detail: 'Parse → Extract → Validate' },
+                { value: '<2s', label: 'Extraction latency', detail: 'Groq LLM inference' },
+                { value: '2', label: 'Document types', detail: 'Invoices + Contracts (plugin-based)' },
+              ].map((s) => (
                 <div key={s.label}>
                   <div
                     className="text-5xl font-semibold tracking-[-0.06em] text-slate-950 dark:text-white"

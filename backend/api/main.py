@@ -5,7 +5,16 @@ from backend.api.middleware import RateLimitMiddleware
 from backend.core.config import settings
 
 
-app = FastAPI(title="docflow-agent", version="0.1.0")
+is_prod = settings.environment == "production"
+
+app = FastAPI(
+    title="docflow-agent",
+    version="0.1.0",
+    # Disable interactive docs in production — don't expose the API schema
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json",
+)
 
 # Rate limiting — must be added BEFORE CORS so it can intercept early
 app.add_middleware(RateLimitMiddleware)
