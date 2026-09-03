@@ -41,6 +41,16 @@ async def review_document(
 
     db.commit()
 
+    if review.human_review_status == HumanReviewStatus.approved and doc.webhook_url:
+        from backend.core.connectors import dispatch_webhook
+        await dispatch_webhook({
+            "document_id": doc.id,
+            "status": doc.status.value,
+            "extraction_results": doc.extraction_results,
+            "confidence_score": doc.confidence_score,
+            "human_review_status": "approved"
+        }, url=doc.webhook_url)
+
     return DocumentReviewResponse(
         status=doc.status.value,
         message=f"Review recorded: {review.human_review_status}",

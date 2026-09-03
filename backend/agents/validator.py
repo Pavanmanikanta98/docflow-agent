@@ -20,9 +20,7 @@ class ValidatorOutput(BaseModel):
 
     field_scores: maps each extracted field name to a confidence float [0.0, 1.0].
     overall_confidence: weighted average across all scored fields.
-
-    Using a dict instead of hardcoded fields means this schema works for
-    invoices, contracts, or any future document type without modification.
+    status: Optional override status for hard gates.
     """
     field_scores: dict[str, float] = Field(
         ...,
@@ -39,6 +37,10 @@ class ValidatorOutput(BaseModel):
             "Weighted average of all field confidences. "
             "Weight monetary and identifier fields more heavily."
         ),
+    )
+    status: str | None = Field(
+        None,
+        description="Optional pipeline status override for hard gates (e.g. 'human_review').",
     )
 
 
@@ -106,7 +108,32 @@ async def validate_fields(
         f"{list(extracted_fields.keys())}."
     )
     result = await agent.run(prompt)
-    return result.output
+    output = result.output
+
+    # Hard Gate Validation
+    try:
+        line_items = extracted_fields.get("line_items")
+        total_amount = extracted_fields.get("total_amount")
+        tax_amount = extracted_fields.get("tax_amount", 0.0)
+
+        if isinstance(line_items, list) and total_amount is not None:
+            sum_lines = 0.0
+            for item in line_items:
+                if isinstance(item, dict):
+                    amt = item.get("amount")
+                    if amt is not None:
+                        sum_lines += float(amt)
+
+            tax = float(tax_amount) if tax_amount is not None else 0.0
+            tot = float(total_amount)
+
+            if abs((sum_lines + tax) - tot) > 0.01:
+                output.overall_confidence = 0.0
+                output.status = "human_review"
+    except (ValueError, TypeError):
+        pass
+
+    return output
 
 
 # ---------------------------------------------------------------------------

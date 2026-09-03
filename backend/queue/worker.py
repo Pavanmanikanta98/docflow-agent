@@ -62,18 +62,13 @@ async def process_document(ctx: dict, document_id: int) -> None:
         db.commit()
 
         if doc.webhook_url and doc.status == DocumentStatus.completed:
-            import httpx
-            try:
-                async with httpx.AsyncClient(timeout=settings.webhook_timeout_seconds) as client:
-                    await client.post(doc.webhook_url, json={
-                        "document_id": doc.id,
-                        "status": doc.status.value,
-                        "extraction_results": doc.extraction_results,
-                        "confidence_score": doc.confidence_score,
-                    }
-                    )
-            except Exception:
-                pass
+            from backend.core.connectors import dispatch_webhook
+            await dispatch_webhook({
+                "document_id": doc.id,
+                "status": doc.status.value,
+                "extraction_results": doc.extraction_results,
+                "confidence_score": doc.confidence_score,
+            }, url=doc.webhook_url)
                     
 
         # 6. clean up Redis - bytes and any user-provided LLM key no longer needed
