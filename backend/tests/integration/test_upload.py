@@ -173,3 +173,96 @@ def test_upload_missing_tenant_id_fails(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_upload_ignores_llm_key_header_when_disabled(
+    client: TestClient, mock_redis: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With ALLOW_USER_LLM_KEY=false the X-LLM-Key header is never stored."""
+    from backend.api import middleware
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "allow_user_llm_key", False)
+    monkeypatch.setattr(middleware, "_get_redis", lambda: _AllowAllRedis())
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={"tenant_id": "test-tenant-003", "document_type": "invoice"},
+        headers={"X-LLM-Key": "gsk_should_not_be_stored"},
+    )
+
+    assert response.status_code == 200
+    stored_keys = [c.args[0] for c in mock_redis.setex.call_args_list]
+    assert not any(k.startswith("llm_key:") for k in stored_keys)
+
+
+def test_upload_rejects_webhook_url_when_webhooks_disabled(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from backend.api import middleware
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "webhooks_enabled", False)
+    monkeypatch.setattr(middleware, "_get_redis", lambda: _AllowAllRedis())
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={
+            "tenant_id": "test-tenant-004",
+            "document_type": "invoice",
+            "webhook_url": "https://hooks.example.com/x",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "disabled" in response.json()["detail"]
+
+
+def test_upload_rejects_private_webhook_url(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from backend.api import middleware
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "webhooks_enabled", True)
+    monkeypatch.setattr(middleware, "_get_redis", lambda: _AllowAllRedis())
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={
+            "tenant_id": "test-tenant-005",
+            "document_type": "invoice",
+            "webhook_url": "https://169.254.169.254/latest/meta-data",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+class _AllowAllRedis:
+    """Rate-limit Redis stand-in: every counter reads 0."""
+
+    def __init__(self) -> None:
+        self._queued = 0
+
+    def pipeline(self) -> "_AllowAllRedis":
+        self._queued = 0
+        return self
+
+    def get(self, key: str) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def incr(self, key: str) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def expire(self, key: str, ttl: int) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def execute(self) -> list[None]:
+        return [None] * self._queued

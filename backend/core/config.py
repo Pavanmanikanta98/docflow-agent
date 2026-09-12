@@ -15,10 +15,14 @@ class Settings(BaseSettings):
         extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY from old BYOK)
     )
 
-    # LLM (used for all demo requests; users can override via X-LLM-Key header)
+    # LLM (the server's key is used for every request by default)
     llm_provider: str = Field("groq", env="LLM_PROVIDER")
     llm_model: str = Field("llama-3.1-8b-instant", env="LLM_MODEL")
     groq_api_key: str = Field("", env="GROQ_API_KEY")
+    openai_api_key: str = Field("", env="OPENAI_API_KEY")
+    # Off by default: when false, an X-LLM-Key request header is ignored — it is not
+    # stored, not used for extraction, and does not bypass rate limits.
+    allow_user_llm_key: bool = Field(False, env="ALLOW_USER_LLM_KEY")
 
     # Database
     database_url: str = Field(..., env="DATABASE_URL")
@@ -37,6 +41,9 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = Field(..., env="MAX_UPLOAD_SIZE_MB")
     environment: str = Field(..., env="ENVIRONMENT")
     webhook_timeout_seconds: int = Field(..., env="WEBHOOK_TIMEOUT_SECONDS")
+    # Outbound webhooks are off unless explicitly enabled (keep off on the public demo).
+    webhooks_enabled: bool = Field(False, env="WEBHOOKS_ENABLED")
+    webhook_secret: str = Field("", env="WEBHOOK_SECRET")
 
 settings = Settings()
 

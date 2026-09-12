@@ -14,6 +14,7 @@ from backend.models.schemas import (
     Document as DocumentSchema
 )
 from backend.core.config import settings
+from backend.core.connectors import WebhookURLRejected, validate_webhook_url
 from backend.queue.jobs import enqueue_process_document
 
 ALLOWED_MIMES = {"application/pdf", "image/png", "image/jpeg"}
@@ -43,6 +44,18 @@ async def upload_document(
             status_code=422,
             detail=f"Unsupported document type: {document_type}. Supported: invoice, contract."
         )
+
+    # --- Webhook URL: only when webhooks are enabled, and only public https hosts ---
+    if webhook_url:
+        if not settings.webhooks_enabled:
+            raise HTTPException(
+                status_code=422,
+                detail="Webhooks are disabled on this deployment.",
+            )
+        try:
+            validate_webhook_url(webhook_url)
+        except WebhookURLRejected as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     file_bytes = await file.read()
 
@@ -75,11 +88,11 @@ async def upload_document(
     redis_key = f"doc_bytes:{new_doc.id}"
     redis.setex(redis_key, 3600, file_bytes)
 
-    # If user provided their own LLM key, store it temporarily in Redis
-    # alongside the doc bytes (same 1-hour TTL). The async pipeline worker
-    # will read it once and delete it. Never persisted to the database.
+    # Optional user-supplied LLM key — only when ALLOW_USER_LLM_KEY=true.
+    # Stored in Redis with the same 1-hour TTL; the worker deletes it after the
+    # pipeline finishes. Never persisted to the database.
     user_llm_key = request.headers.get("x-llm-key")
-    if user_llm_key:
+    if user_llm_key and settings.allow_user_llm_key:
         redis.setex(f"llm_key:{new_doc.id}", 3600, user_llm_key)
 
     await enqueue_process_document(new_doc.id)

@@ -13,6 +13,12 @@ class InvoiceFields(BaseModel):
     invoice_number: Optional[str] = Field(None, description="Invoice or reference number")
     invoice_date: Optional[str] = Field(None, description="Date of the invoice (as string)")
     due_date: Optional[str] = Field(None, description="Due date of the invoice (as string)")
+    subtotal: Optional[float] = Field(
+        None, description="Subtotal before tax, if the document states one"
+    )
+    tax_amount: Optional[float] = Field(
+        None, description="Tax amount, if the document states one"
+    )
     total_amount: Optional[float] = Field(None, description="Total amount of the invoice")
     currency: Optional[str] = Field(None, description="Currency code e.g. USD, EUR, INR")
     line_items: Optional[list[str]] = Field(None, description="List of line item descriptions")

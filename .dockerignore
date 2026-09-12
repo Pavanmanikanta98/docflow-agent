@@ -1,0 +1,12 @@
+.git
+.venv
+.pytest_cache
+.ruff_cache
+.deepeval
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+frontend
+*.md

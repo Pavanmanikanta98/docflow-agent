@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, Typography, Spin, App, Button, Modal, Input } from 'antd';
+import { Alert, Card, Typography, Spin, App, Button, Modal, Input } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import ExtractionReview from '@/components/ExtractionReview';
@@ -10,6 +10,18 @@ import ExportPanel from '@/components/ExportPanel';
 import type { Document } from '@/lib/types';
 
 const { Title } = Typography;
+
+/** Turn a machine reason from the pipeline into something a reviewer can read. */
+function describeReviewReason(reason: string): string {
+  if (reason === 'math_mismatch') {
+    return 'Subtotal plus tax does not equal the total — check the amounts.';
+  }
+  if (reason.startsWith('low_confidence:')) {
+    const score = reason.split(':')[1];
+    return `The checker was only ${score} confident — verify the highlighted fields.`;
+  }
+  return reason;
+}
 
 /** Shows the PDF in an iframe. If bytes are gone (cleared post-processing), shows a clean message. */
 function FilePreview({ fileUrl, filename }: { fileUrl: string; filename: string }) {
@@ -73,6 +85,15 @@ export default function ReviewPage() {
       .catch(() => notification.error({ title: 'Failed to load document.' }))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const extraction = doc?.extraction_results as unknown as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const rawReasons = extraction?._review_reasons;
+  const reviewReasons: string[] = Array.isArray(rawReasons)
+    ? (rawReasons as string[])
+    : [];
 
   const submitReview = async (status: 'approved' | 'rejected', reason?: string) => {
     setSubmitting(true);
@@ -155,6 +176,22 @@ export default function ReviewPage() {
       {/* Right — review + export */}
       <Card className="w-full lg:w-[450px] overflow-y-auto shadow-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <Title level={4} className="!mb-6">Extraction Results</Title>
+
+        {reviewReasons.length > 0 && (
+          <Alert
+            className="!mb-4"
+            type="warning"
+            showIcon
+            message="Held for review"
+            description={
+              <ul className="list-disc pl-4">
+                {reviewReasons.map((reason) => (
+                  <li key={reason}>{describeReviewReason(reason)}</li>
+                ))}
+              </ul>
+            }
+          />
+        )}
 
         <ExtractionReview
           doc={doc}

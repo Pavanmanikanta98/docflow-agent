@@ -14,7 +14,7 @@ from typing import TypedDict, Optional
 
 from langgraph.graph import StateGraph, START, END
 
-from backend.agents.parser import extract_text_from_pdf
+from backend.agents.parser import extract_text
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
 from backend.core.llm import llm_client
@@ -29,11 +29,13 @@ class DocFlowState(TypedDict):
     document_id: int
     tenant_id: str                # Needed for BYOK key lookup
     document_type: str
-    file_bytes: bytes             # Raw PDF bytes read from Redis
+    mime_type: str                # "application/pdf" | "image/png" | "image/jpeg"
+    file_bytes: bytes             # Raw upload bytes read from Redis
     raw_text: str                 # Filled by parse_node
     extraction_results: Optional[dict]    # Filled by extract_node
     confidence_score: Optional[float]     # Filled by validate_node (overall)
     field_confidences: Optional[dict]     # Filled by validate_node (per-field)
+    review_reasons: Optional[list[str]]   # Why a human is needed (validate_node)
     human_review_required: Optional[bool]  # Set by awaiting_review_node
     status: str                   # "processing" → "completed" | "awaiting_review" | "failed"
     error: Optional[str]          # Only populated on failure
@@ -45,12 +47,19 @@ class DocFlowState(TypedDict):
 
 async def parse_node(state: DocFlowState) -> DocFlowState:
     """
-    Node 1: Extract raw text from PDF bytes.
-    If the PDF is scanned (0 chars extracted), marks state as failed.
+    Node 1: Extract raw text from the uploaded PDF or image.
+    If no text can be extracted (text layer and OCR both empty), marks state as failed.
     """
-    raw_text = extract_text_from_pdf(state["file_bytes"])
+    try:
+        raw_text = extract_text(state["file_bytes"], state["mime_type"])
+    except ValueError as exc:
+        return {**state, "status": "failed", "error": str(exc)}
     if not raw_text.strip():
-        return {**state, "status": "failed", "error": "Parser returned empty text — scanned PDF?"}
+        return {
+            **state,
+            "status": "failed",
+            "error": "No text could be extracted (text layer and OCR both empty)",
+        }
     return {**state, "raw_text": raw_text}
 
 
@@ -58,7 +67,8 @@ def _resolve_model(document_id: int):
     """Resolve the LLM model for this extraction request.
 
     Priority order:
-      1. Temp key in Redis (user provided X-LLM-Key header at upload time)
+      1. Temp key in Redis (user provided X-LLM-Key header at upload time),
+         only when ALLOW_USER_LLM_KEY=true
       2. Global fallback (.env GROQ_API_KEY)
 
     The key is read but NOT deleted here — both extract_node and validate_node
@@ -66,6 +76,9 @@ def _resolve_model(document_id: int):
     pipeline finishes (success or failure paths in worker.py). The 1h Redis
     TTL is the safety net if cleanup is missed.
     """
+    if not settings.allow_user_llm_key:
+        return llm_client.get_model()
+
     from backend.core.db import redis_client
 
     # Check for user-provided key (stored temporarily during upload)
@@ -108,10 +121,18 @@ async def validate_node(state: DocFlowState) -> DocFlowState:
         extracted_fields=state["extraction_results"],
         model=model,
     )
+    reasons = list(validation.review_reasons)
+    if validation.status != "human_review" and (
+        validation.overall_confidence < settings.confidence_threshold
+    ):
+        reasons.append(f"low_confidence:{validation.overall_confidence:.2f}")
+
     return {
         **state,
         "confidence_score": validation.overall_confidence,
         "field_confidences": validation.field_scores,
+        "review_reasons": reasons,
+        "status": validation.status or state["status"],
     }
 
 
@@ -142,7 +163,9 @@ def route_after_parse(state: DocFlowState) -> str:
 
 
 def route_after_validate(state: DocFlowState) -> str:
-    """After validation: route by the validator's overall_confidence score."""
+    """After validation: a deterministic gate wins; otherwise route on confidence."""
+    if state.get("status") == "human_review" or state.get("review_reasons"):
+        return "awaiting_review"
     score = state.get("confidence_score") or 0.0
     if score >= settings.confidence_threshold:
         return "completed"

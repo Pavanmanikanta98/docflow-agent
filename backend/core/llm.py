@@ -50,13 +50,14 @@ class LLMClient:
         )
 
     def _groq_model(self, model_name: str, api_key: str | None = None) -> Any:
-        import os
         from pydantic_ai.models.groq import GroqModel
+        from pydantic_ai.providers.groq import GroqProvider
 
-        # Inject into env — pydantic-ai reads GROQ_API_KEY from os.environ
+        # Pass the key to this model's provider only. Writing it into os.environ
+        # would make it process-wide and visible to every later request.
         key = api_key or settings.groq_api_key
         if key:
-            os.environ["GROQ_API_KEY"] = key
+            return GroqModel(model_name, provider=GroqProvider(api_key=key))
         return GroqModel(model_name)
 
     def _ollama_model(self, model_name: str) -> Any:
@@ -65,12 +66,13 @@ class LLMClient:
         return OllamaModel(model_name)
 
     def _openai_model(self, model_name: str, api_key: str | None = None) -> Any:
-        import os
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
 
-        if api_key:
-            os.environ["OPENAI_API_KEY"] = api_key
-        return OpenAIModel(model_name)
+        key = api_key or settings.openai_api_key
+        if key:
+            return OpenAIChatModel(model_name, provider=OpenAIProvider(api_key=key))
+        return OpenAIChatModel(model_name)
 
 
 llm_client = LLMClient()
