@@ -37,9 +37,9 @@ routing + PNG OCR tests pass; all 17 webhook unit tests pass; the README signatu
 snippet verifies against `connectors.sign`.
 
 Decisions taken while implementing (Pavan: adding is OK, deleting is not):
-- **V1-3** keeps the `X-LLM-Key` feature but puts it behind `ALLOW_USER_LLM_KEY`
-  (default `false`) instead of deleting it. Found on the way: any junk value in that
-  header skipped all rate limits.
+- **V1-3** first gated the `X-LLM-Key` feature behind `ALLOW_USER_LLM_KEY` (any junk
+  value in that header had been skipping all rate limits). It has since been removed
+  outright — see ADR 003.
 - **V1-5** adds `WEBHOOKS_ENABLED` (default `false`) and `WEBHOOK_SECRET`.
   Header names are unchanged.
 - **V1-4** gates on `subtotal + tax = total` (new optional invoice fields) instead of
@@ -238,7 +238,7 @@ plan has no background workers) → Neon PostgreSQL + Upstash Redis.
 2. Render web service: Docker, `backend/Dockerfile`, health check path `/health`,
    env: `DATABASE_URL`, `REDIS_URL`, `GROQ_API_KEY`, `ENVIRONMENT=production`,
    `ALLOWED_ORIGINS=<vercel url>`, `CONFIDENCE_THRESHOLD=0.75`, `MAX_UPLOAD_SIZE_MB=10`,
-   `WEBHOOK_TIMEOUT_SECONDS=10`, `ALLOW_USER_LLM_KEY=false`, `WEBHOOKS_ENABLED=false`.
+   `WEBHOOK_TIMEOUT_SECONDS=10`, `WEBHOOKS_ENABLED=false`.
 3. Run `alembic upgrade head` once against Neon (locally with the Neon URL is simplest).
 4. Vercel: root `frontend/`, env `NEXT_PUBLIC_API_URL=<render url>`,
    `NEXT_PUBLIC_CONTACT_EMAIL`.
@@ -284,7 +284,6 @@ Check both providers' current free-tier terms on the day.
 | `BUSINESS_PLAN.md` | local only (untracked, not on GitHub) | "SOC-2 ready", audit logs, $150k roles — claims the code doesn't support | Never `git add` it; move to a private notes folder |
 | `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` | probably in `git stash@{0}` (3 Sep) | agy/Gemini-era plans with invented numbers | Keep in the stash or a private folder |
 | `REVIEW.md`, `BUGS.md`, `CONVERSATION_INSIGHTS.md` | local only, if still present | Old trackers, out of date | Private folder |
-| `X-LLM-Key` code path | `api/middleware.py` bypass + unused `SENSITIVE_HEADERS`, `api/routes/documents.py` storage, `core/pipeline.py` Redis read, `queue/worker.py` two `llm_key:` deletes, `ALLOW_USER_LLM_KEY` | Feature is off; less code to explain and secure | Harmless while the setting is `false` |
 | `validate_invoice_fields` alias | `agents/validator.py` (bottom) | Not called anywhere; comment says otherwise | Harmless |
 | `deepeval` dev dependency | `pyproject.toml`, `requirements.txt` | Not imported anywhere; heavy install; README no longer mentions it | Slower installs and CI |
 | `tenant_api_keys` table | migration `fbb366fea798` | Unused | Schema change — decide in v2 |

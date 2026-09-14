@@ -63,45 +63,21 @@ async def parse_node(state: DocFlowState) -> DocFlowState:
     return {**state, "raw_text": raw_text}
 
 
-def _resolve_model(document_id: int):
-    """Resolve the LLM model for this extraction request.
-
-    Priority order:
-      1. Temp key in Redis (user provided X-LLM-Key header at upload time),
-         only when ALLOW_USER_LLM_KEY=true
-      2. Global fallback (.env GROQ_API_KEY)
-
-    The key is read but NOT deleted here — both extract_node and validate_node
-    call this function and need the same key. The worker deletes it once the
-    pipeline finishes (success or failure paths in worker.py). The 1h Redis
-    TTL is the safety net if cleanup is missed.
-    """
-    if not settings.allow_user_llm_key:
-        return llm_client.get_model()
-
-    from backend.core.db import redis_client
-
-    # Check for user-provided key (stored temporarily during upload)
-    temp_key = redis_client.get(f"llm_key:{document_id}")
-    if temp_key:
-        raw_key = temp_key.decode() if isinstance(temp_key, bytes) else temp_key
-        return llm_client.get_model(api_key=raw_key)
-
-    # No user key — use global .env defaults
+def _resolve_model():
+    """Return the model every node uses: the server key from .env."""
     return llm_client.get_model()
 
 
 async def extract_node(state: DocFlowState) -> DocFlowState:
     """
     Node 2: Send raw text to LLM via pydantic-ai.
-    Uses the key sent with this upload when that is enabled, else the server key.
     """
 
     from backend.agents.extractor import extract_fields
     from backend.plugins import get_plugin
 
     plugin = get_plugin(state["document_type"])
-    model = _resolve_model(state["document_id"])
+    model = _resolve_model()
 
     fields = await extract_fields(state["raw_text"], plugin, model=model)
     return {
@@ -113,9 +89,8 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
 async def validate_node(state: DocFlowState) -> DocFlowState:
     """
     Node 3: Independent per-field confidence scoring.
-    Uses the key sent with this upload when that is enabled, else the server key.
     """
-    model = _resolve_model(state["document_id"])
+    model = _resolve_model()
     validation = await validate_fields(
         raw_text=state["raw_text"],
         extracted_fields=state["extraction_results"],

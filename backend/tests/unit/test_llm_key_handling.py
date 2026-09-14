@@ -1,5 +1,9 @@
-"""V1-3: a user-supplied X-LLM-Key must not leak, bypass limits, or reach the LLM
-unless ALLOW_USER_LLM_KEY is switched on. No real LLM or Redis calls."""
+"""The server key is the only key.
+
+Callers cannot supply one: an X-LLM-Key header is an ordinary unknown header,
+so it buys no rate-limit relief and never reaches the LLM. The key the server
+does hold must stay out of os.environ, where any later request could read it.
+No real LLM or Redis calls."""
 
 import os
 from typing import Any
@@ -9,7 +13,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend.api import middleware
-from backend.core import pipeline
 from backend.core.config import settings
 from backend.core.llm import llm_client
 
@@ -40,33 +43,7 @@ def test_groq_model_with_server_key_does_not_touch_environment(
 
 
 # ---------------------------------------------------------------------------
-# Pipeline: stored user keys are ignored while the feature is off
-# ---------------------------------------------------------------------------
-
-class _RedisThatMustNotBeRead:
-    def get(self, key: str) -> Any:
-        raise AssertionError(f"Redis read for {key!r} while ALLOW_USER_LLM_KEY=false")
-
-
-def test_resolve_model_ignores_user_key_when_disabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import backend.core.db as db
-
-    monkeypatch.setattr(settings, "allow_user_llm_key", False)
-    monkeypatch.setattr(db, "redis_client", _RedisThatMustNotBeRead())
-    requested: list[str | None] = []
-    monkeypatch.setattr(
-        llm_client, "get_model", lambda api_key=None, **kw: requested.append(api_key)
-    )
-
-    pipeline._resolve_model(document_id=1)
-
-    assert requested == [None]
-
-
-# ---------------------------------------------------------------------------
-# Rate limit middleware: the header is not a free pass
+# Rate limit middleware: no header is a free pass
 # ---------------------------------------------------------------------------
 
 class _FakePipeline:
@@ -117,29 +94,24 @@ def _app_with_zero_limits(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     return TestClient(app)
 
 
-def test_llm_key_header_does_not_bypass_limits_when_disabled(
+def test_llm_key_header_does_not_bypass_limits(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(settings, "allow_user_llm_key", False)
-    client = _app_with_zero_limits(monkeypatch)
-
-    response = client.post(
-        "/api/v1/documents/upload", headers={"X-LLM-Key": "anything"}
-    )
-
-    assert response.status_code == 429
-    assert "own Groq API key" not in response.json()["message"]
-
-
-def test_llm_key_header_bypasses_limits_when_enabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "allow_user_llm_key", True)
+    """The header that used to buy a bypass is now just an unknown header."""
     client = _app_with_zero_limits(monkeypatch)
 
     response = client.post(
         "/api/v1/documents/upload", headers={"X-LLM-Key": "gsk_user"}
     )
 
-    assert response.status_code == 200
-    assert response.headers["X-RateLimit-Bypassed"] == "true"
+    assert response.status_code == 429
+    assert "X-RateLimit-Bypassed" not in response.headers
+    assert "own Groq API key" not in response.json()["message"]
+
+
+def test_upload_is_rate_limited_with_no_special_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _app_with_zero_limits(monkeypatch)
+
+    assert client.post("/api/v1/documents/upload").status_code == 429

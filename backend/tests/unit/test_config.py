@@ -85,7 +85,6 @@ def test_config_reads_every_env_var_by_name(monkeypatch: pytest.MonkeyPatch) -> 
         "MAX_UPLOAD_SIZE_MB": "42",
         "ENVIRONMENT": "envtest",
         "WEBHOOK_TIMEOUT_SECONDS": "17",
-        "ALLOW_USER_LLM_KEY": "true",
         "WEBHOOKS_ENABLED": "true",
         "WEBHOOK_SECRET": "whsec_envtest",
     }
@@ -102,6 +101,5 @@ def test_config_reads_every_env_var_by_name(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.max_upload_size_mb == 42
     assert settings.environment == env["ENVIRONMENT"]
     assert settings.webhook_timeout_seconds == 17
-    assert settings.allow_user_llm_key is True
     assert settings.webhooks_enabled is True
     assert settings.webhook_secret == env["WEBHOOK_SECRET"]

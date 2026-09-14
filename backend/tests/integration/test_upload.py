@@ -210,14 +210,10 @@ def test_upload_missing_tenant_id_fails(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_upload_ignores_llm_key_header_when_disabled(
-    client: TestClient, mock_redis: MagicMock, monkeypatch: pytest.MonkeyPatch
+def test_upload_never_stores_an_llm_key_header(
+    client: TestClient, mock_redis: MagicMock
 ) -> None:
-    """With ALLOW_USER_LLM_KEY=false the X-LLM-Key header is never stored."""
-    from backend.core.config import settings
-
-    monkeypatch.setattr(settings, "allow_user_llm_key", False)
-
+    """Callers cannot supply a key: the header is read by nothing and stored nowhere."""
     response = client.post(
         "/api/v1/documents/upload",
         files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
