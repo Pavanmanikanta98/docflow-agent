@@ -2,8 +2,10 @@
 LLMClient abstraction — the only place in the codebase that touches LLM SDKs.
 
 Supports two modes:
-  1. Global fallback: reads LLM_PROVIDER + GROQ_API_KEY from .env (demo mode).
-  2. Per-tenant BYOK: caller passes provider, api_key, and model explicitly.
+  1. Server key (the default): reads LLM_PROVIDER + GROQ_API_KEY from .env.
+  2. Explicit override: the caller passes provider, api_key and model. The
+     pipeline uses this only for a key sent on the upload request itself,
+     and only when ALLOW_USER_LLM_KEY is true.
 """
 
 from typing import Any
@@ -14,11 +16,11 @@ from backend.core.config import settings
 class LLMClient:
     """Thin wrapper that returns a pydantic-ai-compatible model object.
 
-    Usage (global fallback):
+    Usage (server key):
         client = LLMClient()
         model = client.get_model()
 
-    Usage (per-tenant BYOK):
+    Usage (explicit override):
         model = client.get_model(
             provider="groq", api_key="gsk_...", model_name="llama-3.1-8b-instant"
         )
@@ -32,8 +34,9 @@ class LLMClient:
     ) -> Any:
         """Return the configured pydantic-ai model instance.
 
-        When called with no arguments, falls back to .env defaults.
-        When called with explicit overrides, uses the tenant's BYOK key.
+        With no arguments, uses the .env defaults. With explicit arguments,
+        uses the key, provider and model passed in — the key reaches this
+        model's provider only, never os.environ.
         """
         resolved_provider = (provider or settings.llm_provider).lower()
         resolved_model = model_name or settings.llm_model

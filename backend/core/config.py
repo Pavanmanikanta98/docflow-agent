@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY from old BYOK)
+        extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY, now unused)
     )
 
     # LLM (the server's key is used for every request by default)

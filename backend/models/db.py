@@ -69,6 +69,7 @@ class Document(Base):
 
 
 # NOTE: The tenant_api_keys table still exists in the DB from migration
-# fbb366fea798. It's no longer used — BYOK was replaced with client-side
-# key passthrough (X-LLM-Key header). The table can be dropped in a
-# future migration if desired.
+# fbb366fea798. Nothing reads or writes it. The plan to store a key per
+# tenant was dropped; a caller can instead send a key on the upload request
+# (X-LLM-Key), which is off unless ALLOW_USER_LLM_KEY is true. The table can
+# be dropped in a future migration if desired.

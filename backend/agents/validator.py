@@ -140,8 +140,9 @@ _SYSTEM_PROMPT = (
     "  - field_scores must contain exactly the same keys as the extracted values dict."
 )
 
-# NOTE: No module-level Agent instance here. The agent is created per-call
-# to support per-tenant BYOK keys (each tenant may use a different model).
+# NOTE: No module-level Agent instance here. The agent is built per call so a
+# request that carries its own key uses its own model, without leaking that
+# model to any other request.
 
 
 # ---------------------------------------------------------------------------
@@ -162,8 +163,8 @@ async def validate_fields(
     Args:
         raw_text: The raw text extracted from the PDF by Agent 1 (parser).
         extracted_fields: The structured dict returned by Agent 2 (extractor).
-        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK
-            or fallback).
+        model: pydantic-ai model instance, resolved by the pipeline (server
+            key, or a caller-supplied key when that is enabled).
 
     Returns:
         ValidatorOutput with per-field scores dict and overall_confidence.

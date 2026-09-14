@@ -20,8 +20,8 @@ async def extract_fields(
     Args:
         raw_text: Raw text extracted from the document.
         plugin: Document plugin with extraction schema and prompt.
-        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK
-            or fallback).
+        model: pydantic-ai model instance, resolved by the pipeline (server
+            key, or a caller-supplied key when that is enabled).
     """
 
     agent = Agent(

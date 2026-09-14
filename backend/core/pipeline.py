@@ -26,7 +26,7 @@ from backend.core.llm import llm_client
 class DocFlowState(TypedDict):
     """All data the pipeline needs and produces."""
     document_id: int
-    tenant_id: str                # Needed for BYOK key lookup
+    tenant_id: str                # Carried for the DB row; unused by the nodes
     document_type: str
     mime_type: str                # "application/pdf" | "image/png" | "image/jpeg"
     file_bytes: bytes             # Raw upload bytes read from Redis
@@ -94,7 +94,7 @@ def _resolve_model(document_id: int):
 async def extract_node(state: DocFlowState) -> DocFlowState:
     """
     Node 2: Send raw text to LLM via pydantic-ai.
-    Resolves tenant's BYOK key if available, otherwise falls back to .env.
+    Uses the key sent with this upload when that is enabled, else the server key.
     """
 
     from backend.agents.extractor import extract_fields
@@ -113,7 +113,7 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
 async def validate_node(state: DocFlowState) -> DocFlowState:
     """
     Node 3: Independent per-field confidence scoring.
-    Uses tenant's BYOK key if available, otherwise falls back to .env.
+    Uses the key sent with this upload when that is enabled, else the server key.
     """
     model = _resolve_model(state["document_id"])
     validation = await validate_fields(
