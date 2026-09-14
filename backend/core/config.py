@@ -20,9 +20,6 @@ class Settings(BaseSettings):
     llm_model: str = Field("llama-3.1-8b-instant")
     groq_api_key: str = Field("")
     openai_api_key: str = Field("")
-    # Off by default: when false, an X-LLM-Key request header is ignored — it is not
-    # stored, not used for extraction, and does not bypass rate limits.
-    allow_user_llm_key: bool = Field(False)
 
     # Database
     database_url: str = Field(...)

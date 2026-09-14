@@ -8,7 +8,6 @@ from fastapi import (
     Form,
     HTTPException,
     Query,
-    Request,
     UploadFile,
 )
 from fastapi.responses import Response
@@ -33,7 +32,6 @@ router = APIRouter(prefix='/documents', tags=['documents'])
 
 @router.post('/upload', response_model=DocumentUploadResponse)
 async def upload_document(
-    request: Request,
     file: UploadFile = File(...),
     tenant_id: str = Form(...),
     document_type: str = Form(...),
@@ -106,13 +104,6 @@ async def upload_document(
 
     redis_key = f"doc_bytes:{new_doc.id}"
     redis.setex(redis_key, 3600, file_bytes)
-
-    # Optional user-supplied LLM key — only when ALLOW_USER_LLM_KEY=true.
-    # Stored in Redis with the same 1-hour TTL; the worker deletes it after the
-    # pipeline finishes. Never persisted to the database.
-    user_llm_key = request.headers.get("x-llm-key")
-    if user_llm_key and settings.allow_user_llm_key:
-        redis.setex(f"llm_key:{new_doc.id}", 3600, user_llm_key)
 
     await enqueue_process_document(new_doc.id)
 

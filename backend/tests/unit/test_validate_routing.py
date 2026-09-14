@@ -32,7 +32,7 @@ async def _run_validate(
         return output
 
     monkeypatch.setattr(pipeline, "validate_fields", fake_validate)
-    monkeypatch.setattr(pipeline, "_resolve_model", lambda document_id: object())
+    monkeypatch.setattr(pipeline, "_resolve_model", lambda: object())
     return await pipeline.validate_node(_state())
 
 
