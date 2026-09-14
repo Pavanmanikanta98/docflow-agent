@@ -4,8 +4,10 @@ LAYER 1: Per-session  — 10 extractions/day (tracked by X-Session-Id header)
 LAYER 2: Per-IP       — 30 extractions/day (backstop against session farming)
 LAYER 3: Global       — 500 extractions/day (absolute budget ceiling)
 
-BYPASS: If the request carries an X-LLM-Key header, the user is paying
-their own bill → skip all rate limits.
+BYPASS: Only when ALLOW_USER_LLM_KEY=true — a request carrying an X-LLM-Key
+header pays its own LLM bill, so it skips the limits. When the setting is false
+(the default), the header is ignored and normal limits apply; otherwise anyone
+could bypass the limits by sending any string in that header.
 
 HOW IT WORKS:
 ─────────────
@@ -23,12 +25,11 @@ and is then garbage-collected from memory.
 import time
 from datetime import datetime, timezone
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from backend.core.config import settings
-
 
 # Which routes are rate-limited (only the expensive LLM operation)
 RATE_LIMITED_PATHS = {"/api/v1/documents/upload"}
@@ -58,6 +59,20 @@ def _ttl_until_midnight() -> int:
     return int((next_midnight - now).total_seconds())
 
 
+def _limit_message() -> str:
+    """429 message; only mention bringing your own key when that is enabled."""
+    if settings.allow_user_llm_key:
+        return (
+            "You've used all your free extractions for today. "
+            "Send your own Groq API key to continue, "
+            "or get in touch for production access."
+        )
+    return (
+        "You've used all your free extractions for today. "
+        "Come back tomorrow, or get in touch for production access."
+    )
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware that enforces 3-layer rate limiting on upload requests."""
 
@@ -66,9 +81,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path not in RATE_LIMITED_PATHS or request.method != "POST":
             return await call_next(request)
 
-        # BYPASS: If user provides their own LLM key, skip all limits
-        # They're paying their own API bill, not ours
-        if request.headers.get("x-llm-key"):
+        # BYPASS: user-supplied LLM key skips limits — only if the feature is on
+        if settings.allow_user_llm_key and request.headers.get("x-llm-key"):
             response = await call_next(request)
             response.headers["X-RateLimit-Bypassed"] = "true"
             return response
@@ -100,20 +114,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # --- Check limits (most specific → least specific) ---
         limit_hit = None
         limit_value = 0
-        remaining = 0
 
         if session_count >= settings.rate_limit_per_session:
             limit_hit = "session"
             limit_value = settings.rate_limit_per_session
-            remaining = 0
         elif ip_count >= settings.rate_limit_per_ip:
             limit_hit = "ip"
             limit_value = settings.rate_limit_per_ip
-            remaining = 0
         elif global_count >= settings.rate_limit_global:
             limit_hit = "global"
             limit_value = settings.rate_limit_global
-            remaining = 0
 
         if limit_hit:
             return JSONResponse(
@@ -122,13 +132,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "detail": "Demo limit reached",
                     "limit_type": limit_hit,
                     "limit": limit_value,
-                    "used": session_count if limit_hit == "session" else ip_count if limit_hit == "ip" else global_count,
-                    "reset_seconds": ttl,
-                    "message": (
-                        "You've used all your free extractions for today. "
-                        "Paste your own Groq API key (free at groq.com) to continue, "
-                        "or contact me for production access."
+                    "used": (
+                        session_count
+                        if limit_hit == "session"
+                        else ip_count
+                        if limit_hit == "ip"
+                        else global_count
                     ),
+                    "reset_seconds": ttl,
+                    "message": _limit_message(),
                 },
                 headers={
                     "X-RateLimit-Limit": str(settings.rate_limit_per_session),

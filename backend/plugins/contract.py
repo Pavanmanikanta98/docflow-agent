@@ -9,12 +9,22 @@ from backend.plugins.base import DocumentPlugin
 
 class ContractFields(BaseModel):
     """Structured output schema for contract documents."""
-    parties: Optional[list[str]] = Field(None, description="List of parties named in the contract")
-    effective_date: Optional[str] = Field(None, description="Contract effective/start date")
+    parties: Optional[list[str]] = Field(
+        None, description="List of parties named in the contract"
+    )
+    effective_date: Optional[str] = Field(
+        None, description="Contract effective/start date"
+    )
     expiry_date: Optional[str] = Field(None, description="Contract expiry or end date")
-    contract_value: Optional[float] = Field(None, description="Total monetary value of the contract")
-    currency: Optional[str] = Field(None, description="Currency code e.g. USD, EUR, INR")
-    jurisdiction: Optional[str] = Field(None, description="Governing law / jurisdiction clause")
+    contract_value: Optional[float] = Field(
+        None, description="Total monetary value of the contract"
+    )
+    currency: Optional[str] = Field(
+        None, description="Currency code e.g. USD, EUR, INR"
+    )
+    jurisdiction: Optional[str] = Field(
+        None, description="Governing law / jurisdiction clause"
+    )
     key_obligations: Optional[list[str]] = Field(
         None, description="Top 3-5 key obligations of the main party"
     )
@@ -51,5 +61,6 @@ class ContractPlugin(DocumentPlugin):
             "Identify all named parties, key dates, monetary values, and obligations. "
             "Summarise the termination clause in plain English. "
             "If a field is not present in the text, set it to null. "
-            "Be honest about your confidence_score — set it lower if the contract is incomplete or ambiguous."
+            "Be honest about your confidence_score — set it lower if the contract "
+            "is incomplete or ambiguous."
         )

@@ -4,15 +4,42 @@ Uses an in-memory SQLite database and a mocked Redis client so no
 external services are needed."""
 
 import io
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, Enum as SAEnum
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from backend.models.db import Base
+
+
+class _AllowAllRedis:
+    """Rate-limit Redis stand-in: every counter reads 0."""
+
+    def __init__(self) -> None:
+        self._queued = 0
+
+    def pipeline(self) -> "_AllowAllRedis":
+        self._queued = 0
+        return self
+
+    def get(self, key: str) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def incr(self, key: str) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def expire(self, key: str, ttl: int) -> "_AllowAllRedis":
+        self._queued += 1
+        return self
+
+    def execute(self) -> list[None]:
+        return [None] * self._queued
 
 
 # ---------------------------------------------------------------------------
@@ -50,10 +77,10 @@ def test_engine():
 @pytest.fixture()
 def test_db(test_engine):
     """Yield a SQLAlchemy session bound to the in-memory engine."""
-    TestingSessionLocal = sessionmaker(
+    testing_session_local = sessionmaker(
         autocommit=False, autoflush=False, bind=test_engine,
     )
-    session = TestingSessionLocal()
+    session = testing_session_local()
     try:
         yield session
     finally:
@@ -70,11 +97,19 @@ def mock_redis():
 
 
 @pytest.fixture()
-def client(test_db, mock_redis):
-    """Create a TestClient with dependency overrides for DB and Redis."""
+def client(test_db, mock_redis, monkeypatch: pytest.MonkeyPatch):
+    """Create a TestClient with dependency overrides for DB and Redis.
 
+    RateLimitMiddleware bypasses the ``get_redis`` dependency and reads the
+    module-level client via ``middleware._get_redis``, so that is patched too;
+    every request still runs through the real middleware, just without a
+    Redis server."""
+
+    from backend.api import middleware
     from backend.api.deps import get_db, get_redis
     from backend.api.main import app
+
+    monkeypatch.setattr(middleware, "_get_redis", lambda: _AllowAllRedis())
 
     def override_get_db():
         try:
@@ -169,6 +204,67 @@ def test_upload_missing_tenant_id_fails(client: TestClient) -> None:
         data={
             # tenant_id intentionally omitted
             "document_type": "invoice",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_upload_ignores_llm_key_header_when_disabled(
+    client: TestClient, mock_redis: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With ALLOW_USER_LLM_KEY=false the X-LLM-Key header is never stored."""
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "allow_user_llm_key", False)
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={"tenant_id": "test-tenant-003", "document_type": "invoice"},
+        headers={"X-LLM-Key": "gsk_should_not_be_stored"},
+    )
+
+    assert response.status_code == 200
+    stored_keys = [c.args[0] for c in mock_redis.setex.call_args_list]
+    assert not any(k.startswith("llm_key:") for k in stored_keys)
+
+
+def test_upload_rejects_webhook_url_when_webhooks_disabled(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "webhooks_enabled", False)
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={
+            "tenant_id": "test-tenant-004",
+            "document_type": "invoice",
+            "webhook_url": "https://hooks.example.com/x",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "disabled" in response.json()["detail"]
+
+
+def test_upload_rejects_private_webhook_url(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from backend.core.config import settings
+
+    monkeypatch.setattr(settings, "webhooks_enabled", True)
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
+        data={
+            "tenant_id": "test-tenant-005",
+            "document_type": "invoice",
+            "webhook_url": "https://169.254.169.254/latest/meta-data",
         },
     )
 

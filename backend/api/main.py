@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.routes import documents, export, review, usage
-from backend.api.middleware import RateLimitMiddleware
-from backend.core.config import settings
 
+from backend.api.middleware import RateLimitMiddleware
+from backend.api.routes import documents, export, review, usage
+from backend.core.config import settings
 
 is_prod = settings.environment == "production"
 

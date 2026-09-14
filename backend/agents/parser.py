@@ -1,15 +1,18 @@
-"""Agent 1: extract raw text from document.
+"""Stage 1: extract raw text from an uploaded document.
 
-3-tier fallback strategy:
+PDFs use a 3-tier fallback:
   1. PyMuPDF  — fast, handles digital PDFs
   2. pdfplumber — catches edge cases PyMuPDF misses
   3. Tesseract OCR — handles scanned/image-based PDFs
 
-Returns the first non-empty result. If all three fail, returns "".
+Images (PNG, JPEG) go straight to Tesseract OCR.
+
+Returns the first non-empty result. If everything fails, returns "".
 """
 
 import io
-import fitz            # PyMuPDF
+
+import fitz  # PyMuPDF
 import pdfplumber
 import pytesseract
 from PIL import Image
@@ -53,7 +56,7 @@ def _try_tesseract(file_bytes: bytes) -> str:
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     """
-    Main entry point. Tries 3 extraction methods in order.
+    PDF path. Tries 3 extraction methods in order.
     Returns the first non-empty result, or "" if all fail.
     """
     # Tier 1: PyMuPDF (fast, digital PDFs)
@@ -73,6 +76,29 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
 
     # All 3 failed — return empty string, pipeline will mark as failed
     return ""
+
+
+IMAGE_MIME_TYPES = frozenset({"image/png", "image/jpeg"})
+PDF_MIME_TYPE = "application/pdf"
+
+
+def extract_text_from_image(file_bytes: bytes) -> str:
+    """OCR a single PNG/JPEG image with Tesseract."""
+    with Image.open(io.BytesIO(file_bytes)) as img:
+        return pytesseract.image_to_string(img.convert("RGB"))
+
+
+def extract_text(file_bytes: bytes, mime_type: str) -> str:
+    """Pick the extraction path from the upload's MIME type.
+
+    Raises:
+        ValueError: if the MIME type is not a supported document type.
+    """
+    if mime_type in IMAGE_MIME_TYPES:
+        return extract_text_from_image(file_bytes)
+    if mime_type == PDF_MIME_TYPE:
+        return extract_text_from_pdf(file_bytes)
+    raise ValueError(f"Unsupported MIME type for parsing: {mime_type!r}")
 
 
 if __name__ == "__main__":

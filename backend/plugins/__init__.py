@@ -8,8 +8,8 @@ That's it. No other file needs to change.
 """
 
 from backend.plugins.base import DocumentPlugin
-from backend.plugins.invoice import InvoicePlugin
 from backend.plugins.contract import ContractPlugin
+from backend.plugins.invoice import InvoicePlugin
 
 # Registry maps document_type string → plugin instance
 REGISTRY: dict[str, DocumentPlugin] = {

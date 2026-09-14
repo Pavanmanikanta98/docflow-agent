@@ -3,7 +3,6 @@
 
 import csv
 import io
-import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -54,5 +53,4 @@ async def export_document(
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
-    
-    
+

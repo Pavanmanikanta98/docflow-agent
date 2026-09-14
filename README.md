@@ -1,6 +1,6 @@
 # docflow-agent
 
-Multi-agent document processing pipeline that extracts structured data from invoices and contracts, validates confidence, and routes low-confidence fields to human review before export.
+Document processing pipeline that extracts structured data from invoices and contracts, scores each field against the source text, and holds low-confidence documents for human review before export.
 
 **Demo and walkthrough video:** _coming soon — links added once deployed._
 
@@ -8,32 +8,36 @@ Multi-agent document processing pipeline that extracts structured data from invo
 
 ## What It Does
 
-Upload a business document → agents extract structured fields → low-confidence extractions are flagged for your review → export clean data as JSON, CSV, or webhook.
+Upload a PDF or image → the backend queues it → a LangGraph pipeline extracts text and typed fields → low-confidence documents wait for human review → export as JSON, CSV, or webhook.
 
 ```
-Invoice / Contract
+Invoice / Contract (PDF, PNG, JPEG)
        ↓
-  Parser Agent       — identifies document type, extracts raw text
+  Parse        — PDFs: PyMuPDF → pdfplumber → Tesseract OCR; images: Tesseract OCR
        ↓
- Extractor Agent     — pulls structured fields (amounts, dates, parties, line items)
+  Extract      — LLM call #1: pydantic-ai structured output, one schema per document type
        ↓
- Validator Agent     — scores confidence per field
+  Validate     — LLM call #2: scores each extracted field against the raw text
        ↓
-  Human Review       — low-confidence fields surface in UI for approval
+  Route        — score ≥ CONFIDENCE_THRESHOLD → completed, otherwise → awaiting review
        ↓
-    Export           — JSON, CSV, or webhook to your system
+  Human Review — approve or reject in the UI
+       ↓
+  Export       — JSON, CSV, or webhook
 ```
 
 ---
 
 ## Key Features
 
-- **Multi-agent orchestration** — LangGraph stateful pipeline with conditional routing
-- **Structured extraction** — pydantic-ai validates every output against typed schemas
-- **Human-in-the-loop** — uncertain fields pause the pipeline and surface for review
-- **Swappable LLM** — Groq by default, switch to Ollama for fully local processing (one env variable)
-- **Evaluation suite** — DeepEval test suite with 20+ cases and accuracy metrics
-- **Plugin architecture** — add new document types without touching core pipeline code
+- **LangGraph pipeline** — typed shared state and conditional routing (failed / review / completed)
+- **Structured extraction** — pydantic-ai validates every LLM output against a typed schema
+- **Human-in-the-loop** — documents below the confidence threshold wait for a reviewer
+- **OCR fallback** — scanned PDFs fall through to Tesseract; PNG/JPEG uploads go straight to OCR
+- **Async processing** — uploads return immediately; an ARQ worker processes the queue
+- **Swappable LLM** — Groq by default; OpenAI or Ollama via `LLM_PROVIDER`
+- **Evaluation harness** — 20 hand-labelled cases (10 invoices, 10 contracts) scored with deterministic field matchers
+- **Plugin architecture** — each document type is one file in `backend/plugins/`
 
 ---
 
@@ -41,80 +45,101 @@ Invoice / Contract
 
 | Layer | Technology |
 |---|---|
-| Agent orchestration | LangGraph |
+| Orchestration | LangGraph |
 | Structured outputs | pydantic-ai |
-| LLM | Groq (swappable to Ollama) |
-| Backend | FastAPI + ARQ (async queue) |
-| Frontend | Next.js + TypeScript |
-| Database | PostgreSQL (Neon) |
-| Queue | ARQ + Upstash Redis |
+| LLM | Groq (OpenAI / Ollama supported) |
+| Parsing | PyMuPDF, pdfplumber, Tesseract OCR |
+| Backend | FastAPI, ARQ task queue, Redis |
+| Database | PostgreSQL (SQLAlchemy, Alembic) |
+| Frontend | Next.js, TypeScript, Ant Design |
 
 ---
 
-## Extraction Accuracy
+## Evaluation
 
-Accuracy is measured with the in-repo evaluation suite (`backend/tests/evaluation/`):
-10 gold-standard invoices and 10 gold-standard contracts, scored field-by-field
-against the real LLM. Run on demand — see `evaluation_walkthrough.md`.
+The harness lives in `backend/tests/evaluation/`:
 
-Fields scoring below `CONFIDENCE_THRESHOLD` (default 0.75) are automatically
-flagged for human review before export.
+- `golden/invoices.json` and `golden/contracts.json` — 10 hand-labelled documents each
+- Field matchers in `conftest.py`: numbers within 0.01, dates parsed to the same day,
+  names and free text fuzzy-matched, null-vs-value checked, list overlap for line items
+- No LLM-as-judge: the labels are known, so deterministic matching is cheaper and
+  repeatable
 
-> Live accuracy numbers will be published here once the demo is deployed and
-> the eval suite has been run against the production model and prompts.
+```bash
+uv run pytest backend/tests/evaluation -s   # real LLM calls — costs API credits
+```
+
+> **Results: not measured yet.** Numbers will be published here with the model name,
+> date and raw result files once the harness has been run.
+
+Limits: the golden inputs are text, so OCR quality is not part of this score yet.
 
 ---
 
-## Data Privacy
+## Webhooks
 
-Documents are processed in-memory and never written to disk.
+Off by default. Set `WEBHOOKS_ENABLED=true` and `WEBHOOK_SECRET`, then pass `webhook_url`
+on upload. DocFlow sends `document.completed` (auto-approved) and `document.approved`
+(approved by a reviewer).
 
-| Deployment mode | How it works |
-|---|---|
-| Cloud (default) | Text sent to Groq API over HTTPS. Not stored after processing. |
-| Local (Ollama) | Set `LLM_PROVIDER=ollama`. Documents never leave your infrastructure. |
-| Self-hosted | Full Docker Compose. Runs entirely on your servers. |
+- Only `https` URLs whose host resolves to a public IP are accepted; redirects are not followed.
+- `X-Idempotency-Key` is the same for every send of the same document + event.
+- Verify the signature on your side:
+
+```python
+import hashlib, hmac, time
+
+def verify(secret: str, body: bytes, timestamp: str, signature: str) -> bool:
+    if abs(time.time() - int(timestamp)) > 300:   # reject old or replayed requests
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256)
+    return hmac.compare_digest(expected.hexdigest(), signature)
+# headers: X-Timestamp -> timestamp, X-DocFlow-Signature -> signature
+```
+
+---
+
+## Data Handling
+
+- Uploaded file bytes are kept in Redis for up to 1 hour so the worker can process them,
+  then deleted. They are not written to the app's disk or database.
+- Extracted fields and review decisions are stored in PostgreSQL.
+- With the default Groq provider, document text is sent to the Groq API over HTTPS.
+  With `LLM_PROVIDER=ollama`, text stays on your own machine.
 
 ---
 
 ## Running Locally
 
+Requirements: Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js + pnpm, Docker,
+and the `tesseract` binary (for OCR).
+
 ```bash
 git clone https://github.com/Pavanmanikanta98/docflow-agent
 cd docflow-agent
 
-# Backend
-cd backend
-uv venv && source .venv/bin/activate
-uv pip install -r requirements.txt
-cp .env.example .env   # add your keys
+docker compose up -d          # local PostgreSQL + Redis only
+cp .env.example .env          # add GROQ_API_KEY and check the other values
+uv sync --extra dev
+uv run alembic upgrade head
 
-# Frontend
-cd ../frontend
-pnpm install
-cp .env.local.example .env.local
+uv run uvicorn backend.api.main:app --reload       # terminal 1 — API on :8000
+uv run arq backend.queue.worker.WorkerSettings     # terminal 2 — worker
 
-# Start
-uvicorn api.main:app --reload   # terminal 1
-python -m arq queue.worker.WorkerSettings   # terminal 2
-pnpm dev   # terminal 3, inside frontend/
+cd frontend && pnpm install && cp .env.local.example .env.local
+pnpm dev                                           # terminal 3 — UI on :3000
 ```
 
----
-
-## Docker (one command)
+Tests:
 
 ```bash
-docker-compose up
+uv run pytest backend/tests/unit backend/tests/integration -q
 ```
-
-Frontend: http://localhost:3000
-Backend: http://localhost:8000/docs
 
 ---
 
 ## Built by
 
-Pavan Manikanta — AI agent developer
-- pydantic-ai contributor (3 merged PRs: SambaNova + Alibaba providers)
+Pavan Manikanta — AI engineer
+- pydantic-ai contributor (3 merged PRs)
 - GitHub: https://github.com/Pavanmanikanta98

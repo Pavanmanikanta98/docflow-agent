@@ -12,31 +12,38 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY from old BYOK)
+        extra="ignore",  # Ignore leftover env vars (e.g. ENCRYPTION_KEY, now unused)
     )
 
-    # LLM (used for all demo requests; users can override via X-LLM-Key header)
-    llm_provider: str = Field("groq", env="LLM_PROVIDER")
-    llm_model: str = Field("llama-3.1-8b-instant", env="LLM_MODEL")
-    groq_api_key: str = Field("", env="GROQ_API_KEY")
+    # LLM (the server's key is used for every request by default)
+    llm_provider: str = Field("groq")
+    llm_model: str = Field("llama-3.1-8b-instant")
+    groq_api_key: str = Field("")
+    openai_api_key: str = Field("")
+    # Off by default: when false, an X-LLM-Key request header is ignored — it is not
+    # stored, not used for extraction, and does not bypass rate limits.
+    allow_user_llm_key: bool = Field(False)
 
     # Database
-    database_url: str = Field(..., env="DATABASE_URL")
+    database_url: str = Field(...)
 
     # Redis / ARQ
-    redis_url: str = Field(..., env="REDIS_URL")
+    redis_url: str = Field(...)
 
     # Rate limiting
-    rate_limit_per_session: int = Field(10, env="RATE_LIMIT_PER_SESSION")   # per session per day
-    rate_limit_per_ip: int = Field(30, env="RATE_LIMIT_PER_IP")             # per IP per day
-    rate_limit_global: int = Field(500, env="RATE_LIMIT_GLOBAL")            # global daily cap
+    rate_limit_per_session: int = Field(10)  # per session per day
+    rate_limit_per_ip: int = Field(30)  # per IP per day
+    rate_limit_global: int = Field(500)  # global daily cap
 
     # App
-    allowed_origins: str = Field("http://localhost:3000", env="ALLOWED_ORIGINS")
-    confidence_threshold: float = Field(..., env="CONFIDENCE_THRESHOLD")
-    max_upload_size_mb: int = Field(..., env="MAX_UPLOAD_SIZE_MB")
-    environment: str = Field(..., env="ENVIRONMENT")
-    webhook_timeout_seconds: int = Field(..., env="WEBHOOK_TIMEOUT_SECONDS")
+    allowed_origins: str = Field("http://localhost:3000")
+    confidence_threshold: float = Field(...)
+    max_upload_size_mb: int = Field(...)
+    environment: str = Field(...)
+    webhook_timeout_seconds: int = Field(...)
+    # Outbound webhooks are off unless explicitly enabled (keep off on the public demo).
+    webhooks_enabled: bool = Field(False)
+    webhook_secret: str = Field("")
 
 settings = Settings()
 

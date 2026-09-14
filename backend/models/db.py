@@ -2,7 +2,8 @@
 
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, JSON, DateTime, Boolean, Float, Enum
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -33,7 +34,7 @@ class Document(Base):
     document_url = Column(String, nullable=False)
     document_size = Column(Integer, nullable=False)
     document_mime_type = Column(String, nullable=False)
-    webhook_url = Column(String, nullable=True) 
+    webhook_url = Column(String, nullable=True)
 
     # Tracks where the document is in its lifecycle
     status = Column(
@@ -59,11 +60,16 @@ class Document(Base):
     human_review_rejection_reason = Column(String, nullable=True)
 
     # --- Timestamps ---
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=True, onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = Column(
+        DateTime, nullable=True, onupdate=lambda: datetime.now(timezone.utc)
+    )
 
 
 # NOTE: The tenant_api_keys table still exists in the DB from migration
-# fbb366fea798. It's no longer used — BYOK was replaced with client-side
-# key passthrough (X-LLM-Key header). The table can be dropped in a
-# future migration if desired.
+# fbb366fea798. Nothing reads or writes it. The plan to store a key per
+# tenant was dropped; a caller can instead send a key on the upload request
+# (X-LLM-Key), which is off unless ALLOW_USER_LLM_KEY is true. The table can
+# be dropped in a future migration if desired.

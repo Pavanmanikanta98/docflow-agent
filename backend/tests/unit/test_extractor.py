@@ -7,9 +7,8 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 from backend.agents.extractor import extract_fields
-from backend.plugins.invoice import InvoicePlugin, InvoiceFields
 from backend.plugins.contract import ContractPlugin
-
+from backend.plugins.invoice import InvoiceFields, InvoicePlugin
 
 SAMPLE_INVOICE_TEXT = """
 INVOICE #INV-2026-0042

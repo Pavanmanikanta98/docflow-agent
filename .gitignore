@@ -32,3 +32,12 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Private notes — never publish (see SPRINT.md V1-0)
+BUSINESS_PLAN.md
+ROADMAP.md
+ARCHITECTURE_AUDIT.md
+MARKET_ANALYSIS.md
+REVIEW.md
+BUGS.md
+CONVERSATION_INSIGHTS.md

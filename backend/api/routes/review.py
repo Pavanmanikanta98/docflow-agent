@@ -1,7 +1,7 @@
 """Routes: POST /{document_id}/review — human approval / rejection."""
 
-from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from backend.api.deps import get_db
 from backend.models.db import Document, DocumentStatus, HumanReviewStatus
@@ -43,13 +43,18 @@ async def review_document(
 
     if review.human_review_status == HumanReviewStatus.approved and doc.webhook_url:
         from backend.core.connectors import dispatch_webhook
-        await dispatch_webhook({
-            "document_id": doc.id,
-            "status": doc.status.value,
-            "extraction_results": doc.extraction_results,
-            "confidence_score": doc.confidence_score,
-            "human_review_status": "approved"
-        }, url=doc.webhook_url)
+        await dispatch_webhook(
+            document_id=doc.id,
+            event="document.approved",
+            payload={
+                "document_id": doc.id,
+                "status": doc.status.value,
+                "extraction_results": doc.extraction_results,
+                "confidence_score": doc.confidence_score,
+                "human_review_status": "approved",
+            },
+            url=doc.webhook_url,
+        )
 
     return DocumentReviewResponse(
         status=doc.status.value,

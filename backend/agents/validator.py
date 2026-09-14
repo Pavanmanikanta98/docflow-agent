@@ -6,13 +6,38 @@ This prevents the LLM from grading its own extraction work.
 """
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-
 
 # ---------------------------------------------------------------------------
 # Output schema — generic, works for any document type
 # ---------------------------------------------------------------------------
+
+class LLMScores(BaseModel):
+    """What the LLM is asked for: per-field scores and an overall score.
+
+    Kept separate from ValidatorOutput so the model cannot set the pipeline status
+    or invent review reasons — those are decided by code below.
+    """
+
+    field_scores: dict[str, float] = Field(
+        ...,
+        description=(
+            "Map of field_name -> confidence score [0.0, 1.0]. "
+            "Include exactly the fields present in the extracted values — no extras."
+        ),
+    )
+    overall_confidence: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Weighted average of all field confidences. "
+            "Weight monetary and identifier fields more heavily."
+        ),
+    )
+
 
 class ValidatorOutput(BaseModel):
     """
@@ -40,8 +65,53 @@ class ValidatorOutput(BaseModel):
     )
     status: str | None = Field(
         None,
-        description="Optional pipeline status override for hard gates (e.g. 'human_review').",
+        description=(
+            "Optional pipeline status override for hard gates (e.g. 'human_review')."
+        ),
     )
+    review_reasons: list[str] = Field(
+        default_factory=list,
+        description="Why the document needs a human: e.g. ['math_mismatch'].",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Deterministic gate — runs after the LLM, and outranks it
+# ---------------------------------------------------------------------------
+
+MATH_TOLERANCE = 0.01
+
+
+def _as_float(value: Any) -> float | None:
+    """Return a float, or None when the value is missing or not numeric."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def check_arithmetic(extracted_fields: dict[str, Any]) -> list[str]:
+    """Check subtotal + tax = total.
+
+    The LLM scores its own extraction, so a confident hallucination can still be
+    wrong. This check is arithmetic, not opinion.
+
+    Returns:
+        ["math_mismatch"] when all three numbers are present and do not add up,
+        [] when they add up or when any of them is missing (a missing subtotal is
+        a gap in the document, not proof of a wrong total).
+    """
+    subtotal = _as_float(extracted_fields.get("subtotal"))
+    tax = _as_float(extracted_fields.get("tax_amount"))
+    total = _as_float(extracted_fields.get("total_amount"))
+
+    if subtotal is None or tax is None or total is None:
+        return []
+    if abs((subtotal + tax) - total) > MATH_TOLERANCE:
+        return ["math_mismatch"]
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -50,8 +120,10 @@ class ValidatorOutput(BaseModel):
 
 _SYSTEM_PROMPT = (
     "You are a document validation specialist. "
-    "You receive the raw text of a document AND the extracted field values from a previous agent. "
-    "For each extracted field, score your confidence that the value is CORRECT by verifying "
+    "You receive the raw text of a document AND the extracted field values "
+    "from a previous agent. "
+    "For each extracted field, score your confidence that the value is CORRECT "
+    "by verifying "
     "it directly against the raw text. "
     "\n\n"
     "Scoring guide:\n"
@@ -61,13 +133,16 @@ _SYSTEM_PROMPT = (
     "  0.00-0.49: Value is missing, guessed, or not verifiable from the text.\n"
     "\n"
     "Rules:\n"
-    "  - Score ONLY the fields listed in the extracted values — do not add or invent fields.\n"
-    "  - overall_confidence is a weighted average; weight monetary and identifier fields more heavily.\n"
+    "  - Score ONLY the fields listed in the extracted values — do not add or "
+    "invent fields.\n"
+    "  - overall_confidence is a weighted average; weight monetary and identifier "
+    "fields more heavily.\n"
     "  - field_scores must contain exactly the same keys as the extracted values dict."
 )
 
-# NOTE: No module-level Agent instance here. The agent is created per-call
-# to support per-tenant BYOK keys (each tenant may use a different model).
+# NOTE: No module-level Agent instance here. The agent is built per call so a
+# request that carries its own key uses its own model, without leaking that
+# model to any other request.
 
 
 # ---------------------------------------------------------------------------
@@ -88,14 +163,15 @@ async def validate_fields(
     Args:
         raw_text: The raw text extracted from the PDF by Agent 1 (parser).
         extracted_fields: The structured dict returned by Agent 2 (extractor).
-        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK or fallback).
+        model: pydantic-ai model instance, resolved by the pipeline (server
+            key, or a caller-supplied key when that is enabled).
 
     Returns:
         ValidatorOutput with per-field scores dict and overall_confidence.
     """
     agent = Agent(
         model=model,
-        output_type=ValidatorOutput,
+        output_type=LLMScores,
         system_prompt=_SYSTEM_PROMPT,
     )
 
@@ -107,31 +183,18 @@ async def validate_fields(
         "field_scores must contain exactly these keys: "
         f"{list(extracted_fields.keys())}."
     )
-    result = await agent.run(prompt)
-    output = result.output
+    scores = (await agent.run(prompt)).output
+    output = ValidatorOutput(
+        field_scores=scores.field_scores,
+        overall_confidence=scores.overall_confidence,
+    )
 
-    # Hard Gate Validation
-    try:
-        line_items = extracted_fields.get("line_items")
-        total_amount = extracted_fields.get("total_amount")
-        tax_amount = extracted_fields.get("tax_amount", 0.0)
-
-        if isinstance(line_items, list) and total_amount is not None:
-            sum_lines = 0.0
-            for item in line_items:
-                if isinstance(item, dict):
-                    amt = item.get("amount")
-                    if amt is not None:
-                        sum_lines += float(amt)
-
-            tax = float(tax_amount) if tax_amount is not None else 0.0
-            tot = float(total_amount)
-
-            if abs((sum_lines + tax) - tot) > 0.01:
-                output.overall_confidence = 0.0
-                output.status = "human_review"
-    except (ValueError, TypeError):
-        pass
+    # Deterministic gate: arithmetic beats the model's own confidence.
+    reasons = check_arithmetic(extracted_fields)
+    if reasons:
+        output.overall_confidence = 0.0
+        output.status = "human_review"
+        output.review_reasons = reasons
 
     return output
 

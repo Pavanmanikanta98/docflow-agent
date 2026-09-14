@@ -76,7 +76,7 @@ Once confirmed, proceed without asking again for the same decision.
 - Cover happy path + at least one failure case per agent
 
 **Evaluation tests (run on demand only):**
-- DeepEval suite — real LLM calls, measures extraction accuracy
+- Deterministic evaluation harness (`backend/tests/evaluation/`) — real LLM calls, golden datasets, field-level matchers
 - Do not run in CI by default — they cost API credits
 
 If you write code with no test, flag it explicitly: "This function has no test — confirm this is acceptable."

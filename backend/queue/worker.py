@@ -1,12 +1,12 @@
 """ARQ WorkerSettings — connects to Redis via REDIS_URL from config."""
 
-from sqlalchemy.orm import Session
 from arq.connections import RedisSettings
+from sqlalchemy.orm import Session
 
 from backend.core.config import settings
 from backend.core.db import SessionLocal, redis_client
+from backend.core.pipeline import DocFlowState, pipeline
 from backend.models.db import Document, DocumentStatus
-from backend.core.pipeline import pipeline, DocFlowState
 
 
 async def process_document(ctx: dict, document_id: int) -> None:
@@ -35,11 +35,13 @@ async def process_document(ctx: dict, document_id: int) -> None:
             "document_id": document_id,
             "tenant_id": doc.tenant_id,
             "document_type": doc.document_type,
+            "mime_type": doc.document_mime_type,
             "file_bytes": file_bytes,
             "raw_text": "",
             "extraction_results": None,
             "confidence_score": None,
             "field_confidences": None,
+            "review_reasons": None,
             "human_review_required": None,
             "status": "processing",
             "error": None,
@@ -54,6 +56,8 @@ async def process_document(ctx: dict, document_id: int) -> None:
         extraction_results = result["extraction_results"] or {}
         if result.get("field_confidences"):
             extraction_results["_field_confidences"] = result["field_confidences"]
+        if result.get("review_reasons"):
+            extraction_results["_review_reasons"] = result["review_reasons"]
 
         doc.extraction_results = extraction_results
         doc.confidence_score = result["confidence_score"]
@@ -63,13 +67,18 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
         if doc.webhook_url and doc.status == DocumentStatus.completed:
             from backend.core.connectors import dispatch_webhook
-            await dispatch_webhook({
-                "document_id": doc.id,
-                "status": doc.status.value,
-                "extraction_results": doc.extraction_results,
-                "confidence_score": doc.confidence_score,
-            }, url=doc.webhook_url)
-                    
+            await dispatch_webhook(
+                document_id=doc.id,
+                event="document.completed",
+                payload={
+                    "document_id": doc.id,
+                    "status": doc.status.value,
+                    "extraction_results": doc.extraction_results,
+                    "confidence_score": doc.confidence_score,
+                },
+                url=doc.webhook_url,
+            )
+
 
         # 6. clean up Redis - bytes and any user-provided LLM key no longer needed
         redis_client.delete(redis_key)
@@ -90,11 +99,11 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
     finally:
         db.close()
-        
+
 
 
 class WorkerSettings:
     """ARQ reads this class to configure the worker."""
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     functions = [process_document]
-    
+

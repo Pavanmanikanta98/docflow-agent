@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Type
+
 from pydantic import BaseModel
 
 
@@ -20,4 +21,3 @@ class DocumentPlugin(ABC):
     @abstractmethod
     def system_prompt(self) -> str: ...
 
-    

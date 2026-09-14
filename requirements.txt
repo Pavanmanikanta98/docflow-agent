@@ -25,6 +25,8 @@ alembic>=1.18.4
 # Document parsing
 PyMuPDF>=1.27.2
 pdfplumber>=0.11.9
+pytesseract>=0.3.13
+pillow>=12.0.0
 
 # LLM providers
 groq>=1.1.1
