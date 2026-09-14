@@ -1,6 +1,5 @@
 """Test 1: Settings loads without error when all required env vars are set."""
 
-import os
 import pytest
 
 
@@ -68,3 +67,41 @@ def test_config_missing_required_var(monkeypatch: pytest.MonkeyPatch) -> None:
         # _env_file=None prevents pydantic-settings from reading the
         # real .env file on disk — forces it to rely only on env vars.
         Settings(_env_file=None)
+
+
+def test_config_reads_every_env_var_by_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every setting binds to its upper-case environment variable name.
+
+    Guards the env var contract: pydantic-settings matches on the field name
+    (case-insensitively), so removing the deprecated ``env=`` keyword must not
+    change which variable each field reads. ``_env_file=None`` keeps the real
+    ``.env`` out of the picture so the values can only come from the
+    environment."""
+
+    env = {
+        "DATABASE_URL": "postgresql://envtest:envtest@db.example:5432/envtest",
+        "REDIS_URL": "redis://cache.example:6380/3",
+        "CONFIDENCE_THRESHOLD": "0.83",
+        "MAX_UPLOAD_SIZE_MB": "42",
+        "ENVIRONMENT": "envtest",
+        "WEBHOOK_TIMEOUT_SECONDS": "17",
+        "ALLOW_USER_LLM_KEY": "true",
+        "WEBHOOKS_ENABLED": "true",
+        "WEBHOOK_SECRET": "whsec_envtest",
+    }
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+
+    from backend.core.config import Settings
+
+    settings = Settings(_env_file=None)
+
+    assert settings.database_url == env["DATABASE_URL"]
+    assert settings.redis_url == env["REDIS_URL"]
+    assert settings.confidence_threshold == 0.83
+    assert settings.max_upload_size_mb == 42
+    assert settings.environment == env["ENVIRONMENT"]
+    assert settings.webhook_timeout_seconds == 17
+    assert settings.allow_user_llm_key is True
+    assert settings.webhooks_enabled is True
+    assert settings.webhook_secret == env["WEBHOOK_SECRET"]

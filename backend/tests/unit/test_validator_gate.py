@@ -5,7 +5,6 @@ import pytest
 from backend.agents.validator import ValidatorOutput, check_arithmetic, validate_fields
 from backend.plugins.invoice import InvoiceFields
 
-
 # ---------------------------------------------------------------------------
 # The pure check
 # ---------------------------------------------------------------------------

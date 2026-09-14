@@ -27,23 +27,20 @@ WHAT THE OUTPUT LOOKS LIKE:
 """
 
 import pytest
-from pydantic_ai import Agent
 
 from backend.agents.extractor import extract_fields
-from backend.plugins.invoice import InvoicePlugin, InvoiceFields
 from backend.core.config import settings
-
+from backend.plugins.invoice import InvoiceFields, InvoicePlugin
 from backend.tests.evaluation.conftest import (
-    load_golden,
-    fuzzy_match,
+    CaseResult,
+    FieldResult,
     date_match,
     exact_match_number,
-    null_match,
+    fuzzy_match,
     list_overlap_score,
-    FieldResult,
-    CaseResult,
+    load_golden,
+    null_match,
 )
-
 
 # ---------------------------------------------------------------------------
 # Load test data + resolve LLM model
@@ -129,7 +126,10 @@ def evaluate_invoice(result: InvoiceFields, expected: dict) -> CaseResult:
         detail = "both null ✓"
     else:
         passed = date_match(result.due_date, exp_due)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.due_date} vs {exp_due})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.due_date} vs {exp_due})"
+        )
     fields.append(FieldResult(
         field_name="due_date", passed=passed,
         actual=result.due_date, expected=exp_due, detail=detail,
@@ -156,7 +156,10 @@ def evaluate_invoice(result: InvoiceFields, expected: dict) -> CaseResult:
         detail = "both null ✓"
     else:
         passed = fuzzy_match(result.currency, exp_curr)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.currency} vs {exp_curr})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.currency} vs {exp_curr})"
+        )
     fields.append(FieldResult(
         field_name="currency", passed=passed,
         actual=result.currency, expected=exp_curr, detail=detail,
@@ -166,13 +169,19 @@ def evaluate_invoice(result: InvoiceFields, expected: dict) -> CaseResult:
     exp_items = expected.get("line_items")
     if not null_match(result.line_items, exp_items):
         score = 0.0
-        detail = f"null mismatch (got {'list' if result.line_items else 'null'}, expected {'list' if exp_items else 'null'})"
+        detail = (
+            f"null mismatch (got {'list' if result.line_items else 'null'}, "
+            f"expected {'list' if exp_items else 'null'})"
+        )
     elif result.line_items is None and exp_items is None:
         score = 1.0
         detail = "both null ✓"
     else:
         score = list_overlap_score(result.line_items, exp_items)
-        detail = f"overlap {score:.0%} ({len(result.line_items or [])} extracted, {len(exp_items or [])} expected)"
+        detail = (
+            f"overlap {score:.0%} ({len(result.line_items or [])} extracted, "
+            f"{len(exp_items or [])} expected)"
+        )
     # We consider >=50% overlap a pass for line items (they're noisy)
     passed = score >= 0.5
     fields.append(FieldResult(
@@ -223,6 +232,7 @@ async def test_invoice_extraction(case: dict) -> None:
     # raise this to 70%, then 80%. Track the trend, not perfection.
     assert case_result.accuracy >= 0.6, (
         f"Case {case['case_id']} accuracy too low: "
-        f"{case_result.accuracy:.0%} ({case_result.passed_count}/{case_result.total_count})\n"
+        f"{case_result.accuracy:.0%} "
+        f"({case_result.passed_count}/{case_result.total_count})\n"
         f"{case_result.summary()}"
     )

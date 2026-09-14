@@ -13,20 +13,18 @@ because there's no single "correct" summary.
 import pytest
 
 from backend.agents.extractor import extract_fields
-from backend.plugins.contract import ContractPlugin, ContractFields
 from backend.core.config import settings
-
+from backend.plugins.contract import ContractFields, ContractPlugin
 from backend.tests.evaluation.conftest import (
-    load_golden,
-    fuzzy_match,
+    CaseResult,
+    FieldResult,
     date_match,
     exact_match_number,
-    null_match,
+    fuzzy_match,
     list_overlap_score,
-    FieldResult,
-    CaseResult,
+    load_golden,
+    null_match,
 )
-
 
 # ---------------------------------------------------------------------------
 # Load test data
@@ -83,7 +81,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
     fields.append(FieldResult(
         field_name="effective_date", passed=passed,
         actual=result.effective_date, expected=expected.get("effective_date"),
-        detail=f"{'matched' if passed else 'mismatch'} ({result.effective_date} vs {expected.get('effective_date')})",
+        detail=(
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.effective_date} vs {expected.get('effective_date')})"
+        ),
     ))
 
     # --- expiry_date (null-aware + fuzzy) ---
@@ -96,7 +97,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
         detail = "both null ✓"
     else:
         passed = date_match(result.expiry_date, exp_expiry)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.expiry_date} vs {exp_expiry})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.expiry_date} vs {exp_expiry})"
+        )
     fields.append(FieldResult(
         field_name="expiry_date", passed=passed,
         actual=result.expiry_date, expected=exp_expiry, detail=detail,
@@ -112,7 +116,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
         detail = "both null ✓"
     else:
         passed = exact_match_number(result.contract_value, exp_value)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.contract_value} vs {exp_value})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.contract_value} vs {exp_value})"
+        )
     fields.append(FieldResult(
         field_name="contract_value", passed=passed,
         actual=result.contract_value, expected=exp_value, detail=detail,
@@ -128,7 +135,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
         detail = "both null ✓"
     else:
         passed = fuzzy_match(result.currency, exp_curr)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.currency} vs {exp_curr})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.currency} vs {exp_curr})"
+        )
     fields.append(FieldResult(
         field_name="currency", passed=passed,
         actual=result.currency, expected=exp_curr, detail=detail,
@@ -145,7 +155,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
     else:
         # Loose threshold — "State of New York" vs "New York, NY" are both valid
         passed = fuzzy_match(result.jurisdiction, exp_juris, threshold=0.5)
-        detail = f"{'matched' if passed else 'mismatch'} ({result.jurisdiction} vs {exp_juris})"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"({result.jurisdiction} vs {exp_juris})"
+        )
     fields.append(FieldResult(
         field_name="jurisdiction", passed=passed,
         actual=result.jurisdiction, expected=exp_juris, detail=detail,
@@ -155,14 +168,17 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
     exp_oblig = expected.get("key_obligations")
     if not null_match(result.key_obligations, exp_oblig):
         score = 0.0
-        detail = f"null mismatch"
+        detail = "null mismatch"
     elif result.key_obligations is None and exp_oblig is None:
         score = 1.0
         detail = "both null ✓"
     else:
         # Loose threshold for sentence matching
         score = list_overlap_score(result.key_obligations, exp_oblig, threshold=0.5)
-        detail = f"overlap {score:.0%} ({len(result.key_obligations or [])} extracted, {len(exp_oblig or [])} expected)"
+        detail = (
+            f"overlap {score:.0%} ({len(result.key_obligations or [])} extracted, "
+            f"{len(exp_oblig or [])} expected)"
+        )
     fields.append(FieldResult(
         field_name="key_obligations", passed=score >= 0.4,
         actual=result.key_obligations, expected=exp_oblig, detail=detail,
@@ -179,7 +195,10 @@ def evaluate_contract(result: ContractFields, expected: dict) -> CaseResult:
     else:
         # Very loose threshold — many valid ways to summarize a clause
         passed = fuzzy_match(result.termination_clause, exp_term, threshold=0.3)
-        detail = f"{'matched' if passed else 'mismatch'} (similarity check at 0.3 threshold)"
+        detail = (
+            f"{'matched' if passed else 'mismatch'} "
+            f"(similarity check at 0.3 threshold)"
+        )
         if not passed:
             detail += f"\n       actual:   {result.termination_clause[:100]}..."
             detail += f"\n       expected: {exp_term[:100]}..."
@@ -228,6 +247,7 @@ async def test_contract_extraction(case: dict) -> None:
     # Lower threshold for contracts (more free-text fields)
     assert case_result.accuracy >= 0.5, (
         f"Case {case['case_id']} accuracy too low: "
-        f"{case_result.accuracy:.0%} ({case_result.passed_count}/{case_result.total_count})\n"
+        f"{case_result.accuracy:.0%} "
+        f"({case_result.passed_count}/{case_result.total_count})\n"
         f"{case_result.summary()}"
     )

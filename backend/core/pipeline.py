@@ -10,15 +10,14 @@ Graph shape:
                   → failed                  → END
 """
 
-from typing import TypedDict, Optional
+from typing import Optional, TypedDict
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 
 from backend.agents.parser import extract_text
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
 from backend.core.llm import llm_client
-
 
 # ---------------------------------------------------------------------------
 # State — the single dict that travels through every node
@@ -37,7 +36,8 @@ class DocFlowState(TypedDict):
     field_confidences: Optional[dict]     # Filled by validate_node (per-field)
     review_reasons: Optional[list[str]]   # Why a human is needed (validate_node)
     human_review_required: Optional[bool]  # Set by awaiting_review_node
-    status: str                   # "processing" → "completed" | "awaiting_review" | "failed"
+    # "processing" → "completed" | "awaiting_review" | "failed"
+    status: str
     error: Optional[str]          # Only populated on failure
 
 
@@ -97,8 +97,8 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
     Resolves tenant's BYOK key if available, otherwise falls back to .env.
     """
 
-    from backend.plugins import get_plugin
     from backend.agents.extractor import extract_fields
+    from backend.plugins import get_plugin
 
     plugin = get_plugin(state["document_type"])
     model = _resolve_model(state["document_id"])

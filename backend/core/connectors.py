@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 Resolver = Callable[..., list[tuple[Any, ...]]]
 
 
-class WebhookURLRejected(ValueError):
+class WebhookURLRejectedError(ValueError):
     """The webhook URL is not allowed (scheme, host, or resolved address)."""
 
 
@@ -59,27 +59,29 @@ def validate_webhook_url(url: str, resolver: Resolver = socket.getaddrinfo) -> N
     """Allow only https URLs whose host resolves to public IP addresses.
 
     Raises:
-        WebhookURLRejected: for non-https URLs, missing hosts, unresolvable hosts,
+        WebhookURLRejectedError: for non-https URLs, missing hosts, unresolvable hosts,
             or any resolved address that is private, loopback, link-local or reserved.
     """
     parsed = urlparse(url)
     if parsed.scheme != "https":
-        raise WebhookURLRejected("Webhook URL must use https")
+        raise WebhookURLRejectedError("Webhook URL must use https")
     host = parsed.hostname
     if not host:
-        raise WebhookURLRejected("Webhook URL has no host")
+        raise WebhookURLRejectedError("Webhook URL has no host")
 
     try:
         infos = resolver(host, parsed.port or 443, type=socket.SOCK_STREAM)
     except socket.gaierror as exc:
-        raise WebhookURLRejected(f"Webhook host {host!r} cannot be resolved") from exc
+        raise WebhookURLRejectedError(
+            f"Webhook host {host!r} cannot be resolved"
+        ) from exc
 
     for info in infos:
         address = ipaddress.ip_address(info[4][0])
         if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
             address = address.ipv4_mapped
         if not address.is_global:
-            raise WebhookURLRejected(
+            raise WebhookURLRejectedError(
                 f"Webhook host {host!r} resolves to a non-public address"
             )
 
@@ -112,7 +114,7 @@ async def dispatch_webhook(
 
     try:
         validate_webhook_url(url, resolver=resolver)
-    except WebhookURLRejected as exc:
+    except WebhookURLRejectedError as exc:
         logger.warning(
             "Webhook rejected for document %s (%s): %s", document_id, host, exc
         )

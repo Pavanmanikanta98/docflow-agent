@@ -19,7 +19,9 @@ class LLMClient:
         model = client.get_model()
 
     Usage (per-tenant BYOK):
-        model = client.get_model(provider="groq", api_key="gsk_...", model_name="llama-3.1-8b-instant")
+        model = client.get_model(
+            provider="groq", api_key="gsk_...", model_name="llama-3.1-8b-instant"
+        )
     """
 
     def get_model(

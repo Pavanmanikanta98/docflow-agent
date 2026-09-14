@@ -6,9 +6,9 @@ This prevents the LLM from grading its own extraction work.
 """
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-
 
 # ---------------------------------------------------------------------------
 # Output schema — generic, works for any document type
@@ -65,7 +65,9 @@ class ValidatorOutput(BaseModel):
     )
     status: str | None = Field(
         None,
-        description="Optional pipeline status override for hard gates (e.g. 'human_review').",
+        description=(
+            "Optional pipeline status override for hard gates (e.g. 'human_review')."
+        ),
     )
     review_reasons: list[str] = Field(
         default_factory=list,
@@ -118,8 +120,10 @@ def check_arithmetic(extracted_fields: dict[str, Any]) -> list[str]:
 
 _SYSTEM_PROMPT = (
     "You are a document validation specialist. "
-    "You receive the raw text of a document AND the extracted field values from a previous agent. "
-    "For each extracted field, score your confidence that the value is CORRECT by verifying "
+    "You receive the raw text of a document AND the extracted field values "
+    "from a previous agent. "
+    "For each extracted field, score your confidence that the value is CORRECT "
+    "by verifying "
     "it directly against the raw text. "
     "\n\n"
     "Scoring guide:\n"
@@ -129,8 +133,10 @@ _SYSTEM_PROMPT = (
     "  0.00-0.49: Value is missing, guessed, or not verifiable from the text.\n"
     "\n"
     "Rules:\n"
-    "  - Score ONLY the fields listed in the extracted values — do not add or invent fields.\n"
-    "  - overall_confidence is a weighted average; weight monetary and identifier fields more heavily.\n"
+    "  - Score ONLY the fields listed in the extracted values — do not add or "
+    "invent fields.\n"
+    "  - overall_confidence is a weighted average; weight monetary and identifier "
+    "fields more heavily.\n"
     "  - field_scores must contain exactly the same keys as the extracted values dict."
 )
 
@@ -156,7 +162,8 @@ async def validate_fields(
     Args:
         raw_text: The raw text extracted from the PDF by Agent 1 (parser).
         extracted_fields: The structured dict returned by Agent 2 (extractor).
-        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK or fallback).
+        model: pydantic-ai model instance (resolved by pipeline — tenant BYOK
+            or fallback).
 
     Returns:
         ValidatorOutput with per-field scores dict and overall_confidence.

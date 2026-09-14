@@ -25,12 +25,11 @@ and is then garbage-collected from memory.
 import time
 from datetime import datetime, timezone
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from backend.core.config import settings
-
 
 # Which routes are rate-limited (only the expensive LLM operation)
 RATE_LIMITED_PATHS = {"/api/v1/documents/upload"}
@@ -115,20 +114,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # --- Check limits (most specific → least specific) ---
         limit_hit = None
         limit_value = 0
-        remaining = 0
 
         if session_count >= settings.rate_limit_per_session:
             limit_hit = "session"
             limit_value = settings.rate_limit_per_session
-            remaining = 0
         elif ip_count >= settings.rate_limit_per_ip:
             limit_hit = "ip"
             limit_value = settings.rate_limit_per_ip
-            remaining = 0
         elif global_count >= settings.rate_limit_global:
             limit_hit = "global"
             limit_value = settings.rate_limit_global
-            remaining = 0
 
         if limit_hit:
             return JSONResponse(
@@ -137,7 +132,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "detail": "Demo limit reached",
                     "limit_type": limit_hit,
                     "limit": limit_value,
-                    "used": session_count if limit_hit == "session" else ip_count if limit_hit == "ip" else global_count,
+                    "used": (
+                        session_count
+                        if limit_hit == "session"
+                        else ip_count
+                        if limit_hit == "ip"
+                        else global_count
+                    ),
                     "reset_seconds": ttl,
                     "message": _limit_message(),
                 },

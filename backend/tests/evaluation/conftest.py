@@ -19,12 +19,11 @@ These are cheaper, reproducible, and easier to debug.
 
 import json
 import math
-from pathlib import Path
-from difflib import SequenceMatcher
 from dataclasses import dataclass, field
-from typing import Any, Optional
 from datetime import datetime
-
+from difflib import SequenceMatcher
+from pathlib import Path
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -44,7 +43,9 @@ def load_golden(filename: str) -> list[dict]:
 # Deterministic Metrics
 # ---------------------------------------------------------------------------
 
-def fuzzy_match(actual: str | None, expected: str | None, threshold: float = 0.75) -> bool:
+def fuzzy_match(
+    actual: str | None, expected: str | None, threshold: float = 0.75
+) -> bool:
     """Check if two strings are similar enough using SequenceMatcher.
 
     WHY THIS AND NOT ==?
@@ -232,7 +233,10 @@ class CaseResult:
         lines = [f"\n{'='*60}"]
         lines.append(f"Case: {self.case_id}")
         lines.append(f"  {self.description}")
-        lines.append(f"  Accuracy: {self.accuracy:.0%} ({self.passed_count}/{self.total_count})")
+        lines.append(
+            f"  Accuracy: {self.accuracy:.0%} "
+            f"({self.passed_count}/{self.total_count})"
+        )
         for r in self.field_results:
             icon = "✅" if r.passed else "❌"
             lines.append(f"  {icon} {r.field_name}: {r.detail}")

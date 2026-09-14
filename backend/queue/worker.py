@@ -1,12 +1,12 @@
 """ARQ WorkerSettings — connects to Redis via REDIS_URL from config."""
 
-from sqlalchemy.orm import Session
 from arq.connections import RedisSettings
+from sqlalchemy.orm import Session
 
 from backend.core.config import settings
 from backend.core.db import SessionLocal, redis_client
+from backend.core.pipeline import DocFlowState, pipeline
 from backend.models.db import Document, DocumentStatus
-from backend.core.pipeline import pipeline, DocFlowState
 
 
 async def process_document(ctx: dict, document_id: int) -> None:
@@ -78,7 +78,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
                 },
                 url=doc.webhook_url,
             )
-                    
+
 
         # 6. clean up Redis - bytes and any user-provided LLM key no longer needed
         redis_client.delete(redis_key)
@@ -99,11 +99,11 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
     finally:
         db.close()
-        
+
 
 
 class WorkerSettings:
     """ARQ reads this class to configure the worker."""
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     functions = [process_document]
-    
+

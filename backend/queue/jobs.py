@@ -11,4 +11,4 @@ async def enqueue_process_document(document_id: int) -> None:
 
     pool = await create_pool(RedisSettings.from_dsn(settings.redis_url))
     await pool.enqueue_job("process_document", document_id)
-    await pool.aclose() 
+    await pool.aclose()

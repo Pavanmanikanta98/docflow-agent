@@ -306,6 +306,9 @@ Check both providers' current free-tier terms on the day.
 - [ ] `dispatch_webhook` swallowed errors — covered by V1-5.
 - [ ] CSV export writes lists and `_field_confidences` as Python reprs in one cell;
       flatten line items and skip `_`-prefixed keys.
+- [ ] `backend/models/db.py` still uses `sqlalchemy.ext.declarative.declarative_base`
+      (SQLAlchemy 2.0 `MovedIn20Warning` on every test run); switch to
+      `sqlalchemy.orm.declarative_base`. Last remaining project-side warning in pytest.
 
 ---
 

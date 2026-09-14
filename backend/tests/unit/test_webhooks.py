@@ -66,7 +66,7 @@ def test_idempotency_key_is_stable_per_document_and_event() -> None:
     ],
 )
 def test_rejects_non_public_or_non_https_urls(url: str, ip: str) -> None:
-    with pytest.raises(connectors.WebhookURLRejected):
+    with pytest.raises(connectors.WebhookURLRejectedError):
         connectors.validate_webhook_url(url, resolver=_resolver(ip))
 
 

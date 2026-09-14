@@ -11,7 +11,8 @@ Returns the first non-empty result. If everything fails, returns "".
 """
 
 import io
-import fitz            # PyMuPDF
+
+import fitz  # PyMuPDF
 import pdfplumber
 import pytesseract
 from PIL import Image

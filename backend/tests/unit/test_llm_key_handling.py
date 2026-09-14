@@ -13,7 +13,6 @@ from backend.core import pipeline
 from backend.core.config import settings
 from backend.core.llm import llm_client
 
-
 # ---------------------------------------------------------------------------
 # LLM client: keys go to the provider, never into os.environ
 # ---------------------------------------------------------------------------
