@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Sparkles,
 } from 'lucide-react';
-import { getSessionId } from '@/lib/api';
 import api from '@/lib/api';
 
 const { Text } = Typography;
@@ -38,8 +37,7 @@ export function UsageBanner() {
 
   const fetchUsage = useCallback(async () => {
     try {
-      const sessionId = getSessionId();
-      const { data } = await api.get(`/api/v1/usage?session_id=${sessionId}`);
+      const { data } = await api.get('/api/v1/usage');
       setUsage(data);
     } catch {
       // Silently fail — badge just won't show

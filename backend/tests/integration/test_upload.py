@@ -1,141 +1,16 @@
 """Test 3: Upload endpoint returns document_id.
 
-Uses an in-memory SQLite database and a mocked Redis client so no
-external services are needed."""
+Fixtures live in conftest.py — in-memory SQLite and a mocked Redis client,
+so no external services are needed."""
 
 import io
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Enum as SAEnum
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from backend.models.db import Base
+from backend.tests.integration.conftest import SESSION_A, session_headers
 
-
-class _AllowAllRedis:
-    """Rate-limit Redis stand-in: every counter reads 0."""
-
-    def __init__(self) -> None:
-        self._queued = 0
-
-    def pipeline(self) -> "_AllowAllRedis":
-        self._queued = 0
-        return self
-
-    def get(self, key: str) -> "_AllowAllRedis":
-        self._queued += 1
-        return self
-
-    def incr(self, key: str) -> "_AllowAllRedis":
-        self._queued += 1
-        return self
-
-    def expire(self, key: str, ttl: int) -> "_AllowAllRedis":
-        self._queued += 1
-        return self
-
-    def execute(self) -> list[None]:
-        return [None] * self._queued
-
-
-# ---------------------------------------------------------------------------
-# Fixtures — in-memory SQLite + mocked Redis
-# ---------------------------------------------------------------------------
-
-@pytest.fixture()
-def test_engine():
-    """Create an in-memory SQLite engine with StaticPool so all
-    connections share the same database.
-
-    SQLite lacks native ENUM support so we disable it before creating
-    tables."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    # Disable native_enum for SQLite compatibility
-    for table in Base.metadata.tables.values():
-        for col in table.columns:
-            if isinstance(col.type, SAEnum):
-                col.type.native_enum = False
-                col.type.create_constraint = False
-
-    Base.metadata.create_all(bind=engine)
-
-    yield engine
-
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
-
-
-@pytest.fixture()
-def test_db(test_engine):
-    """Yield a SQLAlchemy session bound to the in-memory engine."""
-    testing_session_local = sessionmaker(
-        autocommit=False, autoflush=False, bind=test_engine,
-    )
-    session = testing_session_local()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture()
-def mock_redis():
-    """Return a MagicMock that quacks like a Redis client."""
-    r = MagicMock()
-    r.setex = MagicMock(return_value=True)
-    r.get = MagicMock(return_value=b"fake-file-bytes")
-    return r
-
-
-@pytest.fixture()
-def client(test_db, mock_redis, monkeypatch: pytest.MonkeyPatch):
-    """Create a TestClient with dependency overrides for DB and Redis.
-
-    RateLimitMiddleware bypasses the ``get_redis`` dependency and reads the
-    module-level client via ``middleware._get_redis``, so that is patched too;
-    every request still runs through the real middleware, just without a
-    Redis server."""
-
-    from backend.api import middleware
-    from backend.api.deps import get_db, get_redis
-    from backend.api.main import app
-
-    monkeypatch.setattr(middleware, "_get_redis", lambda: _AllowAllRedis())
-
-    def override_get_db():
-        try:
-            yield test_db
-        finally:
-            pass
-
-    def override_get_redis():
-        return mock_redis
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_redis] = override_get_redis
-
-    # Patch the ARQ enqueue so it doesn't try to connect to real Redis
-    with patch(
-        "backend.api.routes.documents.enqueue_process_document",
-        new_callable=AsyncMock,
-    ):
-        yield TestClient(app)
-
-    app.dependency_overrides.clear()
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 def test_upload_returns_document_id(client: TestClient) -> None:
     """POST /api/v1/documents/upload must return a response containing
@@ -146,10 +21,8 @@ def test_upload_returns_document_id(client: TestClient) -> None:
     response = client.post(
         "/api/v1/documents/upload",
         files={"file": ("test_invoice.pdf", fake_pdf, "application/pdf")},
-        data={
-            "tenant_id": "test-tenant-001",
-            "document_type": "invoice",
-        },
+        data={"document_type": "invoice"},
+        headers=session_headers(),
     )
 
     assert response.status_code == 200, (
@@ -172,10 +45,8 @@ def test_upload_returns_correct_metadata(client: TestClient) -> None:
     response = client.post(
         "/api/v1/documents/upload",
         files={"file": ("contract.pdf", fake_pdf, "application/pdf")},
-        data={
-            "tenant_id": "test-tenant-002",
-            "document_type": "contract",
-        },
+        data={"document_type": "contract"},
+        headers=session_headers(),
     )
 
     assert response.status_code == 200
@@ -193,21 +64,42 @@ def test_upload_returns_correct_metadata(client: TestClient) -> None:
     assert body["document_size"] > 0
 
 
-def test_upload_missing_tenant_id_fails(client: TestClient) -> None:
-    """Upload without tenant_id should return 422 Unprocessable Entity."""
+def test_upload_without_a_session_header_is_rejected(client: TestClient) -> None:
+    """No X-Session-Id means no identity, so there is nothing to file the
+    document under. Rejected before anything is stored."""
 
     fake_pdf = io.BytesIO(b"%PDF-1.4 incomplete upload")
 
     response = client.post(
         "/api/v1/documents/upload",
         files={"file": ("test.pdf", fake_pdf, "application/pdf")},
-        data={
-            # tenant_id intentionally omitted
-            "document_type": "invoice",
-        },
+        data={"document_type": "invoice"},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 400
+
+
+def test_upload_ignores_a_tenant_id_in_the_form(client: TestClient) -> None:
+    """The document belongs to the caller's session, never to a tenant the
+    caller names in the upload form."""
+
+    fake_pdf = io.BytesIO(b"%PDF-1.4 spoof attempt")
+
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": ("inv.pdf", fake_pdf, "application/pdf")},
+        data={"document_type": "invoice", "tenant_id": "somebody-elses-tenant"},
+        headers=session_headers(),
+    )
+
+    assert response.status_code == 200
+    document_id = response.json()["document_id"]
+
+    # The uploader can still read it back, so it was filed under their session.
+    mine = client.get(
+        f"/api/v1/documents/{document_id}", headers=session_headers()
+    )
+    assert mine.status_code == 200
 
 
 def test_upload_never_stores_an_llm_key_header(
@@ -217,8 +109,8 @@ def test_upload_never_stores_an_llm_key_header(
     response = client.post(
         "/api/v1/documents/upload",
         files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
-        data={"tenant_id": "test-tenant-003", "document_type": "invoice"},
-        headers={"X-LLM-Key": "gsk_should_not_be_stored"},
+        data={"document_type": "invoice"},
+        headers={**session_headers(), "X-LLM-Key": "gsk_should_not_be_stored"},
     )
 
     assert response.status_code == 200
@@ -237,10 +129,10 @@ def test_upload_rejects_webhook_url_when_webhooks_disabled(
         "/api/v1/documents/upload",
         files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
         data={
-            "tenant_id": "test-tenant-004",
             "document_type": "invoice",
             "webhook_url": "https://hooks.example.com/x",
         },
+        headers=session_headers(),
     )
 
     assert response.status_code == 422
@@ -258,10 +150,10 @@ def test_upload_rejects_private_webhook_url(
         "/api/v1/documents/upload",
         files={"file": ("inv.pdf", io.BytesIO(b"%PDF-1.4 x"), "application/pdf")},
         data={
-            "tenant_id": "test-tenant-005",
             "document_type": "invoice",
             "webhook_url": "https://169.254.169.254/latest/meta-data",
         },
+        headers=session_headers(SESSION_A),
     )
 
     assert response.status_code == 422
