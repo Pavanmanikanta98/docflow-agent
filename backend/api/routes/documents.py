@@ -14,7 +14,12 @@ from fastapi.responses import Response
 from redis import Redis
 from sqlalchemy.orm import Session
 
-from backend.api.deps import get_db, get_redis
+from backend.api.deps import (
+    get_db,
+    get_owned_document,
+    get_redis,
+    get_tenant_id,
+)
 from backend.core.config import settings
 from backend.core.connectors import WebhookURLRejectedError, validate_webhook_url
 from backend.models.db import Document, DocumentStatus
@@ -33,9 +38,9 @@ router = APIRouter(prefix='/documents', tags=['documents'])
 @router.post('/upload', response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    tenant_id: str = Form(...),
     document_type: str = Form(...),
     webhook_url: Optional[str] = Form(None),
+    tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis)
 ):
@@ -121,11 +126,9 @@ async def upload_document(
 
 @router.get('', response_model=DocumentListResponse)
 async def list_documents(
-    tenant_id: str = Query(
-        'demo-tenant-id', description="Tenant ID (from query or auth)"
-    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    tenant_id: str = Depends(get_tenant_id),
     db: Session = Depends(get_db)
 ):
     query = db.query(Document).filter(Document.tenant_id == tenant_id)
@@ -146,13 +149,8 @@ async def list_documents(
 
 @router.get('/{document_id}', response_model=DocumentStatusResponse)
 async def get_document(
-    document_id: int,
-    db: Session = Depends(get_db)
+    doc: Document = Depends(get_owned_document),
 ):
-    doc = db.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
     return DocumentStatusResponse(
         status=doc.status.value,
         message="Document status retrieved",
@@ -174,17 +172,9 @@ async def get_document(
 
 @router.get('/{document_id}/file')
 async def download_document_file(
-    document_id: int,
-    tenant_id: str = Query(
-        'demo-tenant-id', description="Tenant ID for access control"
-    ),
-    db: Session = Depends(get_db),
+    doc: Document = Depends(get_owned_document),
     redis: Redis = Depends(get_redis),
 ):
-    doc = db.get(Document, document_id)
-    if not doc or doc.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="Document not found")
-
     redis_key = f"doc_bytes:{doc.id}"
     file_bytes = redis.get(redis_key)
 

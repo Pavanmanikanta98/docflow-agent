@@ -16,9 +16,9 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      // Hardcoding default tenant as 'demo-tenant-id' matching upload form
-      // In prod, this passes the api key in header as configured in api.ts
-      const res = await api.get('/api/v1/documents?tenant_id=demo-tenant-id');
+      // The server scopes the list to this browser's session, taken from
+      // the X-Session-Id header that api.ts attaches to every request.
+      const res = await api.get('/api/v1/documents');
       setDocuments(res.data.documents || []);
     } catch (err) {
       console.error('Failed to fetch documents:', err);

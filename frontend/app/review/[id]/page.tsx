@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Alert, Card, Typography, Spin, App, Button, Modal, Input } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import api from '@/lib/api';
+import api, { getSessionId } from '@/lib/api';
 import ExtractionReview from '@/components/ExtractionReview';
 import ExportPanel from '@/components/ExportPanel';
 import type { Document } from '@/lib/types';
@@ -23,14 +23,42 @@ function describeReviewReason(reason: string): string {
   return reason;
 }
 
-/** Shows the PDF in an iframe. If bytes are gone (cleared post-processing), shows a clean message. */
+/** Shows the PDF in an iframe. If bytes are gone (cleared post-processing), shows a clean message.
+ *
+ * The file route is scoped to the browser session, and a browser cannot put a
+ * header on an iframe's own request. So the bytes are fetched here — where the
+ * session header can be set — and handed to the iframe as a blob URL. That
+ * keeps the header as the single way anything proves who it is; the
+ * alternative, a session id in the iframe's URL, would leak the same secret
+ * into history, referrers and access logs.
+ */
 function FilePreview({ fileUrl, filename }: { fileUrl: string; filename: string }) {
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
   const [available, setAvailable] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
-    fetch(fileUrl, { method: 'HEAD' })
-      .then((r) => setAvailable(r.ok))
-      .catch(() => setAvailable(false));
+    let objectUrl: string | null = null;
+    let cancelled = false;
+
+    fetch(fileUrl, { headers: { 'X-Session-Id': getSessionId() } })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Preview unavailable (${r.status})`);
+        return r.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+        setAvailable(true);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailable(false);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [fileUrl]);
 
   if (available === null) {
@@ -56,7 +84,7 @@ function FilePreview({ fileUrl, filename }: { fileUrl: string; filename: string 
 
   return (
     <iframe
-      src={fileUrl}
+      src={blobUrl ?? undefined}
       className="w-full flex-1 border-0 min-h-[500px]"
       title="Document Preview"
     />

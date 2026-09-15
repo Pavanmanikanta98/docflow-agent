@@ -7,8 +7,9 @@ Returns how many extractions remain for this session today.
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends
 
+from backend.api.deps import get_tenant_id
 from backend.core.config import settings
 from backend.core.db import redis_client
 
@@ -28,7 +29,7 @@ def _ttl_until_midnight() -> int:
 
 @router.get("")
 async def get_usage(
-    session_id: str = Query("anonymous", description="Browser session ID"),
+    session_id: str = Depends(get_tenant_id),
 ):
     """Return how many extractions this session has left today.
 

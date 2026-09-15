@@ -148,6 +148,16 @@ The validator's `status` is also ignored by `route_after_validate`.
 
 ### V1-6 · Demo isolation without login — `fix/demo-session-isolation` — 1.5-2 h
 
+**Done (14 Sep 2026).** 66 unit + integration tests pass, `ruff check backend`
+clean. See ADR 004. Two corrections to the sketch below, found while doing it:
+`GET /usage` was also taking identity from the caller (a `session_id` query
+parameter defaulting to `anonymous`, so anyone could read anyone's quota) and now
+uses the same dependency; and the PDF preview could not keep pointing an
+`<iframe>` at the file route, because a browser will not put a custom header on an
+iframe's own request — it now fetches the bytes with the header and shows a blob
+URL. The ownership check lives in one dependency, `get_owned_document`, rather
+than being repeated in four route bodies.
+
 **Problem.** Every visitor uploads as `tenant_id=demo-tenant-id` (hardcoded in
 `DocumentUploader.tsx:31` and `documents/page.tsx:21`), and `GET /documents/{id}`,
 `/{id}/file`, `/{id}/export` and `POST /{id}/review` never check the tenant at all.
@@ -176,6 +186,8 @@ so a caller cannot name someone else's tenant.
 
 **Watch out.** Existing upload tests send `tenant_id` as a form field — update them.
 Old rows keep `demo-tenant-id` and become invisible; that is fine for a demo.
+The integration fixtures moved to `backend/tests/integration/conftest.py` so the
+new module can share them; V1-8's repo-root `conftest.py` is still to be written.
 
 ### V1-7 · Measure it — `feat/eval-results-and-metrics` — 2.5-3 h
 
@@ -245,6 +257,8 @@ plan has no background workers) → Neon PostgreSQL + Upstash Redis.
 5. Smoke test in the browser: digital PDF → completed; scanned PDF → OCR path;
    invoice with a wrong total → review with `math_mismatch` (after V1-4); approve →
    export JSON and CSV; a second browser cannot see the first browser's documents.
+   Any documents uploaded before V1-6 are filed under `demo-tenant-id` and will not
+   appear for anyone — expected, not a deploy failure.
 
 **Watch out.** Free Render web services sleep after 15 minutes, so the first request
 can take about a minute — say so in the README and in the Loom. Free Neon databases
@@ -287,6 +301,7 @@ Check both providers' current free-tier terms on the day.
 | `validate_invoice_fields` alias | `agents/validator.py` (bottom) | Not called anywhere; comment says otherwise | Harmless |
 | `deepeval` dev dependency | `pyproject.toml`, `requirements.txt` | Not imported anywhere; heavy install; README no longer mentions it | Slower installs and CI |
 | `tenant_api_keys` table | migration `fbb366fea798` | Unused | Schema change — decide in v2 |
+| `DocumentUploadRequest`, `DocumentListRequest` | `models/schemas.py` | Imported nowhere; both still carry the `tenant_id` field V1-6 removed from the API | Harmless, but they describe a request shape that no longer exists |
 | `requirements.txt` | repo root | Duplicates `pyproject.toml` + `uv.lock` and drifts | Keep in sync by hand |
 
 ---
@@ -305,6 +320,18 @@ Check both providers' current free-tier terms on the day.
 - [ ] `dispatch_webhook` swallowed errors — covered by V1-5.
 - [ ] CSV export writes lists and `_field_confidences` as Python reprs in one cell;
       flatten line items and skip `_`-prefixed keys.
+- [ ] **`pnpm build` fails on `main`** — `frontend/app/page.tsx:161` uses `HandCoins`
+      but nothing imports it. The "Buy me a coffee" card was removed in the 11 Sep
+      cleanup and this entry in `finalActions` was left behind, still pointing at
+      `buymeacoffee.com/replace-me`. Deleting the entry also means the heading
+      "Three ways to take this further." and the `lg:grid-cols-3` row need to become
+      two — a landing-page decision, so left alone. **Blocks V1-8 CI and V1-9's
+      Vercel build.**
+- [ ] **`pnpm lint` fails on `main`** — 4 errors, none of them new: three
+      `react-hooks/set-state-in-effect` (`AppTour.tsx:90`, `SettingsModal.tsx:48`,
+      `ThemeRegistry.tsx:13`) and one `no-explicit-any` (`ExportPanel.tsx:41`).
+      V1-8 runs `pnpm lint` in CI, so CI is red on day one unless these are fixed
+      or the rules are downgraded deliberately.
 - [ ] `backend/models/db.py` still uses `sqlalchemy.ext.declarative.declarative_base`
       (SQLAlchemy 2.0 `MovedIn20Warning` on every test run); switch to
       `sqlalchemy.orm.declarative_base`. Last remaining project-side warning in pytest.
