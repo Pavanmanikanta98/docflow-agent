@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.api.deps import get_db
+from backend.api.deps import get_db, get_owned_document
 from backend.models.db import Document, DocumentStatus, HumanReviewStatus
 from backend.models.schemas import (
     DocumentReviewRequest,
@@ -15,14 +15,10 @@ router = APIRouter(prefix='/documents', tags=['review'])
 
 @router.post("/{document_id}/review", response_model=DocumentReviewResponse)
 async def review_document(
-    document_id: int,
     review: DocumentReviewRequest,
+    doc: Document = Depends(get_owned_document),
     db: Session = Depends(get_db),
 ):
-    doc = db.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
     if doc.status not in (DocumentStatus.awaiting_review, DocumentStatus.completed):
         raise HTTPException(
             status_code=400,

@@ -71,3 +71,55 @@ nothing in the request path passes one. The header is read by no code.
 ### Consequence
 `tenant_api_keys` stays in the database for now — dropping it needs a migration and
 buys nothing at runtime. Revisit in v2.
+
+---
+
+## ADR 004: On the public demo, the browser session is the tenant
+**Date:** 2026-09-14
+**Status:** Accepted (refines ADR 001 for the demo deployment)
+
+### Context
+ADR 001 chose single-tenant deployments for real clients, so `tenant_id` exists on
+every table (RULES.md) but never had to separate anybody. The public demo breaks
+that assumption: it is one deployment shared by every visitor, it has no login, and
+every upload was filed under a `demo-tenant-id` string hardcoded in the frontend.
+
+Three of the six document routes never checked ownership at all — `GET /{id}`,
+`/{id}/export` and `POST /{id}/review` looked rows up by primary key alone — and the
+two that did check compared against a query parameter the caller supplied. So any
+visitor could read, export and approve any other visitor's document by guessing an
+integer, and approving somebody else's document also fired their webhook.
+
+### Decision
+The browser session id is the tenant id on the demo. It arrives in the `X-Session-Id`
+header, which the frontend already attached to every request and the rate limiter
+already read. `get_tenant_id` in `backend/api/deps.py` is the only place it is read,
+and `get_owned_document` is the only way a route may load a document by id. The
+upload form field and the list/file query parameters are gone, so there is no longer
+any way for a caller to name a tenant.
+
+### Justification
+- The session id already existed and was already being sent. Nothing new to mint.
+- One dependency means a route that forgets the check is visible in its signature,
+  rather than a missing `if` buried in a handler body.
+- Mismatches return 404, not 403, so the response does not confirm that an id exists.
+- `tenant_id` keeps doing on the demo what ADR 001 designed it for on client
+  installs; nothing about the schema or the single-tenant model changes.
+
+### Consequence
+**This is isolation, not authentication.** Anyone who copies another visitor's
+session id out of their localStorage gets their documents, and clearing browser
+storage abandons the old documents. That is an acceptable trade for a demo with no
+accounts; real auth (ADR 002's NextAuth sketch) stays deferred until a client needs it.
+
+Documents uploaded before this change keep `tenant_id = "demo-tenant-id"` and become
+invisible, since no browser sends that value as a session id. For a demo whose file
+bytes expire after an hour anyway, that is fine.
+
+Two consequences for the browser: a request that arrives without a usable
+`X-Session-Id` is refused with 400 rather than being guessed at, and the PDF preview
+can no longer point an `<iframe>` straight at the file route, because a browser will
+not put a custom header on an iframe's own request. The preview fetches the bytes
+with the header and hands the iframe a blob URL instead — which keeps the header as
+the single way a caller proves who it is, rather than putting the session id in a URL
+where it would leak into history, referrers and access logs.

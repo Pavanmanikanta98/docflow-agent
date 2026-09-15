@@ -6,22 +6,17 @@ import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 
-from backend.api.deps import get_db
+from backend.api.deps import get_owned_document
 from backend.models.db import Document, DocumentStatus
 
 router = APIRouter(prefix="/documents", tags=["export"])
 
 @router.get("/{document_id}/export")
 async def export_document(
-    document_id: int,
     format: str = Query("json", enum=["json", "csv"]),
-    db: Session = Depends(get_db),
+    doc: Document = Depends(get_owned_document),
 ):
-    doc = db.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
     if doc.status != DocumentStatus.completed:
         raise HTTPException(
             status_code=400,
@@ -45,7 +40,7 @@ async def export_document(
         writer.writerow([key, value])
 
     output.seek(0)
-    filename = f"document_{document_id}_export.csv"
+    filename = f"document_{doc.id}_export.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",

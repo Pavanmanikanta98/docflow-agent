@@ -28,7 +28,6 @@ export default function DocumentUploader({
     const formData = new FormData();
     formData.append('file', file as Blob);
     formData.append('document_type', docType);
-    formData.append('tenant_id', 'demo-tenant-id');
 
     try {
       const { data } = await api.post('/api/v1/documents/upload', formData, {

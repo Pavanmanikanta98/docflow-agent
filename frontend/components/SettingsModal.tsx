@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Sparkles,
 } from 'lucide-react';
-import { getSessionId } from '@/lib/api';
 import api from '@/lib/api';
 
 const { Text } = Typography;
@@ -39,9 +38,8 @@ export function UsageBanner() {
   useEffect(() => {
     let ignore = false;
     const fetchUsage = () => {
-      const sessionId = getSessionId();
       api
-        .get<UsageData>(`/api/v1/usage?session_id=${sessionId}`)
+        .get<UsageData>('/api/v1/usage')
         .then(({ data }) => {
           if (!ignore) setUsage(data);
         })
