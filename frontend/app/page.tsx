@@ -155,14 +155,6 @@ const finalActions: FinalAction[] = [
     cta: 'Request an extension',
     note: 'Open to collaboration',
   },
-  {
-    title: 'Support the project',
-    desc: 'DocFlow is open source. If it saved you time or inspired your own pipeline, consider supporting further development.',
-    icon: HandCoins,
-    href: 'https://buymeacoffee.com/replace-me',
-    cta: 'Buy me a coffee',
-    note: 'Update link before deploy',
-  },
 ];
 
 export default function Home() {
@@ -435,12 +427,12 @@ export default function Home() {
       <section id="contact" className="mx-auto max-w-6xl">
         <SectionHeading
           eyebrow="Work with me"
-          title="Three ways to take this further."
+          title="Two ways to take this further."
           description="Custom document pipelines, new document type plugins, or just a conversation about what you're building."
           align="center"
         />
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 lg:grid-cols-2">
           {finalActions.map((item) => (
             <ActionCard
               key={item.title}
