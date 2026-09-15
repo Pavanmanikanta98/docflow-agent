@@ -211,6 +211,15 @@ use, and a reproducible accuracy table per model.
 
 ### V1-8 · CI — `chore/github-actions-ci` — 45-60 min
 
+**Done (15 Sep 2026).** `.github/workflows/ci.yml` runs the backend job (ruff +
+57 unit/integration tests, tesseract installed, `uv sync --locked`) and the
+frontend job (`pnpm lint`, `pnpm build`) on every push and pull request.
+`backend/tests/conftest.py` fills in the six required settings only when the
+repo root has no `.env`; verified locally by moving `.env` aside. Two breakages
+that would have made CI red on day one were fixed on the same branch — see the
+ticked items under "Open polish". Branch protection on `main` still has to be
+switched on by hand.
+
 **Files**
 - `backend/tests/conftest.py` — set dummy `DATABASE_URL`, `REDIS_URL`,
   `CONFIDENCE_THRESHOLD`, `MAX_UPLOAD_SIZE_MB`, `ENVIRONMENT`,
@@ -295,8 +304,21 @@ Check both providers' current free-tier terms on the day.
 
 - [ ] `frontend/components/landing/ActionCard.tsx:37-43` uses `next/link` for `mailto:`
       URLs; use `<a>`.
-- [ ] Unit/integration tests need a `backend/tests/conftest.py` that sets dummy
+- [x] Unit/integration tests need a `backend/tests/conftest.py` that sets dummy
       `DATABASE_URL`, `REDIS_URL`, etc., so they run in CI without a `.env` (V1-8).
+- [x] `pnpm build` failed on `main` — `frontend/app/page.tsx` used `HandCoins`
+      with no import, the leftover "Buy me a coffee" entry from the 11 Sep cleanup.
+      Fixed in V1-8 by finishing the removal: entry deleted, heading now "Two ways
+      to take this further.", row is `lg:grid-cols-2`.
+- [x] `pnpm lint` failed on `main` with 4 errors: three
+      `react-hooks/set-state-in-effect` (`AppTour.tsx`, `SettingsModal.tsx`,
+      `ThemeRegistry.tsx`) and one `no-explicit-any` (`ExportPanel.tsx`). Fixed in
+      V1-8: the "mounted" effects use a shared `lib/useHydrated.ts`
+      (`useSyncExternalStore`), the usage poll sets state in the response callback,
+      and the export error is narrowed with `instanceof Error`. No rules disabled.
+- [ ] `pnpm lint` still prints 2 warnings (not failures):
+      `app/review/[id]/page.tsx:87` missing `notification` dependency and
+      `components/ExtractionReview.tsx:29` `results` should be wrapped in `useMemo`.
 - [ ] Record webhook delivery results (needs a DB column — schema change, ask first).
 - [ ] `validate_webhook_url` runs a blocking DNS lookup inside the upload request.
 - [ ] Landing page says "fire a webhook to your system", but the UI has no webhook
