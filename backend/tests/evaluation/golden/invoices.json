@@ -9,6 +9,8 @@
             "invoice_date": "2026-04-15",
             "due_date": "2026-05-15",
             "total_amount": 715.00,
+            "subtotal": 650.00,
+            "tax_amount": 65.00,
             "currency": "USD",
             "line_items": ["Widget A  x10  $50.00", "Widget B  x5   $30.00"]
         }
@@ -37,6 +39,7 @@
             "invoice_date": "2026-01-01",
             "due_date": "2026-01-31",
             "total_amount": 26850.00,
+            "subtotal": 26450.00,
             "currency": "USD",
             "line_items": [
                 "Raw cotton bales (Grade A) — $12,000.00",
@@ -57,6 +60,8 @@
             "invoice_date": "2026-04-12",
             "due_date": "2026-05-12",
             "total_amount": 1239000.00,
+            "subtotal": 1050000.00,
+            "tax_amount": 189000.00,
             "currency": "INR",
             "line_items": [
                 "Cloud migration consulting (160 hrs) — INR 8,00,000",
@@ -107,6 +112,8 @@
             "invoice_date": "2026-03-15",
             "due_date": "2026-04-15",
             "total_amount": 15232.00,
+            "subtotal": 12800.00,
+            "tax_amount": 2432.00,
             "currency": "EUR",
             "line_items": [
                 "Webentwicklung (80 Std.) — 9.600,00 EUR",
