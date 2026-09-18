@@ -194,6 +194,22 @@ environment and does not overlap with it.
 
 ### V1-7 · Measure it — `feat/eval-results-and-metrics` — 2.5-3 h
 
+**Accuracy half done (18 Sep 2026), metrics half not started.**
+Done: the golden set grew to 32 cases (20 clean, 12 adversarial, tagged with
+`difficulty` in the golden files); the invoice evaluation now scores `subtotal`
+and `tax_amount`; both models were run and the logs plus `SUMMARY.md` are in
+`evals/results/`; the README carries the table. Evidence: the five files in
+`evals/results/`.
+
+Not done, so the box stays open: `metrics.py`, `extract_text_with_method()`,
+`extract_fields_with_usage()`, the pipeline/worker wiring and `run_eval.py`.
+No per-case latency or token counts exist, and the results are `.txt` logs plus
+a hand-written summary rather than the `<date>-<model>.json` this task asks for.
+
+Two notes from the runs. `llama-3.1-8b-instant` is gone from Groq (404) and the
+default is now `openai/gpt-oss-20b` — see ADR 005. The free tier's 8000 TPM
+limit produced one 429 over 32 cases, so a full run may need a retry.
+
 **Goal.** Real numbers for the README and the resume: per-document timings and token
 use, and a reproducible accuracy table per model.
 
