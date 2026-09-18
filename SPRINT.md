@@ -183,6 +183,8 @@ so a caller cannot name someone else's tenant.
 - upload as session A → get / file / export / review as session B → 404 each
 - no `X-Session-Id` → 400
 - list only returns session A's documents
+- `backend/tests/integration/test_usage_count.py`: the usage badge reads the same
+  per-session counter the rate limiter increments, and ignores `?session_id=`
 
 **Watch out.** Existing upload tests send `tenant_id` as a form field — update them.
 Old rows keep `demo-tenant-id` and become invisible; that is fine for a demo.
