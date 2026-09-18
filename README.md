@@ -1,5 +1,7 @@
 # docflow-agent
 
+[![CI](https://github.com/Pavanmanikanta98/docflow-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Pavanmanikanta98/docflow-agent/actions/workflows/ci.yml)
+
 Document processing pipeline that extracts structured data from invoices and contracts, scores each field against the source text, and holds low-confidence documents for human review before export.
 
 **Demo and walkthrough video:** _coming soon — links added once deployed._

@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ConfigProvider, theme, App } from 'antd';
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import { useHydrated } from '@/lib/useHydrated';
 
 function AntdThemeProvider({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!hydrated) {
     return <div style={{ visibility: 'hidden' }}>{children}</div>;
   }
 

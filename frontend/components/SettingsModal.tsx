@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Typography, Progress, Space } from 'antd';
 import {
   Zap,
@@ -36,21 +36,27 @@ export function UsageBanner() {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchUsage = useCallback(async () => {
-    try {
-      const sessionId = getSessionId();
-      const { data } = await api.get(`/api/v1/usage?session_id=${sessionId}`);
-      setUsage(data);
-    } catch {
-      // Silently fail — badge just won't show
-    }
-  }, []);
-
   useEffect(() => {
+    let ignore = false;
+    const fetchUsage = () => {
+      const sessionId = getSessionId();
+      api
+        .get<UsageData>(`/api/v1/usage?session_id=${sessionId}`)
+        .then(({ data }) => {
+          if (!ignore) setUsage(data);
+        })
+        .catch(() => {
+          // Silently fail — badge just won't show
+        });
+    };
+
     fetchUsage();
     const interval = setInterval(fetchUsage, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUsage]);
+    return () => {
+      ignore = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   const resetHours = usage ? Math.ceil(usage.reset_seconds / 3600) : 0;
   const pct = usage ? (usage.remaining / usage.limit) * 100 : 100;

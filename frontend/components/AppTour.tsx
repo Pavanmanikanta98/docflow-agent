@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { TourProvider, useTour } from '@reactour/tour';
 import { Button } from 'antd';
 import { PlayCircleOutlined } from '@ant-design/icons';
+import { useHydrated } from '@/lib/useHydrated';
 
 const steps = [
   {
@@ -84,13 +85,9 @@ function TourTrigger() {
 }
 
 export function AppTour({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return <>{children}</>;
+  if (!hydrated) return <>{children}</>;
 
   return (
     <TourProvider

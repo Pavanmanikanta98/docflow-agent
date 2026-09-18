@@ -32,10 +32,13 @@ export default function ExportPanel({ documentId, disabled = false }: Props) {
       anchor.download = `document_${documentId}_export.${format}`;
       anchor.click();
       URL.revokeObjectURL(objectUrl);
-    } catch (err: any) {
+    } catch (err) {
       notification.error({
         title: 'Export failed',
-        description: err.message || 'Could not export document.',
+        description:
+          err instanceof Error && err.message
+            ? err.message
+            : 'Could not export document.',
       });
     } finally {
       setLoading(null);
