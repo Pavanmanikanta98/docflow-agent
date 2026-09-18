@@ -1,0 +1,27 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /media/pavan/New Volume1/oss/pro/docflow-agent/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/pavan/New Volume1/oss/pro/docflow-agent
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.1.0, repeat-0.9.4, rerunfailures-16.6.1, xdist-3.8.0, deepeval-4.2.0, anyio-4.15.0, langsmith-0.12.1, logfire-4.41.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_003_multiple_items] 
+============================================================
+Case: inv_003_multiple_items
+  Invoice with 5 line items — tests list extraction
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Pacific Trading Co. vs Pacific Trading Co.)
+  ✅ invoice_number: matched (CI-2026/1107 vs CI-2026/1107)
+  ✅ invoice_date: matched (01 Jan 2026 vs 2026-01-01)
+  ✅ due_date: matched (31 Jan 2026 vs 2026-01-31)
+  ✅ total_amount: matched (26850.0 vs 26850.0)
+  ✅ subtotal: matched (26450.0 vs 26450.0)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSEDRunning teardown with pytest sessionfinish...
+
+
+============================== 1 passed in 1.83s ===============================

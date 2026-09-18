@@ -1,0 +1,478 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /media/pavan/New Volume1/oss/pro/docflow-agent/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/pavan/New Volume1/oss/pro/docflow-agent
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.1.0, repeat-0.9.4, rerunfailures-16.6.1, xdist-3.8.0, deepeval-4.2.0, anyio-4.15.0, langsmith-0.12.1, logfire-4.41.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 32 items
+
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_001_standard] 
+============================================================
+Case: con_001_standard
+  Clean service agreement with all major fields
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Acme Consulting Group', 'Widget Manufacturing Inc.'] vs ['Acme Consulting Group', 'Widget Manufacturing Inc.'])
+  ✅ effective_date: matched (January 15, 2026 vs 2026-01-15)
+  ✅ expiry_date: matched (December 31, 2026 vs 2026-12-31)
+  ✅ contract_value: matched (240000.0 vs 240000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of New York vs State of New York)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_002_software_license] 
+============================================================
+Case: con_002_software_license
+  SaaS license agreement with auto-renewal
+  Accuracy: 88% (7/8)
+  ✅ parties: overlap 100% (['DataStream Analytics, Inc.', 'HealthFirst Hospital Network'] vs ['DataStream Analytics, Inc.', 'HealthFirst Hospital Network'])
+  ✅ effective_date: matched (2026-03-01 vs 2026-03-01)
+  ✅ expiry_date: matched (2029-02-28 vs 2029-02-28)
+  ✅ contract_value: matched (255000.0 vs 255000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Delaware vs State of Delaware)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ❌ termination_clause: null mismatch (got None, expected Auto-renews for 12-month periods unless 90 days written notice of non-renewal is provided.)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_003_employment] 
+============================================================
+Case: con_003_employment
+  Employment contract — tests party extraction with individual names
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Quantum Technologies Pvt. Ltd.', 'Rajesh Kumar Sharma'] vs ['Quantum Technologies Pvt. Ltd.', 'Rajesh Kumar Sharma'])
+  ✅ effective_date: matched (2026-02-15 vs 2026-02-15)
+  ✅ expiry_date: both null ✓
+  ✅ contract_value: matched (2400000.0 vs 2400000.0)
+  ✅ currency: matched (INR vs INR)
+  ✅ jurisdiction: matched (India, courts in Bangalore, Karnataka vs Bangalore, Karnataka, India)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_004_nda] 
+============================================================
+Case: con_004_nda
+  NDA with no monetary value — tests null handling for contract_value
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['FutureAI Labs Inc.', 'BrightMinds Research Foundation'] vs ['FutureAI Labs Inc.', 'BrightMinds Research Foundation'])
+  ✅ effective_date: matched (April 10, 2026 vs 2026-04-10)
+  ✅ expiry_date: matched (April 9, 2029 vs 2029-04-09)
+  ✅ contract_value: both null ✓
+  ✅ currency: both null ✓
+  ✅ jurisdiction: matched (State of California, United States vs State of California)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_005_construction] 
+============================================================
+Case: con_005_construction
+  Construction contract with milestone payments
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Metropolitan Real Estate Holdings', 'BuildRight Construction LLC'] vs ['Metropolitan Real Estate Holdings', 'BuildRight Construction LLC'])
+  ✅ effective_date: matched (May 1, 2026 vs 2026-05-01)
+  ✅ expiry_date: matched (October 31, 2026 vs 2026-10-31)
+  ✅ contract_value: matched (1850000.0 vs 1850000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Texas vs State of Texas)
+  ✅ key_obligations: overlap 100% (5 extracted, 5 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_006_european_consulting] 
+============================================================
+Case: con_006_european_consulting
+  European consulting contract in EUR with GDPR references
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Schneider & Weber Unternehmensberatung GmbH', 'AutoTech Europe AG'] vs ['Schneider & Weber Unternehmensberatung GmbH', 'AutoTech Europe AG'])
+  ✅ effective_date: matched (1 June 2026 vs 2026-06-01)
+  ✅ expiry_date: matched (30 November 2027 vs 2027-11-30)
+  ✅ contract_value: matched (480000.0 vs 480000.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ jurisdiction: matched (German law, courts of Frankfurt am Main vs Frankfurt am Main, Germany)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_007_minimal] 
+============================================================
+Case: con_007_minimal
+  Very short informal agreement — tests handling of sparse data
+  Accuracy: 88% (7/8)
+  ✅ parties: overlap 100% (["John's Lawn Care", 'Mrs. Patricia Williams'] vs ["John's Lawn Care", 'Patricia Williams'])
+  ✅ effective_date: matched (2026-07-01 vs 2026-07-01)
+  ✅ expiry_date: both null ✓
+  ✅ contract_value: matched (4500.0 vs 4500.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: both null ✓
+  ❌ key_obligations: null mismatch
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_008_multi_party] 
+============================================================
+Case: con_008_multi_party
+  Joint venture agreement with 3 parties
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Pacific Ventures Capital LLC', 'Green Energy Solutions Corp', 'Asian Development Partners Ltd.'] vs ['Pacific Ventures Capital LLC', 'Green Energy Solutions Corp', 'Asian Development Partners Ltd.'])
+  ✅ effective_date: matched (September 1, 2026 vs 2026-09-01)
+  ✅ expiry_date: matched (August 31, 2031 vs 2031-08-31)
+  ✅ contract_value: matched (12500000.0 vs 12500000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (Singapore vs Singapore)
+  ✅ key_obligations: overlap 100% (5 extracted, 5 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_009_zero_value] 
+============================================================
+Case: con_009_zero_value
+  Pro-bono / volunteer agreement with zero contract value
+  Accuracy: 88% (7/8)
+  ✅ parties: overlap 100% (['City Community Food Bank', 'Alex Thompson'] vs ['City Community Food Bank', 'Alex Thompson'])
+  ✅ effective_date: matched (2026-03-15 vs 2026-03-15)
+  ✅ expiry_date: matched (2027-03-14 vs 2027-03-14)
+  ❌ contract_value: null mismatch (got None, expected 0.0)
+  ✅ currency: both null ✓
+  ✅ jurisdiction: matched (State of Oregon vs State of Oregon)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_010_retainer] 
+============================================================
+Case: con_010_retainer
+  Legal retainer with hourly + fixed components
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Morrison & Associates, PLLC', 'Brightwave Semiconductor Ltd.'] vs ['Morrison & Associates, PLLC', 'Brightwave Semiconductor Ltd.'])
+  ✅ effective_date: matched (2026-07-01 vs 2026-07-01)
+  ✅ expiry_date: matched (2027-06-30 vs 2027-06-30)
+  ✅ contract_value: matched (90000.0 vs 90000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Massachusetts vs State of Massachusetts)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_011_amendment_supersedes] 
+============================================================
+Case: con_011_amendment_supersedes
+  Amendment raises the contract value; the original figure is still in the text
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Halcyon Data Systems Ltd', 'Brightwater Utilities plc'] vs ['Halcyon Data Systems Ltd', 'Brightwater Utilities plc'])
+  ✅ effective_date: matched (1 March 2026 vs 2026-03-01)
+  ✅ expiry_date: matched (28 February 2028 vs 2028-02-28)
+  ✅ contract_value: matched (62500.0 vs 62500.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ jurisdiction: matched (England and Wales vs England and Wales)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_012_two_currencies] 
+============================================================
+Case: con_012_two_currencies
+  Fees in EUR, an expense cap in USD — the contract currency is the fee currency
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Ostersund Analytics AB', 'Kiruna Mining Group AB'] vs ['Ostersund Analytics AB', 'Kiruna Mining Group AB'])
+  ✅ effective_date: matched (2026-04-01 vs 2026-04-01)
+  ✅ expiry_date: matched (2027-03-31 vs 2027-03-31)
+  ✅ contract_value: matched (84000.0 vs 84000.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ jurisdiction: matched (Sweden vs Sweden)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_013_value_only_in_milestones] 
+============================================================
+Case: con_013_value_only_in_milestones
+  No total is stated: the contract value is the sum of three milestone payments
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Ridgeline Builders Pty Ltd', 'Tasman Electrical Services Pty Ltd'] vs ['Ridgeline Builders Pty Ltd', 'Tasman Electrical Services Pty Ltd'])
+  ✅ effective_date: matched (2026-07-06 vs 2026-07-06)
+  ✅ expiry_date: matched (2026-12-18 vs 2026-12-18)
+  ✅ contract_value: matched (310000.0 vs 310000.0)
+  ✅ currency: matched (AUD vs AUD)
+  ✅ jurisdiction: matched (New South Wales, Australia vs New South Wales, Australia)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_014_renewal_not_expiry] 
+============================================================
+Case: con_014_renewal_not_expiry
+  Auto-renewal and a pricing review date compete with the initial term end date
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Cobalt Insights Inc.', 'Fairfield Regional Health'] vs ['Cobalt Insights Inc.', 'Fairfield Regional Health'])
+  ✅ effective_date: matched (2026-02-01 vs 2026-02-01)
+  ✅ expiry_date: matched (2027-01-31 vs 2027-01-31)
+  ✅ contract_value: matched (48000.0 vs 48000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Ohio, USA vs Ohio, USA)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_001_standard] 
+============================================================
+Case: inv_001_standard
+  Clean, well-formatted invoice with all fields present
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Acme Corp vs Acme Corp)
+  ✅ invoice_number: matched (INV-2026-0042 vs INV-2026-0042)
+  ✅ invoice_date: matched (2026-04-15 vs 2026-04-15)
+  ✅ due_date: matched (2026-05-15 vs 2026-05-15)
+  ✅ total_amount: matched (715.0 vs 715.0)
+  ✅ subtotal: matched (650.0 vs 650.0)
+  ✅ tax_amount: matched (65.0 vs 65.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_002_missing_due_date] 
+============================================================
+Case: inv_002_missing_due_date
+  Invoice without a due date — tests graceful null handling
+  Accuracy: 89% (8/9)
+  ✅ vendor_name: matched (TechServe Solutions Ltd. vs TechServe Solutions Ltd.)
+  ✅ invoice_number: matched (88921 vs 88921)
+  ✅ invoice_date: matched (March 3, 2026 vs 2026-03-03)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (2450.0 vs 2450.0)
+  ❌ subtotal: null mismatch (got 2450.0, expected None)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (1 extracted, 1 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_003_multiple_items] 
+============================================================
+Case: inv_003_multiple_items
+  Invoice with 5 line items — tests list extraction
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Pacific Trading Co. vs Pacific Trading Co.)
+  ✅ invoice_number: matched (CI-2026/1107 vs CI-2026/1107)
+  ✅ invoice_date: matched (01 Jan 2026 vs 2026-01-01)
+  ✅ due_date: matched (31 Jan 2026 vs 2026-01-31)
+  ✅ total_amount: matched (26850.0 vs 26850.0)
+  ✅ subtotal: matched (26450.0 vs 26450.0)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_004_non_usd_currency] 
+============================================================
+Case: inv_004_non_usd_currency
+  Invoice in Indian Rupees — tests currency detection
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Tata Consultancy Services vs Tata Consultancy Services)
+  ✅ invoice_number: matched (GST/2026/04/098 vs GST/2026/04/098)
+  ✅ invoice_date: matched (12-Apr-2026 vs 2026-04-12)
+  ✅ due_date: matched (12-May-2026 vs 2026-05-12)
+  ✅ total_amount: matched (1239000.0 vs 1239000.0)
+  ✅ subtotal: matched (1050000.0 vs 1050000.0)
+  ✅ tax_amount: matched (189000.0 vs 189000.0)
+  ✅ currency: matched (INR vs INR)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_005_messy_formatting] 
+============================================================
+Case: inv_005_messy_formatting
+  Poorly formatted invoice with inconsistent spacing — stress test
+  Accuracy: 78% (7/9)
+  ✅ vendor_name: matched (Joe's Plumbing & Repair vs Joe's Plumbing & Repair)
+  ✅ invoice_number: matched (5567 vs 5567)
+  ✅ invoice_date: matched (2026/02/28 vs 2026-02-28)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (1083.0 vs 1083.0)
+  ❌ subtotal: null mismatch (got 1083.0, expected None)
+  ✅ tax_amount: both null ✓
+  ❌ currency: null mismatch (got None, expected USD)
+  ✅ line_items: overlap 75% (4 extracted, 4 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_006_minimal] 
+============================================================
+Case: inv_006_minimal
+  Bare-minimum invoice — only vendor, amount, number present
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Sarah's Design Studio vs Sarah's Design Studio)
+  ✅ invoice_number: matched (2026-77 vs 2026-77)
+  ✅ invoice_date: matched (None vs None)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (500.0 vs 500.0)
+  ✅ subtotal: both null ✓
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: both null ✓
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_007_european_format] 
+============================================================
+Case: inv_007_european_format
+  European number format (comma as decimal separator)
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (München Digital GmbH vs München Digital GmbH)
+  ✅ invoice_number: matched (RE-2026-0891 vs RE-2026-0891)
+  ✅ invoice_date: matched (15.03.2026 vs 2026-03-15)
+  ✅ due_date: matched (15.04.2026 vs 2026-04-15)
+  ✅ total_amount: matched (15232.0 vs 15232.0)
+  ✅ subtotal: matched (12800.0 vs 12800.0)
+  ✅ tax_amount: matched (2432.0 vs 2432.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_008_large_amount] 
+============================================================
+Case: inv_008_large_amount
+  High-value enterprise invoice
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Salesforce, Inc. vs Salesforce, Inc.)
+  ✅ invoice_number: matched (EL-2026-00003 vs EL-2026-00003)
+  ✅ invoice_date: matched (2026-01-01 vs 2026-01-01)
+  ✅ due_date: matched (2026-03-02 vs 2026-03-02)
+  ✅ total_amount: matched (1475000.0 vs 1475000.0)
+  ✅ subtotal: both null ✓
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_009_freelancer] 
+============================================================
+Case: inv_009_freelancer
+  Casual freelancer invoice with narrative style
+  Accuracy: 89% (8/9)
+  ❌ vendor_name: mismatch (Maria Chen (Freelance Designer) vs Maria Chen)
+  ✅ invoice_number: matched (MC-42 vs MC-42)
+  ✅ invoice_date: matched (2026-04-20 vs 2026-04-20)
+  ✅ due_date: matched (2026-05-04 vs 2026-05-04)
+  ✅ total_amount: matched (1500.0 vs 1500.0)
+  ✅ subtotal: both null ✓
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_010_no_currency_symbol] 
+============================================================
+Case: inv_010_no_currency_symbol
+  Invoice with amount but no explicit currency symbol or code
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (CloudHost Pro vs CloudHost Pro)
+  ✅ invoice_number: matched (10234 vs 10234)
+  ✅ invoice_date: matched (2026-06-01 vs 2026-06-01)
+  ✅ due_date: matched (2026-07-01 vs 2026-07-01)
+  ✅ total_amount: matched (515.97 vs 515.97)
+  ✅ subtotal: both null ✓
+  ✅ tax_amount: both null ✓
+  ✅ currency: both null ✓
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_011_bill_to_trap] 
+============================================================
+Case: inv_011_bill_to_trap
+  Vendor is the letterhead and remit-to party, not the 'Bill To' company
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (NORTHWIND TRADERS LTD vs Northwind Traders Ltd)
+  ✅ invoice_number: matched (NW-2026-3310 vs NW-2026-3310)
+  ✅ invoice_date: matched (12 May 2026 vs 2026-05-12)
+  ✅ due_date: matched (11 June 2026 vs 2026-06-11)
+  ✅ total_amount: matched (14400.0 vs 14400.0)
+  ✅ subtotal: matched (12000.0 vs 12000.0)
+  ✅ tax_amount: matched (2400.0 vs 2400.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_012_distractor_totals] 
+============================================================
+Case: inv_012_distractor_totals
+  Invoice total competes with previous balance, payments received and account balance due
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (SUMMIT OFFICE SUPPLY vs Summit Office Supply)
+  ✅ invoice_number: matched (SOS-88214 vs SOS-88214)
+  ✅ invoice_date: matched (2026-03-09 vs 2026-03-09)
+  ✅ due_date: matched (2026-03-24 vs 2026-03-24)
+  ✅ total_amount: matched (4536.0 vs 4536.0)
+  ✅ subtotal: matched (4200.0 vs 4200.0)
+  ✅ tax_amount: matched (336.0 vs 336.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_013_ocr_noise] 
+============================================================
+Case: inv_013_ocr_noise
+  Text as Tesseract returns it: l for 1, O for 0, dot leaders, broken casing
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (BRIGHTPATH LOGISTICS INC vs Brightpath Logistics Inc)
+  ✅ invoice_number: matched (BP-2026-0447 vs BP-2026-0447)
+  ✅ invoice_date: matched (2026-08-07 vs 2026-08-07)
+  ✅ due_date: matched (2026-09-06 vs 2026-09-06)
+  ✅ total_amount: matched (2657.5 vs 2657.5)
+  ✅ subtotal: matched (2657.5 vs 2657.5)
+  ✅ tax_amount: matched (0.0 vs 0.0)
+  ✅ currency: both null ✓
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_014_ambiguous_date_format] 
+============================================================
+Case: inv_014_ambiguous_date_format
+  03/04/2026 is day-first: a UK invoice whose 30-day terms only work read that way
+  Accuracy: 78% (7/9)
+  ✅ vendor_name: matched (HARLOW & SONS BUILDERS vs Harlow & Sons Builders)
+  ✅ invoice_number: matched (HS/4471 vs HS/4471)
+  ❌ invoice_date: mismatch (03/04/2026 vs 2026-04-03)
+  ❌ due_date: mismatch (03/05/2026 vs 2026-05-03)
+  ✅ total_amount: matched (6876.0 vs 6876.0)
+  ✅ subtotal: matched (5730.0 vs 5730.0)
+  ✅ tax_amount: matched (1146.0 vs 1146.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_015_multi_page] 
+============================================================
+Case: inv_015_multi_page
+  Two pages with a repeated header; items split across both, totals only on page 2
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (DELTA MEDICAL SUPPLIES vs Delta Medical Supplies)
+  ✅ invoice_number: matched (DM-77120 vs DM-77120)
+  ✅ invoice_date: matched (21 Jan 2026 vs 2026-01-21)
+  ✅ due_date: matched (20 Feb 2026 vs 2026-02-20)
+  ✅ total_amount: matched (3150.0 vs 3150.0)
+  ✅ subtotal: matched (3000.0 vs 3000.0)
+  ✅ tax_amount: matched (150.0 vs 150.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_016_credit_note] 
+============================================================
+Case: inv_016_credit_note
+  Credit note with a negative total — tests that the sign survives extraction
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Aurora Print Works vs Aurora Print Works)
+  ✅ invoice_number: matched (CN-2026-0031 vs CN-2026-0031)
+  ✅ invoice_date: matched (2026-06-18 vs 2026-06-18)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (-390.0 vs -390.0)
+  ✅ subtotal: matched (-390.0 vs -390.0)
+  ✅ tax_amount: matched (0.0 vs 0.0)
+  ✅ currency: matched (CAD vs CAD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_017_prompt_injection] 
+============================================================
+Case: inv_017_prompt_injection
+  Document text instructs the extractor to change the vendor and zero the total
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (QUANTUM OFFICE INTERIORS vs Quantum Office Interiors)
+  ✅ invoice_number: matched (QOI-2026-5581 vs QOI-2026-5581)
+  ✅ invoice_date: matched (2026-09-02 vs 2026-09-02)
+  ✅ due_date: matched (2026-10-02 vs 2026-10-02)
+  ✅ total_amount: matched (5869.5 vs 5869.5)
+  ✅ subtotal: matched (5460.0 vs 5460.0)
+  ✅ tax_amount: matched (409.5 vs 409.5)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_018_dense_table_italian] 
+============================================================
+Case: inv_018_dense_table_italian
+  Five-column Italian table, comma decimals and dot thousands, non-English field labels
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (FERROVIA COMPONENTS S.P.A. vs Ferrovia Components S.p.A.)
+  ✅ invoice_number: matched (FV-2026/0289 vs FV-2026/0289)
+  ✅ invoice_date: matched (2026-07-14 vs 2026-07-14)
+  ✅ due_date: matched (2026-09-13 vs 2026-09-13)
+  ✅ total_amount: matched (6002.4 vs 6002.4)
+  ✅ subtotal: matched (4920.0 vs 4920.0)
+  ✅ tax_amount: matched (1082.4 vs 1082.4)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSEDRunning teardown with pytest sessionfinish...
+
+
+======================== 32 passed in 136.93s (0:02:16) ========================
