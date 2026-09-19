@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Space, App } from 'antd';
 import { DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
+import { getSessionId } from '@/lib/api';
 
 interface Props {
   documentId: number;
@@ -18,7 +19,12 @@ export default function ExportPanel({ documentId, disabled = false }: Props) {
     setLoading(format);
     try {
       const url = `${apiUrl}/api/v1/documents/${documentId}/export?format=${format}`;
-      const res = await fetch(url);
+      // Raw fetch, so the axios interceptor in lib/api.ts is not involved and
+      // the session header has to be attached by hand. Without it the server
+      // has no idea whose document this is and refuses.
+      const res = await fetch(url, {
+        headers: { 'X-Session-Id': getSessionId() },
+      });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Export failed' }));
