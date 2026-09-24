@@ -28,9 +28,12 @@ any URL.
 ### Status — 11 Sep 2026 (night)
 
 Code for V1-0 through V1-5 is written as stacked commits.
-V1-6 to V1-9 below are written up as implementation sketches, not code yet. **Not ticked yet:** the full unit + integration suite, ruff,
-`uv lock` and `docker build` have not been run. Tick each task only after that run
-is green on Pavan's machine.
+V1-6 to V1-9 below are written up as implementation sketches, not code yet.
+
+**Audited 18 Sep 2026.** V1-0 to V1-5 are merged (PR #8, #9). Each box below was
+checked against the code; ticked boxes carry the evidence, unticked ones say what
+is missing. Suite: 57 unit + integration tests pass locally and in CI, ruff clean,
+`uv lock --check` clean, `docker build -f backend/Dockerfile .` succeeds.
 
 Checked so far (cloud sandbox, stand-ins where packages were unavailable): parser
 routing + PNG OCR tests pass; all 17 webhook unit tests pass; the README signature
@@ -82,69 +85,127 @@ If a day slips, move the row, not the order. If you are more than 3 days behind 
 ### V1-0 · Repo hygiene — `chore/repo-hygiene` — 30 min
 - [ ] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
       Recover `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` if present.
+      *Not done:* all three are still only in `stash@{0}`, not recovered anywhere.
 - [ ] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
       `MARKET_ANALYSIS.md` out of the repo (private notes folder). They contain claims
       the code does not support ("SOC-2 ready", audit logs, $150k roles).
-- [ ] README: replace "DeepEval test suite with 20+ cases and accuracy metrics" with
+      *Not done:* `BUSINESS_PLAN.md` is still at the repo root. It is untracked and
+      listed in `.gitignore` with the other six notes files, so it cannot be committed
+      by accident, but it has not been moved out.
+- [x] README: replace "DeepEval test suite with 20+ cases and accuracy metrics" with
       "deterministic evaluation harness: 20 golden cases (10 invoices, 10 contracts)".
       Remove the `docker-compose up` → frontend/backend claim (compose only runs
       Postgres + Redis). Fix the pydantic-ai line to "3 merged PRs".
+      *Evidence:* README has no DeepEval mention; "20 hand-labelled cases (10 invoices,
+      10 contracts)" (README.md:41), and the golden files hold 10 each;
+      `docker compose up -d  # local PostgreSQL + Redis only` (README.md:123);
+      "pydantic-ai contributor (3 merged PRs)" (README.md:146).
 - **Done when:** repo root has only code + honest docs; tests still green.
 
 ### V1-1 · Make it installable and deployable — `fix/ocr-deps-dockerfile` — 1.5 h
-- [ ] `backend/agents/parser.py` imports `pytesseract`, but it is not in
+- [x] `backend/agents/parser.py` imports `pytesseract`, but it is not in
       `pyproject.toml` or `requirements.txt` (Pillow only arrives indirectly through
       pdfplumber). A fresh install crashes the worker on import. Declare `pytesseract`
       and `pillow` explicitly (confirm with Pavan first — RULES.md).
-- [ ] Add `backend/Dockerfile` (python 3.12 slim + `apt-get install tesseract-ocr`),
+      *Evidence:* `pyproject.toml:25-26`, `requirements.txt:28-29`, both in `uv.lock`.
+- [x] Add `backend/Dockerfile` (python 3.12 slim + `apt-get install tesseract-ocr`),
       used by both the API and the worker.
-- [ ] Unit test: parser returns text for a tiny generated scanned-style PDF (image-only
+      *Evidence:* `backend/Dockerfile` (python:3.12-slim, tesseract-ocr, `uv sync
+      --frozen --no-dev`), modes in `backend/start.sh`. Built on 18 Sep; inside the
+      image the parser read "INVOICE 4471 TOTAL 715.00" from a generated PNG and from
+      an image-only PDF with an empty text layer.
+- [x] Unit test: parser returns text for a tiny generated scanned-style PDF (image-only
       page) — skip with a clear reason if the tesseract binary is missing.
+      *Evidence:* `test_parser.py::test_scanned_pdf_is_read_with_ocr`, skipped via
+      `requires_tesseract` when the binary is missing. It runs (not skips) locally and
+      in CI, which installs tesseract.
 - **Done when:** `docker build` works and the OCR test passes inside the container.
 
 ### V1-2 · Image uploads actually work — `fix/image-upload-parsing` — 45 min
-- [ ] Upload accepts `image/png` and `image/jpeg`, but the parser always opens bytes
+- [x] Upload accepts `image/png` and `image/jpeg`, but the parser always opens bytes
       with `fitz.open(..., filetype="pdf")`, so every image upload fails.
       Pass the MIME type into the pipeline; send images straight to Tesseract.
-- [ ] Tests: PNG bytes → OCR path is used; PDF bytes → PyMuPDF path is used.
+      *Evidence:* `extract_text(file_bytes, mime_type)` routes images to
+      `extract_text_from_image` (`parser.py:91-101`); the worker passes
+      `doc.document_mime_type` (`worker.py:38`) into the pipeline (`pipeline.py:54`).
+- [x] Tests: PNG bytes → OCR path is used; PDF bytes → PyMuPDF path is used.
+      *Evidence:* `test_parser.py::test_images_go_to_ocr_not_the_pdf_path`,
+      `test_pdfs_go_to_the_pdf_path`, `test_png_upload_is_read_with_ocr`,
+      `test_unsupported_mime_type_is_rejected`.
 
 ### V1-3 · Close the hidden BYOK path — `fix/llm-key-header-gate` — 1 h
-- [ ] Gate `X-LLM-Key` handling (middleware bypass, upload route, `_resolve_model`)
+- [x] Gate `X-LLM-Key` handling (middleware bypass, upload route, `_resolve_model`)
       behind `ALLOW_USER_LLM_KEY=false`. Deleting the code is a proposed removal.
-- [ ] `backend/core/llm.py` writes the key into `os.environ` on every call, making it
+      *Superseded:* removed outright instead of gated (ADR 003, PR #9). No code in
+      `backend/` reads the header or the flag; two comments still mention them (see
+      Open polish). `test_llm_key_handling.py::test_llm_key_header_does_not_bypass_limits`.
+- [x] `backend/core/llm.py` writes the key into `os.environ` on every call, making it
       process-wide (a user key stays there if no server key is set). Build the
       Groq/OpenAI model with an explicit provider object instead — no env mutation.
-- [ ] Test: building a model does not change `os.environ`.
+      *Evidence:* `GroqModel(..., provider=GroqProvider(api_key=key))` and the OpenAI
+      equivalent (`llm.py:65`, `llm.py:79`); nothing in `backend/` writes `os.environ`.
+- [x] Test: building a model does not change `os.environ`.
+      *Evidence:* `test_llm_key_handling.py::test_groq_model_with_explicit_key_does_not_touch_environment`
+      and `test_groq_model_with_server_key_does_not_touch_environment`.
 
 ### V1-4 · Fix the invoice math gate — `fix/invoice-math-gate` — 2 h
 Current bug: `InvoiceFields.line_items` is `list[str]` and there is no `tax_amount`,
 so the gate sums 0 and sends almost every invoice with line items to review.
 The validator's `status` is also ignored by `route_after_validate`.
-- [ ] Add optional `subtotal` and `tax_amount` to `InvoiceFields` (keep `line_items`
+- [x] Add optional `subtotal` and `tax_amount` to `InvoiceFields` (keep `line_items`
       as strings — the eval suite depends on that shape).
-- [ ] Gate: if `subtotal`, `tax_amount` and `total_amount` are all present and
+      *Evidence:* `plugins/invoice.py:22-25`; `line_items` stays `list[str]`
+      (`plugins/invoice.py:34`); `test_validator_gate.py::test_invoice_schema_has_subtotal_and_tax`.
+- [x] Gate: if `subtotal`, `tax_amount` and `total_amount` are all present and
       `abs(subtotal + tax_amount - total_amount) > 0.01` → force review and record
       the reason. If any is missing → skip the gate (do not punish missing data here).
-- [ ] Record why a document went to review, e.g.
+      *Evidence:* `validator.py::check_arithmetic`, `MATH_TOLERANCE = 0.01`
+      (`validator.py:82-114`).
+- [x] Record why a document went to review, e.g.
       `extraction_results["_review_reasons"] = ["math_mismatch"]` or
       `["low_confidence:0.62"]`, and show it on the review screen.
-- [ ] Tests (pure function + routing with `TestModel`/`FunctionModel`):
+      *Evidence:* `low_confidence:` reason built in `pipeline.py:103`, stored as
+      `_review_reasons` in `worker.py:60`, shown as "Held for review" with a readable
+      sentence in `frontend/app/review/[id]/page.tsx` (`describeReviewReason`).
+- [x] Tests (pure function + routing with `TestModel`/`FunctionModel`):
       math OK → gate passes; mismatch → awaiting_review with reason;
       missing subtotal → gate skipped; low confidence → review with reason.
+      *Evidence:* `test_validator_gate.py::test_numbers_that_add_up_pass`,
+      `test_validate_routing.py::test_math_mismatch_routes_to_review_with_reason`,
+      `test_validator_gate.py::test_missing_or_unusable_numbers_skip_the_gate`,
+      `test_validate_routing.py::test_low_confidence_routes_to_review_and_says_the_score`.
 - [ ] Add `subtotal`/`tax_amount` to golden invoices where the input text has them.
+      *Not done:* no golden invoice has either label. Four inputs contain them:
+      `inv_001_standard` (subtotal + tax), `inv_003_multiple_items` (subtotal only),
+      `inv_004_non_usd_currency` (subtotal + GST), `inv_007_european_format`
+      (Zwischensumme + MwSt). Do this before the V1-7 runs, or the eval table will not
+      measure the two fields the gate depends on.
 
 ### V1-5 · Webhooks: safe and actually idempotent — `fix/webhook-signing-ssrf` — 2 h
-- [ ] Idempotency key is `uuid4()` per send, so retries look like new events.
+- [x] Idempotency key is `uuid4()` per send, so retries look like new events.
       Use `f"doc-{document_id}-{event}"`.
-- [ ] Sign `f"{timestamp}.{body}"` (so the timestamp can't be replayed with a new body);
+      *Evidence:* `connectors.py::idempotency_key` returns exactly that.
+- [x] Sign `f"{timestamp}.{body}"` (so the timestamp can't be replayed with a new body);
       secret from `settings` (no `"dummy_secret"` default); timeout from
       `settings.webhook_timeout_seconds`; log failures instead of `print`.
-- [ ] SSRF guard: `webhook_url` comes from a public form. Allow `https` only and reject
+      *Evidence:* `connectors.py::sign` HMACs `timestamp + b"." + body`; the secret is
+      `settings.webhook_secret` and nothing is sent when it is empty; the client uses
+      `settings.webhook_timeout_seconds`; failures go to `logger.warning`, no `print`.
+- [x] SSRF guard: `webhook_url` comes from a public form. Allow `https` only and reject
       hosts resolving to private, loopback or link-local IPs. Add `WEBHOOKS_ENABLED`
       (default `false` on the public demo).
-- [ ] Tests: signature verifies with the documented recipe; retry sends the same key;
+      *Evidence:* `connectors.py::validate_webhook_url` (https only, every resolved
+      address must be `is_global`, IPv4-mapped IPv6 unwrapped), called at upload
+      (`routes/documents.py:70`) and again before sending; `webhooks_enabled: bool =
+      False` in `config.py`; redirects are not followed.
+- [x] Tests: signature verifies with the documented recipe; retry sends the same key;
       `http://127.0.0.1`, `http://169.254.169.254` and `https://10.0.0.5` are rejected.
-- [ ] README: a 6-line "verify our webhook signature" snippet.
+      *Evidence:* `test_webhooks.py::test_signature_matches_documented_recipe`,
+      `test_resending_the_same_event_reuses_the_idempotency_key`,
+      `test_rejects_non_public_or_non_https_urls` (http, 127.0.0.1, 169.254.169.254,
+      10.0.0.5, a public name resolving to 192.168.x, ::1, ::ffff:127.0.0.1).
+- [x] README: a 6-line "verify our webhook signature" snippet.
+      *Evidence:* README.md:91-100, the same recipe the signature test checks.
 
 ### V1-6 · Demo isolation without login — `fix/demo-session-isolation` — 1.5-2 h
 
@@ -354,6 +415,15 @@ Check both providers' current free-tier terms on the day.
       `app/review/[id]/page.tsx:87` missing `notification` dependency and
       `components/ExtractionReview.tsx:29` `results` should be wrapped in `useMemo`.
 - [ ] Record webhook delivery results (needs a DB column — schema change, ask first).
+- [ ] Two comments still describe the removed `X-LLM-Key` / `ALLOW_USER_LLM_KEY` path
+      as if it exists: the module docstring of `backend/core/llm.py` and the
+      `tenant_api_keys` note in `backend/models/db.py`. ADR 003 removed that path.
+- [ ] `validate_webhook_url` checks the resolved address, then httpx resolves the host
+      again when it sends, so a DNS answer that changes in between (rebinding) could
+      still reach a private address. Fix by connecting to the checked IP. Low priority
+      while `WEBHOOKS_ENABLED=false` on the demo.
+- [ ] `backend/agents/parser.py` uses `import fitz`; PyMuPDF 1.28 warns that name will
+      be removed. Switch to `import pymupdf`.
 - [ ] `validate_webhook_url` runs a blocking DNS lookup inside the upload request.
 - [ ] Landing page says "fire a webhook to your system", but the UI has no webhook
       field; it's API-only.
