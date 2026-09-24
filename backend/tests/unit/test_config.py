@@ -17,7 +17,7 @@ def test_config_loads(monkeypatch: pytest.MonkeyPatch) -> None:
         "WEBHOOK_TIMEOUT_SECONDS": "30",
         "GROQ_API_KEY": "gsk_fake_key_for_testing",
         "LLM_PROVIDER": "groq",
-        "LLM_MODEL": "llama-3.1-8b-instant",
+        "LLM_MODEL": "openai/gpt-oss-20b",
         "ALLOWED_ORIGINS": "http://localhost:3000",
     }
 

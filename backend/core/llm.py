@@ -22,7 +22,7 @@ class LLMClient:
 
     Usage (explicit override):
         model = client.get_model(
-            provider="groq", api_key="gsk_...", model_name="llama-3.1-8b-instant"
+            provider="groq", api_key="gsk_...", model_name="openai/gpt-oss-20b"
         )
     """
 

@@ -123,3 +123,35 @@ not put a custom header on an iframe's own request. The preview fetches the byte
 with the header and hands the iframe a blob URL instead — which keeps the header as
 the single way a caller proves who it is, rather than putting the session id in a URL
 where it would leak into history, referrers and access logs.
+
+---
+
+## ADR 005: The default model name follows what Groq actually serves
+**Date:** 2026-09-18
+**Status:** Accepted (supersedes the model row in DECISIONS.md)
+
+### Context
+`DECISIONS.md` picked `llama-3.1-8b-instant` as the default and
+`llama-3.3-70b-versatile` as the quality option. On 18 Sep 2026 Groq serves
+neither: the first evaluation run returned HTTP 404 `model_not_found` for all
+twenty cases, and the account's model list has no Llama chat model at all. The
+name was also the default in `config.py`, so a fresh clone without `LLM_MODEL`
+set could not extract anything.
+
+### Decision
+The default is `openai/gpt-oss-20b`, which the account serves today, and the
+larger comparison model is `openai/gpt-oss-120b`. The published evaluation always
+names the model and the date it was run, because a hosted model list is not
+stable.
+
+### Justification
+- A default that 404s turns "clone and run" into a support question.
+- Same family for both runs, so the accuracy difference is about size rather than
+  vendor.
+- Nothing else changes: `LLMClient` already builds the model from a name, so the
+  provider stays swappable and no business logic knows the model.
+
+### Consequence
+The eval table is only meaningful next to its date. Expect to repeat this when a
+hosted model is retired again; the numbers in the README carry the model name and
+run date for exactly that reason.

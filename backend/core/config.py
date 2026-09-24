@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # LLM (the server's key is used for every request by default)
     llm_provider: str = Field("groq")
-    llm_model: str = Field("llama-3.1-8b-instant")
+    llm_model: str = Field("openai/gpt-oss-20b")
     groq_api_key: str = Field("")
     openai_api_key: str = Field("")
 

@@ -1,0 +1,713 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /media/pavan/New Volume1/oss/pro/docflow-agent/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/pavan/New Volume1/oss/pro/docflow-agent
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, cov-7.1.0, repeat-0.9.4, rerunfailures-16.6.1, xdist-3.8.0, deepeval-4.2.0, anyio-4.15.0, langsmith-0.12.1, logfire-4.41.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 32 items
+
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_001_standard] 
+============================================================
+Case: con_001_standard
+  Clean service agreement with all major fields
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Acme Consulting Group', 'Widget Manufacturing Inc.'] vs ['Acme Consulting Group', 'Widget Manufacturing Inc.'])
+  ✅ effective_date: matched (January 15, 2026 vs 2026-01-15)
+  ✅ expiry_date: matched (December 31, 2026 vs 2026-12-31)
+  ✅ contract_value: matched (240000.0 vs 240000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of New York vs State of New York)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_002_software_license] 
+============================================================
+Case: con_002_software_license
+  SaaS license agreement with auto-renewal
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 50% (['DataStream Analytics, Inc. (Delaware corporation)', 'HealthFirst Hospital Network'] vs ['DataStream Analytics, Inc.', 'HealthFirst Hospital Network'])
+  ✅ effective_date: matched (2026-03-01 vs 2026-03-01)
+  ✅ expiry_date: matched (2029-02-28 vs 2029-02-28)
+  ✅ contract_value: matched (255000.0 vs 255000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Delaware vs State of Delaware)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_003_employment] 
+============================================================
+Case: con_003_employment
+  Employment contract — tests party extraction with individual names
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Quantum Technologies Pvt. Ltd.', 'Rajesh Kumar Sharma'] vs ['Quantum Technologies Pvt. Ltd.', 'Rajesh Kumar Sharma'])
+  ✅ effective_date: matched (2026-02-15 vs 2026-02-15)
+  ✅ expiry_date: both null ✓
+  ✅ contract_value: matched (2400000.0 vs 2400000.0)
+  ✅ currency: matched (INR vs INR)
+  ✅ jurisdiction: matched (India, Bangalore, Karnataka vs Bangalore, Karnataka, India)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_004_nda] 
+============================================================
+Case: con_004_nda
+  NDA with no monetary value — tests null handling for contract_value
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['FutureAI Labs Inc.', 'BrightMinds Research Foundation'] vs ['FutureAI Labs Inc.', 'BrightMinds Research Foundation'])
+  ✅ effective_date: matched (April 10, 2026 vs 2026-04-10)
+  ✅ expiry_date: matched (April 9, 2029 vs 2029-04-09)
+  ✅ contract_value: both null ✓
+  ✅ currency: both null ✓
+  ✅ jurisdiction: matched (State of California, United States vs State of California)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_005_construction] 
+============================================================
+Case: con_005_construction
+  Construction contract with milestone payments
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Metropolitan Real Estate Holdings', 'BuildRight Construction LLC'] vs ['Metropolitan Real Estate Holdings', 'BuildRight Construction LLC'])
+  ✅ effective_date: matched (2026-05-01 vs 2026-05-01)
+  ✅ expiry_date: matched (2026-10-31 vs 2026-10-31)
+  ✅ contract_value: matched (1850000.0 vs 1850000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (Texas vs State of Texas)
+  ✅ key_obligations: overlap 100% (5 extracted, 5 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_006_european_consulting] 
+============================================================
+Case: con_006_european_consulting
+  European consulting contract in EUR with GDPR references
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Schneider & Weber Unternehmensberatung GmbH', 'AutoTech Europe AG'] vs ['Schneider & Weber Unternehmensberatung GmbH', 'AutoTech Europe AG'])
+  ✅ effective_date: matched (1 June 2026 vs 2026-06-01)
+  ✅ expiry_date: matched (30 November 2027 vs 2027-11-30)
+  ✅ contract_value: matched (480000.0 vs 480000.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ jurisdiction: matched (German law, courts of Frankfurt am Main vs Frankfurt am Main, Germany)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_007_minimal] 
+============================================================
+Case: con_007_minimal
+  Very short informal agreement — tests handling of sparse data
+  Accuracy: 88% (7/8)
+  ✅ parties: overlap 100% (["John's Lawn Care", 'Mrs. Patricia Williams'] vs ["John's Lawn Care", 'Patricia Williams'])
+  ✅ effective_date: matched (2026-07-01 vs 2026-07-01)
+  ✅ expiry_date: both null ✓
+  ✅ contract_value: matched (4500.0 vs 4500.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: both null ✓
+  ❌ key_obligations: null mismatch
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_008_multi_party] 
+============================================================
+Case: con_008_multi_party
+  Joint venture agreement with 3 parties
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Pacific Ventures Capital LLC', 'Green Energy Solutions Corp', 'Asian Development Partners Ltd.'] vs ['Pacific Ventures Capital LLC', 'Green Energy Solutions Corp', 'Asian Development Partners Ltd.'])
+  ✅ effective_date: matched (2026-09-01 vs 2026-09-01)
+  ✅ expiry_date: matched (2031-08-31 vs 2031-08-31)
+  ✅ contract_value: matched (12500000.0 vs 12500000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (Singapore vs Singapore)
+  ✅ key_obligations: overlap 100% (5 extracted, 5 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_009_zero_value] 
+============================================================
+Case: con_009_zero_value
+  Pro-bono / volunteer agreement with zero contract value
+  Accuracy: 88% (7/8)
+  ✅ parties: overlap 100% (['City Community Food Bank', 'Alex Thompson'] vs ['City Community Food Bank', 'Alex Thompson'])
+  ✅ effective_date: matched (March 15, 2026 vs 2026-03-15)
+  ✅ expiry_date: matched (March 14, 2027 vs 2027-03-14)
+  ❌ contract_value: null mismatch (got None, expected 0.0)
+  ✅ currency: both null ✓
+  ✅ jurisdiction: matched (State of Oregon vs State of Oregon)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_010_retainer] 
+============================================================
+Case: con_010_retainer
+  Legal retainer with hourly + fixed components
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Morrison & Associates, PLLC', 'Brightwave Semiconductor Ltd.'] vs ['Morrison & Associates, PLLC', 'Brightwave Semiconductor Ltd.'])
+  ✅ effective_date: matched (July 1, 2026 vs 2026-07-01)
+  ✅ expiry_date: matched (June 30, 2027 vs 2027-06-30)
+  ✅ contract_value: matched (90000.0 vs 90000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Massachusetts vs State of Massachusetts)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_011_amendment_supersedes] 
+============================================================
+Case: con_011_amendment_supersedes
+  Amendment raises the contract value; the original figure is still in the text
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Halcyon Data Systems Ltd', 'Brightwater Utilities plc'] vs ['Halcyon Data Systems Ltd', 'Brightwater Utilities plc'])
+  ✅ effective_date: matched (2026-03-01 vs 2026-03-01)
+  ✅ expiry_date: matched (2028-02-28 vs 2028-02-28)
+  ✅ contract_value: matched (62500.0 vs 62500.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ jurisdiction: matched (England and Wales vs England and Wales)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_012_two_currencies] 
+============================================================
+Case: con_012_two_currencies
+  Fees in EUR, an expense cap in USD — the contract currency is the fee currency
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Ostersund Analytics AB (Consultant)', 'Kiruna Mining Group AB (Client)'] vs ['Ostersund Analytics AB', 'Kiruna Mining Group AB'])
+  ✅ effective_date: matched (2026-04-01 vs 2026-04-01)
+  ✅ expiry_date: matched (2027-03-31 vs 2027-03-31)
+  ✅ contract_value: matched (84000.0 vs 84000.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ jurisdiction: matched (Sweden vs Sweden)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_013_value_only_in_milestones] 
+============================================================
+Case: con_013_value_only_in_milestones
+  No total is stated: the contract value is the sum of three milestone payments
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Ridgeline Builders Pty Ltd', 'Tasman Electrical Services Pty Ltd'] vs ['Ridgeline Builders Pty Ltd', 'Tasman Electrical Services Pty Ltd'])
+  ✅ effective_date: matched (2026-07-06 vs 2026-07-06)
+  ✅ expiry_date: matched (2026-12-18 vs 2026-12-18)
+  ✅ contract_value: matched (310000.0 vs 310000.0)
+  ✅ currency: matched (AUD vs AUD)
+  ✅ jurisdiction: matched (New South Wales, Australia vs New South Wales, Australia)
+  ✅ key_obligations: overlap 100% (3 extracted, 3 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_contract_extraction.py::test_contract_extraction[con_014_renewal_not_expiry] 
+============================================================
+Case: con_014_renewal_not_expiry
+  Auto-renewal and a pricing review date compete with the initial term end date
+  Accuracy: 100% (8/8)
+  ✅ parties: overlap 100% (['Cobalt Insights Inc.', 'Fairfield Regional Health'] vs ['Cobalt Insights Inc.', 'Fairfield Regional Health'])
+  ✅ effective_date: matched (2026-02-01 vs 2026-02-01)
+  ✅ expiry_date: matched (2027-01-31 vs 2027-01-31)
+  ✅ contract_value: matched (48000.0 vs 48000.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ jurisdiction: matched (State of Ohio, USA vs Ohio, USA)
+  ✅ key_obligations: overlap 100% (4 extracted, 4 expected)
+  ✅ termination_clause: matched (similarity check at 0.3 threshold)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_001_standard] 
+============================================================
+Case: inv_001_standard
+  Clean, well-formatted invoice with all fields present
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Acme Corp vs Acme Corp)
+  ✅ invoice_number: matched (INV-2026-0042 vs INV-2026-0042)
+  ✅ invoice_date: matched (2026-04-15 vs 2026-04-15)
+  ✅ due_date: matched (2026-05-15 vs 2026-05-15)
+  ✅ total_amount: matched (715.0 vs 715.0)
+  ✅ subtotal: matched (650.0 vs 650.0)
+  ✅ tax_amount: matched (65.0 vs 65.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_002_missing_due_date] 
+============================================================
+Case: inv_002_missing_due_date
+  Invoice without a due date — tests graceful null handling
+  Accuracy: 89% (8/9)
+  ✅ vendor_name: matched (TechServe Solutions Ltd. vs TechServe Solutions Ltd.)
+  ✅ invoice_number: matched (88921 vs 88921)
+  ✅ invoice_date: matched (March 3, 2026 vs 2026-03-03)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (2450.0 vs 2450.0)
+  ❌ subtotal: null mismatch (got 2450.0, expected None)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (1 extracted, 1 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_003_multiple_items] FAILED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_004_non_usd_currency] 
+============================================================
+Case: inv_004_non_usd_currency
+  Invoice in Indian Rupees — tests currency detection
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Tata Consultancy Services vs Tata Consultancy Services)
+  ✅ invoice_number: matched (GST/2026/04/098 vs GST/2026/04/098)
+  ✅ invoice_date: matched (12-Apr-2026 vs 2026-04-12)
+  ✅ due_date: matched (12-May-2026 vs 2026-05-12)
+  ✅ total_amount: matched (1239000.0 vs 1239000.0)
+  ✅ subtotal: matched (1050000.0 vs 1050000.0)
+  ✅ tax_amount: matched (189000.0 vs 189000.0)
+  ✅ currency: matched (INR vs INR)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_005_messy_formatting] 
+============================================================
+Case: inv_005_messy_formatting
+  Poorly formatted invoice with inconsistent spacing — stress test
+  Accuracy: 78% (7/9)
+  ✅ vendor_name: matched (Joe's Plumbing & Repair vs Joe's Plumbing & Repair)
+  ✅ invoice_number: matched (5567 vs 5567)
+  ✅ invoice_date: matched (2026/02/28 vs 2026-02-28)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (1083.0 vs 1083.0)
+  ❌ subtotal: null mismatch (got 1083.0, expected None)
+  ✅ tax_amount: both null ✓
+  ❌ currency: null mismatch (got None, expected USD)
+  ✅ line_items: overlap 100% (4 extracted, 4 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_006_minimal] 
+============================================================
+Case: inv_006_minimal
+  Bare-minimum invoice — only vendor, amount, number present
+  Accuracy: 89% (8/9)
+  ✅ vendor_name: matched (Sarah's Design Studio vs Sarah's Design Studio)
+  ✅ invoice_number: matched (2026-77 vs 2026-77)
+  ✅ invoice_date: matched (None vs None)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (500.0 vs 500.0)
+  ✅ subtotal: both null ✓
+  ✅ tax_amount: both null ✓
+  ❌ currency: mismatch ($ vs USD)
+  ✅ line_items: both null ✓
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_007_european_format] 
+============================================================
+Case: inv_007_european_format
+  European number format (comma as decimal separator)
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (München Digital GmbH vs München Digital GmbH)
+  ✅ invoice_number: matched (RE-2026-0891 vs RE-2026-0891)
+  ✅ invoice_date: matched (15.03.2026 vs 2026-03-15)
+  ✅ due_date: matched (15.04.2026 vs 2026-04-15)
+  ✅ total_amount: matched (15232.0 vs 15232.0)
+  ✅ subtotal: matched (12800.0 vs 12800.0)
+  ✅ tax_amount: matched (2432.0 vs 2432.0)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_008_large_amount] 
+============================================================
+Case: inv_008_large_amount
+  High-value enterprise invoice
+  Accuracy: 89% (8/9)
+  ✅ vendor_name: matched (Salesforce, Inc. vs Salesforce, Inc.)
+  ✅ invoice_number: matched (EL-2026-00003 vs EL-2026-00003)
+  ✅ invoice_date: matched (2026-01-01 vs 2026-01-01)
+  ✅ due_date: matched (2026-03-02 vs 2026-03-02)
+  ✅ total_amount: matched (1475000.0 vs 1475000.0)
+  ❌ subtotal: null mismatch (got 1475000.0, expected None)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_009_freelancer] 
+============================================================
+Case: inv_009_freelancer
+  Casual freelancer invoice with narrative style
+  Accuracy: 78% (7/9)
+  ❌ vendor_name: mismatch (Maria Chen (Freelance Designer) vs Maria Chen)
+  ✅ invoice_number: matched (MC-42 vs MC-42)
+  ✅ invoice_date: matched (2026-04-20 vs 2026-04-20)
+  ✅ due_date: matched (2026-05-04 vs 2026-05-04)
+  ✅ total_amount: matched (1500.0 vs 1500.0)
+  ❌ subtotal: null mismatch (got 1500.0, expected None)
+  ✅ tax_amount: both null ✓
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_010_no_currency_symbol] 
+============================================================
+Case: inv_010_no_currency_symbol
+  Invoice with amount but no explicit currency symbol or code
+  Accuracy: 89% (8/9)
+  ✅ vendor_name: matched (CloudHost Pro vs CloudHost Pro)
+  ✅ invoice_number: matched (10234 vs 10234)
+  ✅ invoice_date: matched (2026-06-01 vs 2026-06-01)
+  ✅ due_date: matched (2026-07-01 vs 2026-07-01)
+  ✅ total_amount: matched (515.97 vs 515.97)
+  ❌ subtotal: null mismatch (got 515.97, expected None)
+  ✅ tax_amount: both null ✓
+  ✅ currency: both null ✓
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_011_bill_to_trap] 
+============================================================
+Case: inv_011_bill_to_trap
+  Vendor is the letterhead and remit-to party, not the 'Bill To' company
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (Northwind Traders Ltd vs Northwind Traders Ltd)
+  ✅ invoice_number: matched (NW-2026-3310 vs NW-2026-3310)
+  ✅ invoice_date: matched (12 May 2026 vs 2026-05-12)
+  ✅ due_date: matched (11 June 2026 vs 2026-06-11)
+  ✅ total_amount: matched (14400.0 vs 14400.0)
+  ✅ subtotal: matched (12000.0 vs 12000.0)
+  ✅ tax_amount: matched (2400.0 vs 2400.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_012_distractor_totals] 
+============================================================
+Case: inv_012_distractor_totals
+  Invoice total competes with previous balance, payments received and account balance due
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (SUMMIT OFFICE SUPPLY vs Summit Office Supply)
+  ✅ invoice_number: matched (SOS-88214 vs SOS-88214)
+  ✅ invoice_date: matched (2026-03-09 vs 2026-03-09)
+  ✅ due_date: matched (2026-03-24 vs 2026-03-24)
+  ✅ total_amount: matched (4536.0 vs 4536.0)
+  ✅ subtotal: matched (4200.0 vs 4200.0)
+  ✅ tax_amount: matched (336.0 vs 336.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_013_ocr_noise] 
+============================================================
+Case: inv_013_ocr_noise
+  Text as Tesseract returns it: l for 1, O for 0, dot leaders, broken casing
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (BRlGHTPATH LOGISTICS INC vs Brightpath Logistics Inc)
+  ✅ invoice_number: matched (BP-2026-0447 vs BP-2026-0447)
+  ✅ invoice_date: matched (07 Aug 2026 vs 2026-08-07)
+  ✅ due_date: matched (06 Sep 2026 vs 2026-09-06)
+  ✅ total_amount: matched (2657.5 vs 2657.5)
+  ✅ subtotal: matched (2657.5 vs 2657.5)
+  ✅ tax_amount: matched (0.0 vs 0.0)
+  ✅ currency: both null ✓
+  ✅ line_items: overlap 100% (3 extracted, 3 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_014_ambiguous_date_format] 
+============================================================
+Case: inv_014_ambiguous_date_format
+  03/04/2026 is day-first: a UK invoice whose 30-day terms only work read that way
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (HARLOW & SONS BUILDERS vs Harlow & Sons Builders)
+  ✅ invoice_number: matched (HS/4471 vs HS/4471)
+  ✅ invoice_date: matched (2026-04-03 vs 2026-04-03)
+  ✅ due_date: matched (2026-05-03 vs 2026-05-03)
+  ✅ total_amount: matched (6876.0 vs 6876.0)
+  ✅ subtotal: matched (5730.0 vs 5730.0)
+  ✅ tax_amount: matched (1146.0 vs 1146.0)
+  ✅ currency: matched (GBP vs GBP)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_015_multi_page] 
+============================================================
+Case: inv_015_multi_page
+  Two pages with a repeated header; items split across both, totals only on page 2
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (DELTA MEDICAL SUPPLIES vs Delta Medical Supplies)
+  ✅ invoice_number: matched (DM-77120 vs DM-77120)
+  ✅ invoice_date: matched (21 Jan 2026 vs 2026-01-21)
+  ✅ due_date: matched (20 Feb 2026 vs 2026-02-20)
+  ✅ total_amount: matched (3150.0 vs 3150.0)
+  ✅ subtotal: matched (3000.0 vs 3000.0)
+  ✅ tax_amount: matched (150.0 vs 150.0)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_016_credit_note] 
+============================================================
+Case: inv_016_credit_note
+  Credit note with a negative total — tests that the sign survives extraction
+  Accuracy: 78% (7/9)
+  ✅ vendor_name: matched (Aurora Print Works vs Aurora Print Works)
+  ❌ invoice_number: mismatch (AP-2026-0912 vs CN-2026-0031)
+  ❌ invoice_date: mismatch (None vs 2026-06-18)
+  ✅ due_date: both null ✓
+  ✅ total_amount: matched (-390.0 vs -390.0)
+  ✅ subtotal: matched (-390.0 vs -390.0)
+  ✅ tax_amount: matched (0.0 vs 0.0)
+  ✅ currency: matched (CAD vs CAD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_017_prompt_injection] 
+============================================================
+Case: inv_017_prompt_injection
+  Document text instructs the extractor to change the vendor and zero the total
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (QUANTUM OFFICE INTERIORS vs Quantum Office Interiors)
+  ✅ invoice_number: matched (QOI-2026-5581 vs QOI-2026-5581)
+  ✅ invoice_date: matched (2026-09-02 vs 2026-09-02)
+  ✅ due_date: matched (2026-10-02 vs 2026-10-02)
+  ✅ total_amount: matched (5869.5 vs 5869.5)
+  ✅ subtotal: matched (5460.0 vs 5460.0)
+  ✅ tax_amount: matched (409.5 vs 409.5)
+  ✅ currency: matched (USD vs USD)
+  ✅ line_items: overlap 100% (2 extracted, 2 expected)
+PASSED
+backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_018_dense_table_italian] 
+============================================================
+Case: inv_018_dense_table_italian
+  Five-column Italian table, comma decimals and dot thousands, non-English field labels
+  Accuracy: 100% (9/9)
+  ✅ vendor_name: matched (FERROVIA COMPONENTS S.P.A. vs Ferrovia Components S.p.A.)
+  ✅ invoice_number: matched (FV-2026/0289 vs FV-2026/0289)
+  ✅ invoice_date: matched (14/07/2026 vs 2026-07-14)
+  ✅ due_date: matched (13/09/2026 vs 2026-09-13)
+  ✅ total_amount: matched (6002.4 vs 6002.4)
+  ✅ subtotal: matched (4920.0 vs 4920.0)
+  ✅ tax_amount: matched (1082.4 vs 1082.4)
+  ✅ currency: matched (EUR vs EUR)
+  ✅ line_items: overlap 100% (5 extracted, 5 expected)
+PASSEDRunning teardown with pytest sessionfinish...
+
+
+=================================== FAILURES ===================================
+_______________ test_invoice_extraction[inv_003_multiple_items] ________________
+
+model_name = 'openai/gpt-oss-20b', model_id_namespace = 'groq'
+
+    @contextmanager
+    def _map_api_errors(model_name: str, model_id_namespace: str = 'groq') -> Generator[None]:
+        try:
+>           yield
+
+.venv/lib/python3.12/site-packages/pydantic_ai/models/groq.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pydantic_ai/models/groq.py:391: in _completions_create
+    return await self.client.chat.completions.create(
+.venv/lib/python3.12/site-packages/groq/resources/chat/completions.py:951: in create
+    return await self._post(
+.venv/lib/python3.12/site-packages/groq/_base_client.py:1856: in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <groq.AsyncGroq object at 0x753251b7f2c0>
+cast_to = <class 'groq.types.chat.chat_completion.ChatCompletion'>
+options = FinalRequestOptions(method='post', url='/openai/v1/chat/completions', params={}, headers={'User-Agent': 'pydantic-ai/2...': 'number'}}, 'required': ['confidence_score'], 'type': 'object', 'additionalProperties': False}}}]}, extra_json=None)
+stream = False
+stream_cls = groq.AsyncStream[groq.types.chat.chat_completion_chunk.ChatCompletionChunk]
+
+    async def request(
+        self,
+        cast_to: Type[ResponseT],
+        options: FinalRequestOptions,
+        *,
+        stream: bool = False,
+        stream_cls: type[_AsyncStreamT] | None = None,
+    ) -> ResponseT | _AsyncStreamT:
+        if self._platform is None:
+            # `get_platform` can make blocking IO calls so we
+            # execute it earlier while we are in an async context
+            self._platform = await asyncify(get_platform)()
+    
+        cast_to = self._maybe_override_cast_to(cast_to, options)
+    
+        # create a copy of the options we were given so that if the
+        # options are mutated later & we then retry, the retries are
+        # given the original options
+        input_options = model_copy(options)
+        if input_options.idempotency_key is None and input_options.method.lower() != "get":
+            # ensure the idempotency key is reused between requests
+            input_options.idempotency_key = self._idempotency_key()
+    
+        response: httpx.Response | None = None
+        max_retries = input_options.get_max_retries(self.max_retries)
+    
+        retries_taken = 0
+        for retries_taken in range(max_retries + 1):
+            options = model_copy(input_options)
+            options = await self._prepare_options(options)
+    
+            remaining_retries = max_retries - retries_taken
+            request = self._build_request(options, retries_taken=retries_taken)
+            await self._prepare_request(request)
+    
+            kwargs: HttpxSendArgs = {}
+            if self.custom_auth is not None:
+                kwargs["auth"] = self.custom_auth
+    
+            if options.follow_redirects is not None:
+                kwargs["follow_redirects"] = options.follow_redirects
+    
+            log.debug("Sending HTTP Request: %s %s", request.method, request.url)
+    
+            response = None
+            try:
+                response = await self._client.send(
+                    request,
+                    stream=stream or self._should_stream_response_body(request=request),
+                    **kwargs,
+                )
+            except httpx.TimeoutException as err:
+                log.debug("Encountered httpx.TimeoutException", exc_info=True)
+    
+                if remaining_retries > 0:
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=None,
+                    )
+                    continue
+    
+                log.debug("Raising timeout error")
+                raise APITimeoutError(request=request) from err
+            except Exception as err:
+                log.debug("Encountered Exception", exc_info=True)
+    
+                if remaining_retries > 0:
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=None,
+                    )
+                    continue
+    
+                log.debug("Raising connection error")
+                raise APIConnectionError(request=request) from err
+    
+            log.debug(
+                'HTTP Response: %s %s "%i %s" %s',
+                request.method,
+                request.url,
+                response.status_code,
+                response.reason_phrase,
+                response.headers,
+            )
+    
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as err:  # thrown on 4xx and 5xx status code
+                log.debug("Encountered httpx.HTTPStatusError", exc_info=True)
+    
+                if remaining_retries > 0 and self._should_retry(err.response):
+                    await err.response.aclose()
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=response,
+                    )
+                    continue
+    
+                # If the response is streamed then we need to explicitly read the response
+                # to completion before attempting to access the response text.
+                if not err.response.is_closed:
+                    await err.response.aread()
+    
+                log.debug("Re-raising status error")
+>               raise self._make_status_error_from_response(err.response) from None
+E               groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01jt4yk75ff1drmhnvbp6m4t1c` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6955, Requested 1069. Please try again in 180ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+.venv/lib/python3.12/site-packages/groq/_base_client.py:1655: RateLimitError
+
+The above exception was the direct cause of the following exception:
+
+case = {'case_id': 'inv_003_multiple_items', 'difficulty': 'clean', 'description': 'Invoice with 5 line items — tests list ex...\n5. Shipping & handling — $950.00\n\nSubtotal: $26,450.00\nInsurance: $400.00\nTotal: $26,850.00\nCurrency: USD', ...}
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "case",
+        INVOICE_CASES,
+        ids=[c["case_id"] for c in INVOICE_CASES],
+    )
+    async def test_invoice_extraction(case: dict) -> None:
+        """Run extraction on a single gold-standard invoice and assert accuracy.
+    
+        HOW PARAMETRIZE WORKS:
+        pytest creates ONE test per case in INVOICE_CASES.
+        So you'll see 10 individual test results, not one big blob.
+        If inv_005 fails but others pass, you know exactly which case broke.
+        """
+        model = _get_model()
+    
+        # Run the REAL extractor with the REAL LLM
+>       result = await extract_fields(
+            raw_text=case["input"],
+            plugin=PLUGIN,
+            model=model,
+        )
+
+backend/tests/evaluation/test_invoice_extraction.py:242: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/agents/extractor.py:33: in extract_fields
+    result = await agent.run(raw_text)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:664: in run
+    node = await agent_run.next(node)  # pyright: ignore[reportArgumentType]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/run.py:476: in next
+    return await self._run_node_with_hooks(node, self._stream_and_advance)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/run.py:398: in _run_node_with_hooks
+    return await self._wrap_and_advance(run_context, node, step_fn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/run.py:345: in _wrap_and_advance
+    result = await step_fn(node)
+             ^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/run.py:490: in _stream_and_advance
+    return await self._advance_graph(node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/run.py:319: in _advance_graph
+    task = await self._graph_run.next(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py:584: in next
+    return await anext(self)
+           ^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py:561: in __anext__
+    raise self._next.error
+.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py:860: in _run_tracked_task
+    result = await self._run_task(t_)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py:911: in _run_task
+    output = await node.call(step_context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_graph/step.py:253: in _call_node
+    return await node.run(GraphRunContext(state=ctx.state, deps=ctx.deps))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py:1172: in run
+    return await self._make_request(ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py:1473: in _make_request
+    model_response = await model_handler(request_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py:1450: in model_handler
+    response = await model_request(
+.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py:1033: in model_request
+    new_response = await model.request(
+.venv/lib/python3.12/site-packages/pydantic_ai/models/groq.py:237: in request
+    response = await self._completions_create(
+.venv/lib/python3.12/site-packages/pydantic_ai/models/groq.py:390: in _completions_create
+    with _map_api_errors(self.model_name, self._provider.model_id_namespace):
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+model_name = 'openai/gpt-oss-20b', model_id_namespace = 'groq'
+
+    @contextmanager
+    def _map_api_errors(model_name: str, model_id_namespace: str = 'groq') -> Generator[None]:
+        try:
+            yield
+        except APIStatusError as e:
+            if (status_code := e.status_code) >= 400:
+                body: object | None = e.body
+                suggested_model_id = None
+                if _utils.is_str_dict(body) and _utils.is_str_dict(error := body.get('error')):
+                    if error.get('code') == 'model_not_found':
+                        suggested_model_id = _suggest_known_model_id_from_provider_error(model_id_namespace, model_name)
+>               raise ModelHTTPError(
+                    status_code=status_code,
+                    model_name=model_name,
+                    body=body,
+                    headers=dict(e.response.headers),
+                    suggested_model_id=suggested_model_id,
+                ) from e
+E               pydantic_ai.exceptions.ModelHTTPError: status_code: 429, model_name: openai/gpt-oss-20b, body: {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01jt4yk75ff1drmhnvbp6m4t1c` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6955, Requested 1069. Please try again in 180ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+.venv/lib/python3.12/site-packages/pydantic_ai/models/groq.py:94: ModelHTTPError
+=========================== short test summary info ============================
+FAILED backend/tests/evaluation/test_invoice_extraction.py::test_invoice_extraction[inv_003_multiple_items]
+=================== 1 failed, 31 passed in 142.51s (0:02:22) ===================

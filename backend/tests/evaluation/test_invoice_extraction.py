@@ -75,7 +75,7 @@ def evaluate_invoice(result: InvoiceFields, expected: dict) -> CaseResult:
     THIS IS WHERE THE METRICS COME TOGETHER:
     Each field type gets the appropriate metric:
       - Strings (vendor_name, currency)  → fuzzy_match
-      - Numbers (total_amount)           → exact_match_number
+      - Numbers (total_amount, subtotal, tax_amount) → exact_match_number
       - Dates (invoice_date, due_date)   → fuzzy_match (LLMs format dates differently)
       - Lists (line_items)               → list_overlap_score
       - Nullable fields                  → null_match first, then value check
@@ -145,6 +145,32 @@ def evaluate_invoice(result: InvoiceFields, expected: dict) -> CaseResult:
         detail=f"{'matched' if passed else 'mismatch'} "
                f"({result.total_amount} vs {expected.get('total_amount')})",
     ))
+
+    # --- subtotal and tax_amount (null-aware numeric) ---
+    # The math gate in validator.py holds a document when subtotal + tax does not
+    # equal the total, so these two are worth measuring. A document that states
+    # neither is labelled null: inventing a number there is a miss, not a bonus.
+    for field_name, actual_value in (
+        ("subtotal", result.subtotal),
+        ("tax_amount", result.tax_amount),
+    ):
+        exp_value = expected.get(field_name)
+        if not null_match(actual_value, exp_value):
+            passed = False
+            detail = f"null mismatch (got {actual_value}, expected {exp_value})"
+        elif actual_value is None and exp_value is None:
+            passed = True
+            detail = "both null ✓"
+        else:
+            passed = exact_match_number(actual_value, exp_value)
+            detail = (
+                f"{'matched' if passed else 'mismatch'} "
+                f"({actual_value} vs {exp_value})"
+            )
+        fields.append(FieldResult(
+            field_name=field_name, passed=passed,
+            actual=actual_value, expected=exp_value, detail=detail,
+        ))
 
     # --- currency (fuzzy — "USD" vs "usd") ---
     exp_curr = expected.get("currency")
