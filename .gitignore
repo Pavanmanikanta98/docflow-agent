@@ -33,6 +33,11 @@ Thumbs.db
 .idea/
 *.swp
 
+# Eval-run resume state (see backend/tests/evaluation/run_ocr_eval.py) — not
+# a result, just scratch progress so a crash doesn't lose an in-flight run.
+evals/results/.ocr_eval_checkpoint.json
+evals/results/.ocr_eval_checkpoint.tmp
+
 # Private notes — never publish (see SPRINT.md V1-0)
 BUSINESS_PLAN.md
 ROADMAP.md

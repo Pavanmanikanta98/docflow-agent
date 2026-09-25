@@ -58,6 +58,43 @@ from backend.tests.evaluation.conftest import (  # noqa: E402
 RESULTS_DIR = REPO_ROOT / "evals" / "results"
 DATASET_DIR = REPO_ROOT / "evals" / "datasets" / "cord-v2"
 
+# A full run is ~230 real LLM calls and can take hours on the free tier —
+# long enough to outlive a container restart. Every successful extraction is
+# flushed here immediately, so resuming after a crash replays only the calls
+# that hadn't succeeded yet, not the whole run.
+CHECKPOINT_PATH = RESULTS_DIR / ".ocr_eval_checkpoint.json"
+MAX_FULL_PASSES = 3  # self-heal transient failures (dropped connections,
+# not just 429s) by re-running only what's still missing, up to this many
+# times in one invocation, before leaving the rest for a resumed run.
+
+
+def load_checkpoint(model_name: str) -> dict:
+    """A checkpoint from a different model is discarded rather than reused,
+    so switching models never silently mixes cached extractions."""
+    if CHECKPOINT_PATH.exists():
+        try:
+            data = json.loads(CHECKPOINT_PATH.read_text())
+        except json.JSONDecodeError:
+            data = {}
+        if data.get("model") == model_name:
+            return data
+    return {"model": model_name, "set_a": {}, "set_b": {}}
+
+
+def save_checkpoint(checkpoint: dict) -> None:
+    """Atomic write (temp file + rename) so a crash mid-save can't leave a
+    truncated, unreadable checkpoint behind."""
+    CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = CHECKPOINT_PATH.with_suffix(".tmp")
+    tmp_path.write_text(json.dumps(checkpoint))
+    tmp_path.replace(CHECKPOINT_PATH)
+
+
+def clear_checkpoint() -> None:
+    """Called once a run's results are written, so the next invocation
+    starts a fresh evaluation instead of replaying a finished one."""
+    CHECKPOINT_PATH.unlink(missing_ok=True)
+
 RATE_LIMIT_DELAY_SECONDS = 2.2  # sequential calls, comfortably under 30 RPM
 MAX_RETRIES = 8
 RATE_LIMIT_MAX_BACKOFF_SECONDS = 90.0
@@ -202,7 +239,7 @@ def _clean_cases(filename: str) -> list[dict]:
     return [c for c in load_golden(filename) if c.get("difficulty") == "clean"]
 
 
-async def run_set_a(preprocess: bool) -> dict:
+async def run_set_a(preprocess: bool, checkpoint: dict) -> dict:
     invoices = _clean_cases("invoices.json")
     contracts = _clean_cases("contracts.json")
 
@@ -223,13 +260,18 @@ async def run_set_a(preprocess: bool) -> dict:
         expected = case["expected"]
         case_id = case["case_id"]
 
-        try:
-            baseline_fields = await extract_with_backoff(golden_text, plugin)
-        except Exception as exc:  # noqa: BLE001 - a real API error, various shapes
-            extraction_failures.append(f"{case_id}:text_layer")
-            print(f"  [Set A] extraction failed for {case_id} (text layer): {exc}")
-            continue
-        baseline_dict = baseline_fields.model_dump(exclude={"confidence_score"})
+        baseline_key = f"{case_id}:text_layer"
+        baseline_dict = checkpoint["set_a"].get(baseline_key)
+        if baseline_dict is None:
+            try:
+                baseline_fields = await extract_with_backoff(golden_text, plugin)
+            except Exception as exc:  # noqa: BLE001 - a real API error, various shapes
+                extraction_failures.append(baseline_key)
+                print(f"  [Set A] extraction failed for {case_id} (text layer): {exc}")
+                continue
+            baseline_dict = baseline_fields.model_dump(exclude={"confidence_score"})
+            checkpoint["set_a"][baseline_key] = baseline_dict
+            save_checkpoint(checkpoint)
         passed, total = score_case(baseline_dict, expected, field_names)
         text_layer_accuracy.append(passed / total)
 
@@ -242,14 +284,19 @@ async def run_set_a(preprocess: bool) -> dict:
             variant_results[variant_name]["cer"].append(cer)
             variant_results[variant_name]["wer"].append(wer)
 
-            try:
-                variant_fields = await extract_with_backoff(ocr_text, plugin)
-            except Exception as exc:  # noqa: BLE001
-                extraction_failures.append(f"{case_id}:{variant_name}")
-                msg = f"{case_id}/{variant_name}: {exc}"
-                print(f"  [Set A] extraction failed for {msg}")
-                continue
-            variant_dict = variant_fields.model_dump(exclude={"confidence_score"})
+            variant_key = f"{case_id}:{variant_name}"
+            variant_dict = checkpoint["set_a"].get(variant_key)
+            if variant_dict is None:
+                try:
+                    variant_fields = await extract_with_backoff(ocr_text, plugin)
+                except Exception as exc:  # noqa: BLE001
+                    extraction_failures.append(variant_key)
+                    msg = f"{case_id}/{variant_name}: {exc}"
+                    print(f"  [Set A] extraction failed for {msg}")
+                    continue
+                variant_dict = variant_fields.model_dump(exclude={"confidence_score"})
+                checkpoint["set_a"][variant_key] = variant_dict
+                save_checkpoint(checkpoint)
             v_passed, v_total = score_case(variant_dict, expected, field_names)
             variant_results[variant_name]["field_accuracy"].append(v_passed / v_total)
 
@@ -281,7 +328,7 @@ async def run_set_a(preprocess: bool) -> dict:
     return summary
 
 
-async def run_set_b(preprocess: bool) -> dict:
+async def run_set_b(preprocess: bool, checkpoint: dict) -> dict:
     labels = json.loads((DATASET_DIR / "labels.json").read_text())
     plugin = InvoicePlugin()
 
@@ -292,15 +339,20 @@ async def run_set_b(preprocess: bool) -> dict:
         image = Image.open(image_path)
         ocr_text = ocr_image(image, preprocess=preprocess)
 
-        try:
-            fields = await extract_with_backoff(ocr_text, plugin)
-        except Exception as exc:  # noqa: BLE001 - a real scan's OCR text can be
-            # garbled enough that the model refuses structured output
-            # entirely; one bad case must not crash the whole eval run.
-            extraction_failures.append(record["id"])
-            print(f"  [Set B] extraction failed for {record['id']}: {exc}")
-            continue
-        fields_dict = fields.model_dump(exclude={"confidence_score"})
+        record_id = record["id"]
+        fields_dict = checkpoint["set_b"].get(record_id)
+        if fields_dict is None:
+            try:
+                fields = await extract_with_backoff(ocr_text, plugin)
+            except Exception as exc:  # noqa: BLE001 - a real scan's OCR text can be
+                # garbled enough that the model refuses structured output
+                # entirely; one bad case must not crash the whole eval run.
+                extraction_failures.append(record_id)
+                print(f"  [Set B] extraction failed for {record_id}: {exc}")
+                continue
+            fields_dict = fields.model_dump(exclude={"confidence_score"})
+            checkpoint["set_b"][record_id] = fields_dict
+            save_checkpoint(checkpoint)
 
         expected = record["labels"]
         passed, total = score_case(fields_dict, expected, SET_B_FIELDS)
@@ -415,9 +467,24 @@ async def main() -> None:
     preprocessing_experiment = run_preprocessing_experiment()
     use_preprocessing = preprocessing_experiment["kept"]
 
+    checkpoint = load_checkpoint(model_name)
+
     started = time.time()
-    set_a = await run_set_a(preprocess=use_preprocessing)
-    set_b = await run_set_b(preprocess=use_preprocessing)
+    set_a: dict = {}
+    set_b: dict = {}
+    for pass_num in range(1, MAX_FULL_PASSES + 1):
+        set_a = await run_set_a(preprocess=use_preprocessing, checkpoint=checkpoint)
+        set_b = await run_set_b(preprocess=use_preprocessing, checkpoint=checkpoint)
+        remaining = len(set_a["extraction_failures"]) + len(
+            set_b["extraction_failures"]
+        )
+        if remaining == 0:
+            break
+        print(
+            f"Pass {pass_num}/{MAX_FULL_PASSES}: {remaining} extraction failures "
+            "remain (already-succeeded cases were not re-spent); retrying just "
+            "those..."
+        )
     elapsed = time.time() - started
 
     report = {
@@ -440,6 +507,12 @@ async def main() -> None:
 
     print(render_markdown(report))
     print(f"\nWrote {out_path}")
+
+    # Only clear on a fully clean run: if failures remain after
+    # MAX_FULL_PASSES, keep the checkpoint so a later invocation resumes
+    # from these successes instead of re-spending quota on all of them.
+    if not set_a["extraction_failures"] and not set_b["extraction_failures"]:
+        clear_checkpoint()
 
 
 if __name__ == "__main__":
