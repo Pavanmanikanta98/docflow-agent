@@ -41,7 +41,6 @@ dev = [
 ]
 eval = [
     "deepeval==4.2.0",
-    "jiwer>=3.0.0",
 ]
 
 [tool.black]

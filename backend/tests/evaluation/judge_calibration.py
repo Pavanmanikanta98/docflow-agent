@@ -92,6 +92,11 @@ def build_termination_clause_judge(
 ) -> Any:
     """Build a DeepEval GEval metric for the termination_clause field.
 
+    Uses explicit `evaluation_steps` rather than a bare `criteria` string
+    (ADR 008): a bare criteria string makes GEval generate its own steps via
+    an internal LLM call at measure time, which is not reproducible run to
+    run — the whole point of hand-authoring steps here.
+
     Args:
         judge_model: A DeepEvalBaseLLM instance (e.g., LLMClientBasedJudge).
         threshold: The passing score threshold (default 0.5).
@@ -100,19 +105,26 @@ def build_termination_clause_judge(
         A configured DeepEval GEval metric instance.
     """
     from deepeval.metrics import GEval
-    from deepeval.test_case import LLMTestCaseParams
+    from deepeval.test_case import SingleTurnParams
 
     return GEval(
         name="termination_clause_judge",
-        criteria=(
-            "Evaluate whether the candidate text faithfully captures the "
-            "termination or exit clause from the expected text. "
-            "Check for: (1) notice periods, (2) conditions for termination, "
-            "(3) named parties, (4) key exit conditions. "
-            "Reward faithful rewording. Fail if a material condition is missing "
-            "or invented."
-        ),
-        evaluation_params=[LLMTestCaseParams.EXPECTED_OUTPUT],
+        evaluation_steps=[
+            "Compare the actual output against the expected output's "
+            "termination or exit clause.",
+            "Check whether the notice period matches (or is a faithful "
+            "rewording of) the expected notice period.",
+            "Check whether the conditions for termination match the "
+            "expected conditions.",
+            "Check whether the named parties match the expected parties.",
+            "Reward faithful rewording that preserves all of the above.",
+            "Fail the response if any material condition above is missing, "
+            "changed, or invented relative to the expected output.",
+        ],
+        evaluation_params=[
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.EXPECTED_OUTPUT,
+        ],
         model=judge_model,
         threshold=threshold,
         async_mode=True,
@@ -124,6 +136,9 @@ def build_key_obligations_judge(
 ) -> Any:
     """Build a DeepEval GEval metric for the key_obligations field.
 
+    Uses explicit `evaluation_steps` for the same reproducibility reason as
+    `build_termination_clause_judge` above.
+
     Args:
         judge_model: A DeepEvalBaseLLM instance (e.g., LLMClientBasedJudge).
         threshold: The passing score threshold (default 0.5).
@@ -132,19 +147,28 @@ def build_key_obligations_judge(
         A configured DeepEval GEval metric instance.
     """
     from deepeval.metrics import GEval
-    from deepeval.test_case import LLMTestCaseParams
+    from deepeval.test_case import SingleTurnParams
 
     return GEval(
         name="key_obligations_judge",
-        criteria=(
-            "Evaluate whether the candidate list of obligations faithfully "
-            "captures the expected obligations from the ground truth. "
-            "Check each obligation for: (1) semantic accuracy, (2) completeness "
-            "(no material conditions dropped), (3) correct named parties. "
-            "Reward faithful rewording and correct paraphrasing. Fail if a "
-            "material obligation is missing or invented."
-        ),
-        evaluation_params=[LLMTestCaseParams.EXPECTED_OUTPUT],
+        evaluation_steps=[
+            "Compare the actual output's list of obligations against the "
+            "expected output's list of obligations.",
+            "Check each expected obligation is present in the actual "
+            "output, allowing faithful rewording and paraphrasing.",
+            "Check that no material obligation from the expected output is "
+            "missing from the actual output.",
+            "Check that no obligation in the actual output is invented "
+            "(absent from the expected output).",
+            "Check that named parties for each obligation match the "
+            "expected output.",
+            "Fail the response if any material obligation is missing, "
+            "changed, or invented relative to the expected output.",
+        ],
+        evaluation_params=[
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.EXPECTED_OUTPUT,
+        ],
         model=judge_model,
         threshold=threshold,
         async_mode=True,
