@@ -39,6 +39,12 @@ dev = [
     "ruff>=0.15.9",
     "deepeval>=3.8.4",
 ]
+# ADR 007 — CER/WER scoring for the OCR evaluation. Not installed in CI or
+# by `uv sync --extra dev`; only backend/tests/evaluation/run_ocr_eval.py
+# needs it.
+eval = [
+    "jiwer>=3.0.0",
+]
 
 [tool.black]
 line-length = 88

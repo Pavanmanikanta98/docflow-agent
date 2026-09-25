@@ -1,0 +1,728 @@
+[
+  {
+    "id": "cord_test_000",
+    "image_file": "cord_test_000.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 60.0,
+      "tax_amount": 5.455,
+      "total_amount": 60.0,
+      "line_items": [
+        "-TICKET CP"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_001",
+    "image_file": "cord_test_001.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 91000.0,
+      "line_items": [
+        "J.STB PROMO",
+        "Y.B.BAT",
+        "Y.BASO PROM"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_002",
+    "image_file": "cord_test_002.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 28000.0,
+      "tax_amount": null,
+      "total_amount": 28000.0,
+      "line_items": [
+        "JASMINE MT ( L )"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_003",
+    "image_file": "cord_test_003.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 11000.0,
+      "tax_amount": null,
+      "total_amount": 11000.0,
+      "line_items": [
+        "DONAT GULA"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_004",
+    "image_file": "cord_test_004.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 194000.0,
+      "tax_amount": null,
+      "total_amount": 174600.0,
+      "line_items": [
+        "ICE BLACKCOFFE",
+        "AVOCADO COFFEE",
+        "CHIKEN KATSU FF"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_005",
+    "image_file": "cord_test_005.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 28.182,
+      "tax_amount": 2.818,
+      "total_amount": 31.0,
+      "line_items": [
+        "TRAD KY TOAST CARTE"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_006",
+    "image_file": "cord_test_006.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 46000.0,
+      "line_items": [
+        "EGG TART",
+        "CHOCO CUS ARD PASTRY",
+        "REDBEAN BREAD"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_007",
+    "image_file": "cord_test_007.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 100909.0,
+      "tax_amount": 10091.0,
+      "total_amount": 111000.0,
+      "line_items": [
+        "Kupon 15"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_008",
+    "image_file": "cord_test_008.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 45455.0,
+      "tax_amount": 4545.0,
+      "total_amount": 50000.0,
+      "line_items": [
+        "[REG] BLACK SAKURA"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_009",
+    "image_file": "cord_test_009.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 36000.0,
+      "tax_amount": null,
+      "total_amount": null,
+      "line_items": [
+        "Bumbu Kaldu Ayam 1"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_010",
+    "image_file": "cord_test_010.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 17000.0,
+      "tax_amount": null,
+      "total_amount": 17000.0,
+      "line_items": [
+        "CINNAMON SUGAR"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_011",
+    "image_file": "cord_test_011.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 230000.0,
+      "line_items": [
+        "BANABERRY FRESH CREAM CAK"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_012",
+    "image_file": "cord_test_012.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 120000.0,
+      "line_items": [
+        "BLUS WANITA",
+        "SHOPPING BAG"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_013",
+    "image_file": "cord_test_013.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": 4.664,
+      "total_amount": 51.3,
+      "line_items": [
+        "BASO KUAH",
+        "A.MINERAL GELAS"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_014",
+    "image_file": "cord_test_014.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 238000.0,
+      "tax_amount": 25585.0,
+      "total_amount": 281435.0,
+      "line_items": [
+        "RedVelvet Cheese Slc",
+        "Chicken Baked Rice",
+        "Fish n Chips",
+        "Mushroom Soup",
+        "Chamomile",
+        "Iced Tea"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_015",
+    "image_file": "cord_test_015.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 63.0,
+      "line_items": [
+        "Lemon Tea (L)",
+        "Caramel Small"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_016",
+    "image_file": "cord_test_016.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 63636.0,
+      "tax_amount": 6364.0,
+      "total_amount": 70000.0,
+      "line_items": [
+        "[LG] BLACK SAKURA",
+        "IVINERAL WATER (bundling) 5k"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_017",
+    "image_file": "cord_test_017.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 91000.0,
+      "tax_amount": null,
+      "total_amount": 0.91,
+      "line_items": [
+        "Goblin's Mace",
+        "Mozarella Hot Dog",
+        "Chili Pepper Croquette",
+        "Cheese Croquette",
+        "Plastik Amook",
+        "Plastik Putih Take Away"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_018",
+    "image_file": "cord_test_018.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 156000.0,
+      "line_items": [
+        "Propolis Cair"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_019",
+    "image_file": "cord_test_019.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 160000.0,
+      "tax_amount": 16000.0,
+      "total_amount": 176000.0,
+      "line_items": [
+        "AMBUSH DBL CHS",
+        "AMBUSH CHS BUR"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_020",
+    "image_file": "cord_test_020.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 325600.0,
+      "tax_amount": 34351.0,
+      "total_amount": 377859.0,
+      "line_items": [
+        "cashew nuts chkn",
+        "garlic pepper beef",
+        "red curry beef",
+        "phad thai",
+        "steamed rice"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_021",
+    "image_file": "cord_test_021.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 38.0,
+      "line_items": [
+        "NASI GOR SFD TLR",
+        "ES TEH TAWAR"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_022",
+    "image_file": "cord_test_022.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 40000.0,
+      "line_items": [
+        "[MD] SOFT STEAMED CHEESEC",
+        "[MD] SOFT STEAMED CHOCOCA"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_023",
+    "image_file": "cord_test_023.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 63000.0,
+      "line_items": [
+        "TWIST DONUT",
+        "REDBEAN BREAD"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_024",
+    "image_file": "cord_test_024.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": null,
+      "line_items": [
+        "5001-Corn Flakes Cookies",
+        "5003-Chokoreto Cookies",
+        "6002-Plastic Bag Medium"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_025",
+    "image_file": "cord_test_025.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 43000.0,
+      "line_items": [
+        "TWIST STRAWBERRY DONUT",
+        "TLJ CROQUETTE",
+        "POTATO PEPPER BAGEL"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_026",
+    "image_file": "cord_test_026.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 138.0,
+      "tax_amount": null,
+      "total_amount": 138.0,
+      "line_items": [
+        "Nasi Cap Cay Porsi B esar",
+        "Teh Tawar",
+        "Fu Yung Hai"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_027",
+    "image_file": "cord_test_027.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 56000.0,
+      "tax_amount": 5600.0,
+      "total_amount": 61600.0,
+      "line_items": [
+        "PKT AYAM",
+        "GULAI OTAK"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_028",
+    "image_file": "cord_test_028.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 369000.0,
+      "tax_amount": 38745.0,
+      "total_amount": 426195.0,
+      "line_items": [
+        "SAMGYOPSAL",
+        "SUL LUNG TANG",
+        "MAKOLI"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_029",
+    "image_file": "cord_test_029.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 132636.0,
+      "tax_amount": 13264.0,
+      "total_amount": 145900.0,
+      "line_items": [
+        "COLD OCHA",
+        "BCA PROMO",
+        "SKEWERED SHUMAI",
+        "SKEWERED TOFU ROLL",
+        "EBI TEMPURA",
+        "KITSUNE UDON (KIDS)"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_030",
+    "image_file": "cord_test_030.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 28636.0,
+      "tax_amount": 2864.0,
+      "total_amount": 31500.0,
+      "line_items": [
+        "Kupon 3"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_031",
+    "image_file": "cord_test_031.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 85500.0,
+      "tax_amount": 18126.0,
+      "total_amount": 113886.0,
+      "line_items": [
+        "SALMON PESTO",
+        "SALMON PESTO"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_032",
+    "image_file": "cord_test_032.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 24.0,
+      "tax_amount": null,
+      "total_amount": 24.0,
+      "line_items": [
+        "THAI ICED GREEN TEA"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_033",
+    "image_file": "cord_test_033.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 117500.0,
+      "tax_amount": 19557.0,
+      "total_amount": 148127.0,
+      "line_items": [
+        "GRILLED BABY POTATO (R",
+        "HOT TUNA",
+        "HOT TUNA"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_034",
+    "image_file": "cord_test_034.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 85.0,
+      "tax_amount": 8.5,
+      "total_amount": 93.5,
+      "line_items": [
+        "Ash Chick Sambal Matah",
+        "Jamur Goreng"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_035",
+    "image_file": "cord_test_035.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 54000.0,
+      "line_items": [
+        "TWIST DONUT",
+        "BANANA DONUT",
+        "CREAMCHEESE BREAD",
+        "FRANKFRUT SAUSAGE ROLL"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_036",
+    "image_file": "cord_test_036.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 40000.0,
+      "tax_amount": null,
+      "total_amount": 40000.0,
+      "line_items": [
+        "XXL Crispy Chicken"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_037",
+    "image_file": "cord_test_037.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": null,
+      "line_items": [
+        "Popcorn Salt (S)"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_038",
+    "image_file": "cord_test_038.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 561800.0,
+      "tax_amount": 60394.0,
+      "total_amount": 664329.0,
+      "line_items": [
+        "XLB Org Pork 10x",
+        "Sicito Babi",
+        "Hotplate Tahu",
+        "DF Fish Fillet Garlc",
+        "LM Pork Belly",
+        "Siew Mai",
+        "Kwan Yin Cup",
+        "Herbal Jelly",
+        "Onde-Onde"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_039",
+    "image_file": "cord_test_039.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": null,
+      "line_items": [
+        "LUNCH BOX 3P SET W/RED BAG & SP00 N.",
+        "RICE CASE 7L W/CUP",
+        "LUNCH BOX 3P SET W/BLACK BAG & SP OON"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_040",
+    "image_file": "cord_test_040.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 68000.0,
+      "line_items": [
+        "Snack Lestari All",
+        "Bakery Aneka Sisir Banana,Pizza,yoko,Mar mer,Daging,abon,keju,cokelat,dll"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_041",
+    "image_file": "cord_test_041.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 316017.0,
+      "tax_amount": null,
+      "total_amount": 365000.0,
+      "line_items": [
+        "Chicken Maryland",
+        "Cappucino (Hot/Iced)",
+        "Naga Lychee Juice",
+        "Cafe Latte",
+        "Hot Chocolate Marshmallo",
+        "Chicken Cesar Salad",
+        "Mineral Water",
+        "Mineral Water",
+        "Lychee/Peach/Lemon/Mango",
+        "Chicken Maryland"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_042",
+    "image_file": "cord_test_042.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 15000.0,
+      "tax_amount": 1500.0,
+      "total_amount": 16500.0,
+      "line_items": [
+        "Chicken HCC. 1Pcs"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_043",
+    "image_file": "cord_test_043.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 165000.0,
+      "tax_amount": 15000.0,
+      "total_amount": 165000.0,
+      "line_items": [
+        "Cheese Tart"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_044",
+    "image_file": "cord_test_044.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 30.0,
+      "line_items": [
+        "Combo 1"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_045",
+    "image_file": "cord_test_045.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 88000.0,
+      "line_items": [
+        "Lemon Tea (L).",
+        "Mike & Ike Original",
+        "Mike & Berry",
+        "Roti Keju Manis."
+      ]
+    }
+  },
+  {
+    "id": "cord_test_046",
+    "image_file": "cord_test_046.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 40000.0,
+      "line_items": [
+        "S-Bubble Milk Tea",
+        "S-Caramel Milk Tea"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_047",
+    "image_file": "cord_test_047.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": null,
+      "tax_amount": null,
+      "total_amount": 63000.0,
+      "line_items": [
+        "COPIA 1 /GB",
+        "PLASTIC BAG RED CENTRAL SI",
+        "COPIA 1 /GB"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_048",
+    "image_file": "cord_test_048.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 22728.0,
+      "tax_amount": 2272.0,
+      "total_amount": 25000.0,
+      "line_items": [
+        "S-Hazelnut KOI Cafe"
+      ]
+    }
+  },
+  {
+    "id": "cord_test_049",
+    "image_file": "cord_test_049.png",
+    "labels": {
+      "vendor_name": null,
+      "subtotal": 23000.0,
+      "tax_amount": null,
+      "total_amount": 23000.0,
+      "line_items": [
+        "Ptgs Eggtart",
+        "Choco Melt"
+      ]
+    }
+  }
+]

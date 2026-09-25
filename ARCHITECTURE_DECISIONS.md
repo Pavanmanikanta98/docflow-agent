@@ -371,6 +371,23 @@ only if it measurably improves CER/WER or field accuracy on these sets. Either
 way, the result — kept or rejected, and why — is recorded in this ADR, not
 silently decided in a commit message.
 
+**Result (measured 2026-09-24, `backend/tests/evaluation/run_ocr_eval.py`,
+Set A, all 8 synthetic variants, 20 clean golden cases each):** average CER
+0.0407 with no preprocessing versus 0.0416 with grayscale+Otsu+deskew — a
+*regression* of 0.0009, not an improvement. **Preprocessing is not added to
+`parser.py`.** The deskew step's own scoring heuristic (row-alignment
+variance on a downsampled thumbnail) is tuned for genuinely skewed pages;
+run against the synthetic set's mostly-mild rotation (≤1.5°) and otherwise
+clean renders, it occasionally nudges an already-fine page slightly off,
+and Otsu thresholding on a synthetic render (already near-binary — plain
+black text on white) has no real degradation to correct. This is a
+negative result worth keeping, not a failed experiment: it says the
+mid-range Tesseract fallback tier (`backend/agents/parser.py`) does not
+need this step for documents in this quality range, and re-running it
+against a source with genuinely skewed real-world scans (rather than
+Set B's already-front-facing CORD receipts) would be the next thing to
+check before revisiting this decision.
+
 ### Alternatives rejected
 - **Synthetic degradation only.** Rejected: it proves the pipeline handles a
   simulation of noise, never a real scan or phone photo, which is exactly the
