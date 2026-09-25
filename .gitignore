@@ -18,6 +18,9 @@ htmlcov/
 .env.local
 *.local
 
+# Local Redis persistence snapshot (started manually in this sandbox)
+dump.rdb
+
 # Node / Next.js
 frontend/node_modules/
 frontend/.next/
