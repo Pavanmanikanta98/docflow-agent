@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -31,6 +32,7 @@ from typing import Any
 import jiwer
 import pytesseract
 from PIL import Image
+from pydantic_ai.exceptions import ModelHTTPError
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
@@ -57,7 +59,53 @@ RESULTS_DIR = REPO_ROOT / "evals" / "results"
 DATASET_DIR = REPO_ROOT / "evals" / "datasets" / "cord-v2"
 
 RATE_LIMIT_DELAY_SECONDS = 2.2  # sequential calls, comfortably under 30 RPM
-MAX_RETRIES = 5
+MAX_RETRIES = 8
+RATE_LIMIT_MAX_BACKOFF_SECONDS = 90.0
+
+_DURATION_RE = re.compile(
+    r"^(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?"
+    r"(?:(?P<seconds>\d+(?:\.\d+)?)s)?(?:(?P<millis>\d+)ms)?$"
+)
+
+
+def _parse_duration_seconds(value: str) -> float | None:
+    """Parse Groq's rate-limit reset duration strings, e.g. "1m26.4s", "585ms"
+    (verified live: this is NOT plain seconds)."""
+    match = _DURATION_RE.match(value.strip())
+    if not match or not any(match.groups()):
+        return None
+    parts = match.groupdict()
+    total = 0.0
+    if parts["hours"]:
+        total += int(parts["hours"]) * 3600
+    if parts["minutes"]:
+        total += int(parts["minutes"]) * 60
+    if parts["seconds"]:
+        total += float(parts["seconds"])
+    if parts["millis"]:
+        total += int(parts["millis"]) / 1000
+    return total
+
+
+def _rate_limit_wait_seconds(exc: Exception, fallback: float) -> float:
+    """Prefer the server's own signal for how long to wait over a guess: the
+    standard `Retry-After` header first, then Groq's `x-ratelimit-reset-*`
+    duration headers (the actual binding constraint here is TPM, not RPM —
+    a fixed backoff schedule gives up long before an 8000 TPM free-tier
+    window actually clears)."""
+    if isinstance(exc, ModelHTTPError) and exc.status_code == 429:
+        if exc.retry_after is not None:
+            return exc.retry_after + 1.0
+        if exc.headers:
+            candidates = [
+                _parse_duration_seconds(exc.headers[key])
+                for key in ("x-ratelimit-reset-tokens", "x-ratelimit-reset-requests")
+                if key in exc.headers
+            ]
+            candidates = [c for c in candidates if c is not None]
+            if candidates:
+                return max(candidates) + 1.0
+    return fallback
 
 DATE_FIELDS = {"invoice_date", "due_date", "effective_date", "expiry_date"}
 NUMBER_FIELDS = {"subtotal", "tax_amount", "total_amount", "contract_value"}
@@ -98,11 +146,16 @@ def field_passes(field_name: str, actual: Any, expected: Any) -> bool:
 
 async def extract_with_backoff(raw_text: str, plugin) -> Any:
     """Resolve a fresh model (and httpx client) on every call — the
-    production pipeline never reuses one model instance across LLM calls,
-    and reusing a single instance across ~230 sequential calls here was
-    found to cause cascading failures partway through a full run even with
-    quota to spare."""
+    production pipeline never reuses one model instance across LLM calls.
+
+    Backoff is driven by the server's own rate-limit signal
+    (`_rate_limit_wait_seconds`), not a fixed schedule: the binding
+    constraint on the free tier is 8000 TPM, and a handful of sequential
+    calls can exhaust a whole window, so waiting a guessed 2-35s and then
+    giving up (the original bug here) fails almost every case in a long
+    run even though the quota recovers within a minute."""
     delay = RATE_LIMIT_DELAY_SECONDS
+    last_exc: Exception | None = None
     for attempt in range(MAX_RETRIES):
         try:
             model = llm_client.get_model()
@@ -111,12 +164,20 @@ async def extract_with_backoff(raw_text: str, plugin) -> Any:
             return result
         except Exception as exc:  # noqa: BLE001 - real API errors, various shapes
             message = str(exc).lower()
-            if "429" in message or "rate_limit" in message or "rate limit" in message:
-                await asyncio.sleep(delay)
-                delay *= 2
-                continue
-            raise
-    raise RuntimeError(f"Exceeded {MAX_RETRIES} retries for extraction")
+            is_rate_limit = (
+                (isinstance(exc, ModelHTTPError) and exc.status_code == 429)
+                or "429" in message
+                or "rate_limit" in message
+                or "rate limit" in message
+            )
+            if not is_rate_limit:
+                raise
+            last_exc = exc
+            wait = _rate_limit_wait_seconds(exc, fallback=delay)
+            wait = min(wait, RATE_LIMIT_MAX_BACKOFF_SECONDS)
+            await asyncio.sleep(wait)
+            delay = min(delay * 2, RATE_LIMIT_MAX_BACKOFF_SECONDS)
+    raise RuntimeError(f"Exceeded {MAX_RETRIES} retries for extraction") from last_exc
 
 
 def ocr_image(image: Image.Image, preprocess: bool = False) -> str:
