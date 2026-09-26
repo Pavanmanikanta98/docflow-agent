@@ -4,6 +4,7 @@ import logging
 
 from arq import Retry
 from arq.connections import RedisSettings
+from pydantic_ai.exceptions import ModelHTTPError
 from sqlalchemy.orm import Session
 
 from backend.agents.extractor import extract_fields
@@ -27,12 +28,21 @@ from backend.core.token_budget import (
     CapacityWaitError,
     clear_capacity_wait,
     estimate_tokens,
+    get_budget_for_model,
     record_capacity_wait,
 )
 from backend.models.db import Document, DocumentStatus
 from backend.plugins import get_plugin
 
 logger = logging.getLogger(__name__)
+
+# A real 429 can still reach us despite our own reservation — our estimate
+# and the provider's are computed independently, and under concurrent load
+# (several jobs reserving around the same instant) a small drift between
+# them is possible even though each reservation is individually correct.
+# When the provider's response carries no `retry-after` to size the wait
+# from, fall back to a fixed, conservative cooldown rather than guessing.
+RATE_LIMIT_FALLBACK_SECONDS = 30.0
 
 # Short retry for the per-session in-flight cap — this is queue fairness
 # between sessions, not a real capacity ceiling, so the wait is small and
@@ -45,6 +55,38 @@ SESSION_INFLIGHT_RETRY_SECONDS = 5
 # like a broken pipeline.
 CAPACITY_WAIT_COUNTER_KEY = "metrics:capacity_waits_total"
 SESSION_INFLIGHT_WAIT_COUNTER_KEY = "metrics:session_inflight_waits_total"
+
+
+def _defer_for_capacity(document_id: int, wait_seconds: float) -> None:
+    """Record the wait and raise the Retry that defers this job. Never
+    returns — every call site treats this as the end of that code path.
+    Does not touch either counter: callers increment whichever one (LLM
+    capacity vs. session in-flight cap) actually applies."""
+    record_capacity_wait(redis_client, document_id, wait_seconds)
+    raise Retry(defer=wait_seconds)
+
+
+def _handle_model_http_error(
+    exc: ModelHTTPError, document_id: int, model_name: str
+) -> None:
+    """A real 429 from the provider, despite our own reservation having
+    granted the request. Treat it exactly like CapacityWaitError — defer,
+    never fail — rather than letting it become an unhandled exception that
+    marks the document failed. Anything other than a 429 is re-raised
+    unchanged; this is not a general-purpose error handler.
+    """
+    if exc.status_code != 429:
+        raise exc
+    logger.warning(
+        "Real 429 for document %s despite our own reservation — treating "
+        "as a capacity wait, not a failure.",
+        document_id,
+    )
+    get_budget_for_model(redis_client, model_name).set_cooldown_from_retry_after(
+        exc.headers or {}
+    )
+    redis_client.incr(CAPACITY_WAIT_COUNTER_KEY)
+    _defer_for_capacity(document_id, exc.retry_after or RATE_LIMIT_FALLBACK_SECONDS)
 
 
 async def process_document(ctx: dict, document_id: int) -> None:
@@ -83,10 +125,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
         )
         if in_flight >= settings.session_inflight_cap:
             redis_client.incr(SESSION_INFLIGHT_WAIT_COUNTER_KEY)
-            record_capacity_wait(
-                redis_client, document_id, SESSION_INFLIGHT_RETRY_SECONDS
-            )
-            raise Retry(defer=SESSION_INFLIGHT_RETRY_SECONDS)
+            _defer_for_capacity(document_id, SESSION_INFLIGHT_RETRY_SECONDS)
 
         # 1. Mark document as processing
         doc.status = DocumentStatus.processing
@@ -157,6 +196,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
             "status": "processing",
             "error": None,
         }
+        model_name = getattr(llm_client.get_model(), "model_name", "")
         try:
             result = await pipeline.ainvoke(initial_state)
         except CapacityWaitError as exc:
@@ -164,8 +204,9 @@ async def process_document(ctx: dict, document_id: int) -> None:
                 "Deferring document %s: %s", document_id, exc, exc_info=False
             )
             redis_client.incr(CAPACITY_WAIT_COUNTER_KEY)
-            record_capacity_wait(redis_client, document_id, exc.wait_seconds)
-            raise Retry(defer=exc.wait_seconds) from exc
+            _defer_for_capacity(document_id, exc.wait_seconds)
+        except ModelHTTPError as exc:
+            _handle_model_http_error(exc, document_id, model_name)
 
         clear_capacity_wait(redis_client, document_id)
 
@@ -258,6 +299,7 @@ async def process_document_chunk(ctx: dict, document_id: int, chunk_index: int) 
 
         plugin = get_plugin(doc.document_type)
         model = llm_client.get_model()
+        model_name = getattr(model, "model_name", "")
 
         if chunk_index < total_chunks:
             chunk_text = get_chunk_text(redis_client, document_id, chunk_index)
@@ -274,8 +316,9 @@ async def process_document_chunk(ctx: dict, document_id: int, chunk_index: int) 
                 )
             except CapacityWaitError as exc:
                 redis_client.incr(CAPACITY_WAIT_COUNTER_KEY)
-                record_capacity_wait(redis_client, document_id, exc.wait_seconds)
-                raise Retry(defer=exc.wait_seconds) from exc
+                _defer_for_capacity(document_id, exc.wait_seconds)
+            except ModelHTTPError as exc:
+                _handle_model_http_error(exc, document_id, model_name)
 
             store_chunk_result(
                 redis_client,

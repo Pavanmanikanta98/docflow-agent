@@ -1,6 +1,6 @@
 {
   "date": "2026-09-24",
-  "generated_at": "2026-09-24T16:35:01.672288+00:00",
+  "generated_at": "2026-09-24T17:33:02.116728+00:00",
   "config": {
     "tpm": 8000,
     "rpm": 30,
@@ -13,13 +13,13 @@
   "failures": 0,
   "timed_out_document_ids": [],
   "large_doc_completed": true,
-  "capacity_waits_total": 63,
-  "session_inflight_waits_total": 2,
+  "capacity_waits_total": 62,
+  "session_inflight_waits_total": 0,
   "small_doc_wait_seconds": {
-    "p50": 70.5055582523346,
-    "p95": 249.5537338256836,
-    "min": 3.532960891723633,
-    "max": 249.66534185409546,
+    "p50": 118.3618278503418,
+    "p95": 299.7068178653717,
+    "min": 4.737138509750366,
+    "max": 299.7481265068054,
     "count": 30
   },
   "pass": true
