@@ -1,0 +1,258 @@
+{
+  "date": "2026-09-26",
+  "extraction_model": "openai/gpt-oss-20b",
+  "judge_model": "openai/gpt-oss-120b",
+  "calibration": {
+    "passed": true,
+    "threshold": 0.5,
+    "runs_per_control": 3,
+    "controls": [
+      {
+        "case_id": "con_001_standard",
+        "is_positive": true,
+        "mean_score": 1.0,
+        "spread": 0.0,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "case_id": "con_001_standard",
+        "is_positive": false,
+        "mean_score": 0.03333333333333333,
+        "spread": 0.1,
+        "scores": [
+          0.0,
+          0.1,
+          0.0
+        ]
+      },
+      {
+        "case_id": "con_001_standard",
+        "is_positive": true,
+        "mean_score": 1.0,
+        "spread": 0.0,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "case_id": "con_001_standard",
+        "is_positive": false,
+        "mean_score": 0.0,
+        "spread": 0.0,
+        "scores": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "case_id": "con_002_software_license",
+        "is_positive": true,
+        "mean_score": 1.0,
+        "spread": 0.0,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "case_id": "con_002_software_license",
+        "is_positive": false,
+        "mean_score": 0.0,
+        "spread": 0.0,
+        "scores": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "case_id": "con_002_software_license",
+        "is_positive": true,
+        "mean_score": 1.0,
+        "spread": 0.0,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "case_id": "con_002_software_license",
+        "is_positive": false,
+        "mean_score": 0.06666666666666667,
+        "spread": 0.2,
+        "scores": [
+          0.0,
+          0.2,
+          0.0
+        ]
+      }
+    ]
+  },
+  "headline_metric": "geval",
+  "cases": [
+    {
+      "case_id": "con_001_standard",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_002_software_license",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_003_employment",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 0.5
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 0.3
+      }
+    },
+    {
+      "case_id": "con_004_nda",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_005_construction",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_006_european_consulting",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 0.9,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_007_minimal",
+      "fuzzy_score": {
+        "termination_clause": true,
+        "key_obligations_overlap": null
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": null
+      }
+    },
+    {
+      "case_id": "con_008_multi_party",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_009_zero_value",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_010_retainer",
+      "fuzzy_score": {
+        "termination_clause": true,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_011_amendment_supersedes",
+      "fuzzy_score": {
+        "termination_clause": false,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_012_two_currencies",
+      "fuzzy_score": {
+        "termination_clause": true,
+        "key_obligations_overlap": 0.6666666666666666
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_013_value_only_in_milestones",
+      "fuzzy_score": {
+        "termination_clause": true,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    },
+    {
+      "case_id": "con_014_renewal_not_expiry",
+      "fuzzy_score": {
+        "termination_clause": true,
+        "key_obligations_overlap": 1.0
+      },
+      "geval_score": {
+        "termination_clause": 1.0,
+        "key_obligations": 1.0
+      }
+    }
+  ],
+  "case_failures": []
+}
