@@ -56,6 +56,10 @@ def patched_redis(monkeypatch):
     fake_redis = MagicMock()
     fake_redis.get.return_value = b"%PDF-1.4 fake bytes"
     monkeypatch.setattr(worker, "redis_client", fake_redis)
+    # The worker now parses eagerly (to decide chunking) before it ever
+    # reaches pipeline.ainvoke; these tests are about dispatch logic, not
+    # real PDF parsing, so a small canned page stands in for it.
+    monkeypatch.setattr(worker, "extract_pages", lambda *a, **k: ["INVOICE small text"])
     return fake_redis
 
 

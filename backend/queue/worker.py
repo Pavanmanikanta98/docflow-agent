@@ -6,15 +6,31 @@ from arq import Retry
 from arq.connections import RedisSettings
 from sqlalchemy.orm import Session
 
+from backend.agents.extractor import extract_fields
+from backend.agents.parser import extract_pages
+from backend.agents.validator import ValidatorOutput, check_arithmetic, validate_fields
+from backend.core.chunk_merge import merge_chunk_results
+from backend.core.chunk_state import (
+    clear_chunk_state,
+    get_all_chunk_results,
+    get_chunk_text,
+    get_total_chunks,
+    start_chunked_document,
+    store_chunk_result,
+)
+from backend.core.chunking import should_chunk, split_pages_into_chunks
 from backend.core.config import settings
 from backend.core.db import SessionLocal, redis_client
-from backend.core.pipeline import DocFlowState, pipeline
+from backend.core.llm import llm_client
+from backend.core.pipeline import DocFlowState, pipeline, resolve_validation_outcome
 from backend.core.token_budget import (
     CapacityWaitError,
     clear_capacity_wait,
+    estimate_tokens,
     record_capacity_wait,
 )
 from backend.models.db import Document, DocumentStatus
+from backend.plugins import get_plugin
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +98,57 @@ async def process_document(ctx: dict, document_id: int) -> None:
         if not file_bytes:
             raise ValueError(f"No bytes in Redis for key: {redis_key}")
 
-        # 3 & 4. Run the full LangGraph pipeline: parse → extract → route
+        # 3. Parse once, up front — this is also how we decide whether the
+        # document needs chunking (ADR 006). parse_node below is then a
+        # no-op: parsing never runs twice.
+        pages = extract_pages(file_bytes, doc.document_mime_type)
+        full_raw_text = "\n".join(pages)
+        if not full_raw_text.strip():
+            raise ValueError(
+                "No text could be extracted (text layer and OCR both empty)"
+            )
+
+        plugin = get_plugin(doc.document_type)
+        estimated_tokens = estimate_tokens(
+            [
+                {"role": "system", "content": plugin.system_prompt},
+                {"role": "user", "content": full_raw_text},
+            ],
+            settings.llm_max_completion_tokens,
+        )
+
+        if should_chunk(
+            estimated_tokens, settings.llm_tpm, settings.llm_max_request_share
+        ):
+            budget_tokens = settings.llm_max_request_share * settings.llm_tpm
+            chunks = split_pages_into_chunks(
+                pages,
+                plugin.system_prompt,
+                settings.llm_max_completion_tokens,
+                budget_tokens,
+            )
+            start_chunked_document(
+                redis_client,
+                document_id,
+                ["\n".join(chunk_pages) for chunk_pages in chunks],
+                full_raw_text,
+            )
+            from backend.queue.jobs import enqueue_process_document_chunk
+
+            await enqueue_process_document_chunk(document_id, chunk_index=0)
+            # The bytes and the raw text now live in the chunk plan; this
+            # job's own work (parse, decide, plan, enqueue) is done.
+            redis_client.delete(redis_key)
+            return
+
+        # 4. Not chunking: run the existing single-request pipeline.
         initial_state: DocFlowState = {
             "document_id": document_id,
             "tenant_id": doc.tenant_id,
             "document_type": doc.document_type,
             "mime_type": doc.document_mime_type,
             "file_bytes": file_bytes,
-            "raw_text": "",
+            "raw_text": full_raw_text,
             "extraction_results": None,
             "confidence_score": None,
             "field_confidences": None,
@@ -127,20 +186,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
         db.commit()
 
-        if doc.webhook_url and doc.status == DocumentStatus.completed:
-            from backend.core.connectors import dispatch_webhook
-            await dispatch_webhook(
-                document_id=doc.id,
-                event="document.completed",
-                payload={
-                    "document_id": doc.id,
-                    "status": doc.status.value,
-                    "extraction_results": doc.extraction_results,
-                    "confidence_score": doc.confidence_score,
-                },
-                url=doc.webhook_url,
-            )
-
+        await _dispatch_completion_webhook(doc)
 
         # 6. clean up Redis - the uploaded bytes are no longer needed
         redis_client.delete(redis_key)
@@ -165,11 +211,173 @@ async def process_document(ctx: dict, document_id: int) -> None:
         db.close()
 
 
+async def _dispatch_completion_webhook(doc: Document) -> None:
+    if doc.webhook_url and doc.status == DocumentStatus.completed:
+        from backend.core.connectors import dispatch_webhook
+
+        await dispatch_webhook(
+            document_id=doc.id,
+            event="document.completed",
+            payload={
+                "document_id": doc.id,
+                "status": doc.status.value,
+                "extraction_results": doc.extraction_results,
+                "confidence_score": doc.confidence_score,
+            },
+            url=doc.webhook_url,
+        )
+
+
+async def process_document_chunk(ctx: dict, document_id: int, chunk_index: int) -> None:
+    """One chunk of a chunked document (ADR 006).
+
+    Each field is validated against the chunk it came from: extract AND
+    validate both run per-chunk here, never against the whole document's
+    text. That is not just a literal reading of the spec — a single
+    validate_fields call over an entire large document's raw_text would
+    itself be exactly the oversized request chunking exists to avoid, so
+    finalize below is a pure merge with no LLM call and nothing left that
+    can trigger a capacity wait.
+
+    `chunk_index == total_chunks` is the sentinel for "every chunk is in —
+    merge and finalize." A capacity wait during a chunk's extract/validate
+    call defers via `arq.Retry`; a retry re-enters at the same chunk, since
+    nothing before it is redone.
+    """
+
+    db: Session = SessionLocal()
+    try:
+        doc = db.get(Document, document_id)
+        if not doc:
+            return
+
+        total_chunks = get_total_chunks(redis_client, document_id)
+        if total_chunks is None:
+            # Chunk state expired (or this job is stale) — nothing to do.
+            return
+
+        plugin = get_plugin(doc.document_type)
+        model = llm_client.get_model()
+
+        if chunk_index < total_chunks:
+            chunk_text = get_chunk_text(redis_client, document_id, chunk_index)
+            try:
+                fields = await extract_fields(
+                    chunk_text, plugin, model=model, redis_client=redis_client
+                )
+                extracted = fields.model_dump(exclude={"confidence_score"})
+                validation = await validate_fields(
+                    raw_text=chunk_text,
+                    extracted_fields=extracted,
+                    model=model,
+                    redis_client=redis_client,
+                )
+            except CapacityWaitError as exc:
+                redis_client.incr(CAPACITY_WAIT_COUNTER_KEY)
+                record_capacity_wait(redis_client, document_id, exc.wait_seconds)
+                raise Retry(defer=exc.wait_seconds) from exc
+
+            store_chunk_result(
+                redis_client,
+                document_id,
+                chunk_index,
+                {
+                    "fields": extracted,
+                    "field_scores": validation.field_scores,
+                    "overall_confidence": validation.overall_confidence,
+                },
+            )
+
+            from backend.queue.jobs import enqueue_process_document_chunk
+
+            # Always re-enqueue as a new job, even for the sentinel index —
+            # this is what puts a big document's next step at the BACK of
+            # the shared queue, letting other documents' jobs interleave
+            # (round-robin fairness) rather than one document hogging a
+            # worker slot for its entire multi-chunk processing time.
+            await enqueue_process_document_chunk(document_id, chunk_index + 1)
+            return
+
+        # --- chunk_index == total_chunks: merge every chunk. No LLM call. ---
+        chunk_data = get_all_chunk_results(redis_client, document_id, total_chunks)
+        merge_result = merge_chunk_results(
+            plugin, [c.get("fields", {}) for c in chunk_data]
+        )
+
+        # A running total can be assembled from different pages ("last"
+        # policy); the arithmetic gate only makes sense post-merge.
+        math_reasons = check_arithmetic(merge_result.fields)
+
+        # Each kept field's confidence comes from the chunk that field's
+        # value came from (its provenance) — never averaged with a chunk
+        # whose value was discarded.
+        merged_field_scores = {
+            field_name: chunk_data[chunk_idx]["field_scores"][field_name]
+            for field_name, chunk_idx in merge_result.provenance.items()
+            if field_name in chunk_data[chunk_idx].get("field_scores", {})
+        }
+        contributing_confidences = [
+            chunk_data[i].get("overall_confidence", 0.0)
+            for i in sorted(set(merge_result.provenance.values()))
+        ]
+        overall_confidence = (
+            sum(contributing_confidences) / len(contributing_confidences)
+            if contributing_confidences
+            else 0.0
+        )
+        if math_reasons:
+            overall_confidence = 0.0
+
+        validation = ValidatorOutput(
+            field_scores=merged_field_scores,
+            overall_confidence=overall_confidence,
+            status="human_review" if math_reasons else None,
+            review_reasons=math_reasons,
+        )
+        status, reasons = resolve_validation_outcome(
+            validation,
+            settings.confidence_threshold,
+            extra_reasons=merge_result.conflict_reasons,
+        )
+
+        clear_capacity_wait(redis_client, document_id)
+
+        extraction_results = dict(merge_result.fields)
+        if merged_field_scores:
+            extraction_results["_field_confidences"] = merged_field_scores
+        if reasons:
+            extraction_results["_review_reasons"] = reasons
+        if merge_result.provenance:
+            extraction_results["_field_provenance"] = merge_result.provenance
+
+        doc.extraction_results = extraction_results
+        doc.confidence_score = overall_confidence
+        doc.status = DocumentStatus(status)
+        db.commit()
+
+        await _dispatch_completion_webhook(doc)
+
+        clear_chunk_state(redis_client, document_id, total_chunks)
+
+    except Retry:
+        raise
+
+    except Exception as e:
+        db.rollback()
+        doc = db.get(Document, document_id)
+        if doc:
+            doc.status = DocumentStatus.failed
+            db.commit()
+        raise e
+
+    finally:
+        db.close()
+
 
 class WorkerSettings:
     """ARQ reads this class to configure the worker."""
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
-    functions = [process_document]
+    functions = [process_document, process_document_chunk]
     # ADR 006: arq's own default (5) would silently ABANDON a document that
     # needs more than 5 capacity-wait retries — arq marks the job permanently
     # failed in its own bookkeeping without ever touching Document.status, so

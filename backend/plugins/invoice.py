@@ -4,7 +4,7 @@ from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
-from backend.plugins.base import DocumentPlugin
+from backend.plugins.base import DocumentPlugin, MergePolicy
 
 
 class InvoiceFields(BaseModel):
@@ -55,6 +55,18 @@ class InvoicePlugin(DocumentPlugin):
     @property
     def extraction_schema(self) -> Type[BaseModel]:
         return InvoiceFields
+
+    @property
+    def merge_policy(self) -> dict[str, MergePolicy]:
+        # Totals should reflect the final page's numbers; line items span
+        # every page they appear on. Header facts (vendor, invoice/date
+        # fields, currency) default to "first_non_null".
+        return {
+            "subtotal": "last",
+            "tax_amount": "last",
+            "total_amount": "last",
+            "line_items": "concat",
+        }
 
     @property
     def system_prompt(self) -> str:
