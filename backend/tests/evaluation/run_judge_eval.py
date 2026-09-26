@@ -40,12 +40,14 @@ from pathlib import Path
 from typing import Any
 
 from deepeval.test_case import LLMTestCase
+from pydantic_ai.exceptions import ModelHTTPError
 
 from backend.agents.extractor import extract_fields
 from backend.core.config import settings
 from backend.core.db import redis_client
 from backend.core.deepeval_judge import LLMClientBasedJudge
 from backend.core.llm import llm_client
+from backend.core.token_budget import CapacityWaitError
 from backend.plugins.contract import ContractPlugin
 from backend.tests.evaluation.conftest import fuzzy_match, load_golden
 from backend.tests.evaluation.judge_calibration import (
@@ -64,6 +66,10 @@ CHECKPOINT_FILE = RESULTS_DIR / ".judge_eval_checkpoint.json"
 JUDGE_THRESHOLD = 0.5
 JUDGE_RUNS_PER_CONTROL = 3
 CALIBRATION_CASE_COUNT = 2  # keep the live cost small; see docs/deepeval.md
+
+MAX_CAPACITY_RETRIES = 20
+CAPACITY_RETRY_BUFFER_SECONDS = 1.0
+CAPACITY_RETRY_MAX_WAIT_SECONDS = 90.0
 
 # A crude, dependency-free "faithful reword": preserves every obligation and
 # every number/date, just swaps a few words for synonyms. Not a real
@@ -124,10 +130,39 @@ def save_checkpoint(checkpoint: dict[str, Any]) -> None:
     tmp_file.replace(CHECKPOINT_FILE)
 
 
+async def _with_capacity_retry(coro_fn):
+    """Retry a call that hits either the local Redis token bucket
+    (CapacityWaitError, ADR 006) or a real Groq 429 (ModelHTTPError),
+    sleeping for however long the failure itself says to wait.
+
+    Free-tier capacity waits are routine, not exceptional - letting one
+    crash the whole process (relying on scripts/run_eval_resilient.sh to
+    restart from checkpoint) works but throws away a full process restart
+    for what is often just an 8-second wait.
+    """
+    for _attempt in range(MAX_CAPACITY_RETRIES):
+        try:
+            return await coro_fn()
+        except CapacityWaitError as exc:
+            await asyncio.sleep(
+                min(exc.wait_seconds, CAPACITY_RETRY_MAX_WAIT_SECONDS)
+                + CAPACITY_RETRY_BUFFER_SECONDS
+            )
+        except ModelHTTPError as exc:
+            if exc.status_code != 429:
+                raise
+            wait = exc.retry_after or CAPACITY_RETRY_MAX_WAIT_SECONDS
+            await asyncio.sleep(
+                min(wait, CAPACITY_RETRY_MAX_WAIT_SECONDS)
+                + CAPACITY_RETRY_BUFFER_SECONDS
+            )
+    raise RuntimeError(f"Exceeded {MAX_CAPACITY_RETRIES} capacity retries")
+
+
 async def _judge_score(metric: Any, actual: str, expected: str) -> float:
     """Run one GEval measurement and return its score (0.0-1.0)."""
     test_case = LLMTestCase(input="", actual_output=actual, expected_output=expected)
-    return await metric.a_measure(test_case)
+    return await _with_capacity_retry(lambda: metric.a_measure(test_case))
 
 
 async def _run_control(
@@ -260,8 +295,13 @@ async def score_case(
         return cached
 
     plugin = ContractPlugin()
-    extracted = await extract_fields(
-        raw_text=case["input"], plugin=plugin, model=model, redis_client=redis_client
+    extracted = await _with_capacity_retry(
+        lambda: extract_fields(
+            raw_text=case["input"],
+            plugin=plugin,
+            model=model,
+            redis_client=redis_client,
+        )
     )
     expected = case["expected"]
 
