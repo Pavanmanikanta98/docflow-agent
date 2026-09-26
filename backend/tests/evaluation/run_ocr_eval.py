@@ -16,6 +16,12 @@ labels for the fields it provides (see evals/datasets/README.md).
 Usage (needs GROQ_API_KEY):
     uv run python -m backend.tests.evaluation.run_ocr_eval
 
+This is a long run (~230 real calls; the free tier's 8000 TPM ceiling makes
+it take hours, not minutes) with its own checkpoint/resume (see
+CHECKPOINT_PATH below), so it tolerates being killed and re-run. To also
+auto-restart on a crash instead of needing a manual re-run:
+    scripts/run_eval_resilient.sh backend.tests.evaluation.run_ocr_eval
+
 Writes evals/results/<date>-ocr-<model>.json and prints a markdown table.
 """
 
