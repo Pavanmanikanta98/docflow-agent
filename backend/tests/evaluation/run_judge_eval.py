@@ -369,8 +369,10 @@ async def main() -> None:
 
     logger.info("Scoring all contract golden cases...")
     extraction_model = llm_client.get_model()
+    all_contract_cases = load_golden("contracts.json")
     cases_data = []
-    for case in load_golden("contracts.json"):
+    case_failures: list[str] = []
+    for case in all_contract_cases:
         try:
             cases_data.append(
                 await score_case(
@@ -382,6 +384,7 @@ async def main() -> None:
                 )
             )
         except Exception as exc:  # noqa: BLE001 - one bad case must not crash the run
+            case_failures.append(case["case_id"])
             logger.error(f"Failed to score {case['case_id']}: {exc}")
 
     results_data = {
@@ -405,6 +408,7 @@ async def main() -> None:
         },
         "headline_metric": headline_metric,
         "cases": cases_data,
+        "case_failures": case_failures,
     }
 
     model_slug = settings.llm_model.replace("/", "-")
@@ -412,8 +416,14 @@ async def main() -> None:
     out_path.write_text(json.dumps(results_data, indent=2) + "\n")
     logger.info(f"Wrote {out_path}")
     logger.info(f"Headline metric: {headline_metric}")
+    if case_failures:
+        logger.warning(f"{len(case_failures)} case(s) failed to score: {case_failures}")
 
-    if calib_passed:
+    # Only clear on a fully clean run - calibration passing is not enough if
+    # cases are still missing; keep the checkpoint so a re-run resumes
+    # instead of re-spending quota on calibration and every already-scored
+    # case.
+    if not case_failures and len(cases_data) == len(all_contract_cases):
         CHECKPOINT_FILE.unlink(missing_ok=True)
 
 
