@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -29,7 +30,17 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO_ROOT / "evals" / "results"
 
-FAKE_GROQ_PORT = 8899
+
+def _free_port() -> int:
+    """An OS-assigned free port, so a stale fake_groq from a killed previous
+    run can never make this run silently talk to the wrong server (a fixed
+    port did exactly that once during development — see load-test notes)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+FAKE_GROQ_PORT = _free_port()
 TPM = 8000
 RPM = 30
 NUM_SMALL_DOCS = 30
