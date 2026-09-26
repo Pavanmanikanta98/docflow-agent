@@ -25,6 +25,9 @@ class Document(BaseModel):
     human_review_rejection_reason: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    # ADR 006 — populated from Redis by the list route, not from the ORM row.
+    waiting_for_capacity: bool = False
+    capacity_wait_estimated_start: Optional[str] = None
 
 
 class DocumentUploadRequest(BaseModel):
@@ -76,6 +79,18 @@ class DocumentStatusResponse(BaseModel):
     )
     human_review_rejection_reason: Optional[str] = Field(
         None, description="The reason for the human review rejection"
+    )
+    # ADR 006 — derived, Redis-backed state; never persisted on the document
+    # row (the status column is a DB enum; a capacity wait is not a status).
+    waiting_for_capacity: bool = Field(
+        False, description="True while this document is deferred for LLM capacity"
+    )
+    capacity_wait_estimated_start: Optional[str] = Field(
+        None,
+        description=(
+            "ISO 8601 estimate of when processing will resume, "
+            "when waiting_for_capacity is true"
+        ),
     )
 
 

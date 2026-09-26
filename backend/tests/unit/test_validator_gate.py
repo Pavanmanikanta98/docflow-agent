@@ -1,9 +1,27 @@
 """V1-4: the arithmetic gate is deterministic and outranks the model's confidence."""
 
 import pytest
+import redis as redis_lib
+from pydantic_ai.models.test import TestModel
 
 from backend.agents.validator import ValidatorOutput, check_arithmetic, validate_fields
 from backend.plugins.invoice import InvoiceFields
+
+
+def _redis_available() -> bool:
+    try:
+        client = redis_lib.from_url(
+            "redis://localhost:6379/15", socket_connect_timeout=1
+        )
+        client.ping()
+        return True
+    except redis_lib.exceptions.RedisError:
+        return False
+
+
+requires_redis = pytest.mark.skipif(
+    not _redis_available(), reason="Redis is not reachable at redis://localhost:6379/15"
+)
 
 # ---------------------------------------------------------------------------
 # The pure check
@@ -60,7 +78,7 @@ async def _validate_with_scores(
         def __init__(self, **kwargs: object) -> None:
             pass
 
-        async def run(self, prompt: str) -> _FakeRun:
+        async def run(self, prompt: str, **kwargs: object) -> _FakeRun:
             return _FakeRun(
                 validator.LLMScores(
                     field_scores={k: confidence for k in fields},
@@ -107,3 +125,31 @@ def test_invoice_schema_has_subtotal_and_tax() -> None:
 
     assert fields.subtotal is None
     assert fields.tax_amount is None
+
+
+# ---------------------------------------------------------------------------
+# ADR 006 — capacity reservation/settlement, against real Redis + TestModel
+# ---------------------------------------------------------------------------
+
+@requires_redis
+@pytest.mark.asyncio
+async def test_validate_fields_reserves_and_settles_capacity_against_real_redis() -> (
+    None
+):
+    """With a redis_client, validate_fields must reserve and settle without
+    raising — the same `result.usage` property access bug the extractor had
+    (caught by scripts/load_test.py) applies here too."""
+    client = redis_lib.from_url("redis://localhost:6379/15")
+    client.flushdb()
+
+    output = await validate_fields(
+        raw_text="INVOICE total 715.00",
+        extracted_fields={"total_amount": 715.0},
+        model=TestModel(),
+        redis_client=client,
+    )
+
+    assert isinstance(output, ValidatorOutput)
+    keys = client.keys("token_budget:*:tpm:*")
+    assert keys, "expected the reservation to have written a tpm window key"
+    client.flushdb()

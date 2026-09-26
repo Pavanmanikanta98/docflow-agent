@@ -8,6 +8,7 @@ import api, { getSessionId } from '@/lib/api';
 import ExtractionReview from '@/components/ExtractionReview';
 import ExportPanel from '@/components/ExportPanel';
 import type { Document } from '@/lib/types';
+import { formatCapacityWaitMessage } from '@/lib/capacityWait';
 
 const { Title } = Typography;
 
@@ -204,6 +205,16 @@ export default function ReviewPage() {
       {/* Right — review + export */}
       <Card className="w-full lg:w-[450px] overflow-y-auto shadow-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <Title level={4} className="!mb-6">Extraction Results</Title>
+
+        {doc.waiting_for_capacity && (
+          <Alert
+            className="!mb-4"
+            type="info"
+            showIcon
+            message={formatCapacityWaitMessage(doc.capacity_wait_estimated_start)}
+            description="The free-tier Groq rate limit is busy. This document will resume automatically — no action needed."
+          />
+        )}
 
         {reviewReasons.length > 0 && (
           <Alert

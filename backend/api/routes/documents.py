@@ -1,4 +1,5 @@
 """Routes: upload, list, status, download."""
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import (
@@ -22,6 +23,10 @@ from backend.api.deps import (
 )
 from backend.core.config import settings
 from backend.core.connectors import WebhookURLRejectedError, validate_webhook_url
+from backend.core.token_budget import (
+    get_capacity_wait_estimated_start,
+    get_capacity_wait_estimated_starts,
+)
 from backend.models.db import Document, DocumentStatus
 from backend.models.schemas import Document as DocumentSchema
 from backend.models.schemas import (
@@ -129,7 +134,8 @@ async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     tenant_id: str = Depends(get_tenant_id),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ):
     query = db.query(Document).filter(Document.tenant_id == tenant_id)
     total = query.count()
@@ -140,8 +146,23 @@ async def list_documents(
         .all()
     )
 
+    waits = get_capacity_wait_estimated_starts(redis, [doc.id for doc in docs])
+
+    def _to_schema(doc: Document) -> DocumentSchema:
+        estimated_start = waits.get(doc.id)
+        return DocumentSchema.model_validate(doc).model_copy(
+            update={
+                "waiting_for_capacity": estimated_start is not None,
+                "capacity_wait_estimated_start": (
+                    datetime.fromtimestamp(estimated_start, tz=timezone.utc).isoformat()
+                    if estimated_start is not None
+                    else None
+                ),
+            }
+        )
+
     return DocumentListResponse(
-        documents=[DocumentSchema.model_validate(doc) for doc in docs],
+        documents=[_to_schema(doc) for doc in docs],
         total=total,
         page=page,
         page_size=page_size
@@ -150,7 +171,11 @@ async def list_documents(
 @router.get('/{document_id}', response_model=DocumentStatusResponse)
 async def get_document(
     doc: Document = Depends(get_owned_document),
+    redis: Redis = Depends(get_redis),
 ):
+    estimated_start = get_capacity_wait_estimated_start(redis, doc.id)
+    waiting_for_capacity = estimated_start is not None
+
     return DocumentStatusResponse(
         status=doc.status.value,
         message="Document status retrieved",
@@ -167,6 +192,12 @@ async def get_document(
             doc.human_review_status.value if doc.human_review_status else None
         ),
         human_review_rejection_reason=doc.human_review_rejection_reason,
+        waiting_for_capacity=waiting_for_capacity,
+        capacity_wait_estimated_start=(
+            datetime.fromtimestamp(estimated_start, tz=timezone.utc).isoformat()
+            if estimated_start is not None
+            else None
+        ),
     )
 
 

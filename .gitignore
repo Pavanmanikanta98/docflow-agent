@@ -41,3 +41,7 @@ MARKET_ANALYSIS.md
 REVIEW.md
 BUGS.md
 CONVERSATION_INSIGHTS.md
+
+# Local redis-server snapshot (created by running redis-server without
+# --save "" during local dev/testing)
+dump.rdb

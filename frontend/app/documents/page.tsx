@@ -6,6 +6,7 @@ import { Table, Tag, Typography, Button, Space } from 'antd';
 import { EyeOutlined, SyncOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import type { Document } from '@/lib/types';
+import { formatCapacityWaitMessage } from '@/lib/capacityWait';
 
 const { Title } = Typography;
 
@@ -57,13 +58,21 @@ export default function DocumentsPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: string, record: Document) => {
+        if (record.waiting_for_capacity) {
+          return (
+            <Tag color="gold" icon={<SyncOutlined spin />}>
+              {formatCapacityWaitMessage(record.capacity_wait_estimated_start).toUpperCase()}
+            </Tag>
+          );
+        }
+
         let color = 'default';
         if (status === 'completed') color = 'success';
         if (status === 'awaiting_review') color = 'warning';
         if (status === 'processing') color = 'processing';
         if (status === 'failed') color = 'error';
-        
+
         return (
           <Tag color={color} icon={status === 'processing' ? <SyncOutlined spin /> : null}>
             {status.replace('_', ' ').toUpperCase()}

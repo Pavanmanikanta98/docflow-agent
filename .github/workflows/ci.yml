@@ -20,6 +20,18 @@ jobs:
     name: Backend (ruff + unit/integration tests)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # ADR 006's token-bucket tests exercise a real Redis Lua script — a mock
+    # would not honestly test atomicity or TTL behaviour.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
 

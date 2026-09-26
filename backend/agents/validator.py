@@ -10,6 +10,13 @@ from typing import Any
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from backend.core.config import settings
+from backend.core.token_budget import (
+    estimate_tokens,
+    get_budget_for_model,
+    reserve_or_raise,
+)
+
 # ---------------------------------------------------------------------------
 # Output schema — generic, works for any document type
 # ---------------------------------------------------------------------------
@@ -153,6 +160,7 @@ async def validate_fields(
     raw_text: str,
     extracted_fields: dict[str, Any],
     model: Any,
+    redis_client: Any = None,
 ) -> ValidatorOutput:
     """
     Validate extracted document fields against the raw source text.
@@ -165,16 +173,18 @@ async def validate_fields(
         extracted_fields: The structured dict returned by Agent 2 (extractor).
         model: pydantic-ai model instance, resolved by the pipeline (server
             key, or a caller-supplied key when that is enabled).
+        redis_client: When given, reserves capacity against ADR 006's token
+            budget before calling the model and settles it against the real
+            usage afterward. `None` (unit tests with TestModel/FunctionModel)
+            skips budgeting — there is no real capacity to protect.
 
     Returns:
         ValidatorOutput with per-field scores dict and overall_confidence.
-    """
-    agent = Agent(
-        model=model,
-        output_type=LLMScores,
-        system_prompt=_SYSTEM_PROMPT,
-    )
 
+    Raises:
+        backend.core.token_budget.CapacityWaitError: no room in the budget
+            right now.
+    """
     field_list = "\n".join(f"  - {k}: {v}" for k, v in extracted_fields.items())
     prompt = (
         f"Raw document text:\n{raw_text}\n\n"
@@ -183,7 +193,33 @@ async def validate_fields(
         "field_scores must contain exactly these keys: "
         f"{list(extracted_fields.keys())}."
     )
-    scores = (await agent.run(prompt)).output
+
+    model_name = getattr(model, "model_name", str(model))
+    reservation = None
+    if redis_client is not None:
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ]
+        estimated = estimate_tokens(messages, settings.llm_max_completion_tokens)
+        reservation = reserve_or_raise(redis_client, model_name, estimated)
+
+    agent = Agent(
+        model=model,
+        output_type=LLMScores,
+        system_prompt=_SYSTEM_PROMPT,
+    )
+
+    result = await agent.run(
+        prompt, model_settings={"max_tokens": settings.llm_max_completion_tokens}
+    )
+    scores = result.output
+
+    if reservation is not None:
+        usage = result.usage
+        actual = (usage.input_tokens or 0) + (usage.output_tokens or 0)
+        get_budget_for_model(redis_client, model_name).settle(reservation, actual)
+
     output = ValidatorOutput(
         field_scores=scores.field_scores,
         overall_confidence=scores.overall_confidence,

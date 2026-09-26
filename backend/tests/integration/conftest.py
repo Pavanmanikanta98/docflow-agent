@@ -102,6 +102,9 @@ def mock_redis():
     r = MagicMock()
     r.setex = MagicMock(return_value=True)
     r.get = MagicMock(return_value=b"fake-file-bytes")
+    # ADR 006 — the document list route batch-reads capacity-wait state via
+    # MGET; no test document is waiting on capacity, so every key is absent.
+    r.mget = MagicMock(side_effect=lambda keys: [None] * len(keys))
     return r
 
 

@@ -17,6 +17,7 @@ from langgraph.graph import END, START, StateGraph
 from backend.agents.parser import extract_text
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
+from backend.core.db import redis_client
 from backend.core.llm import llm_client
 
 # ---------------------------------------------------------------------------
@@ -79,7 +80,9 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
     plugin = get_plugin(state["document_type"])
     model = _resolve_model()
 
-    fields = await extract_fields(state["raw_text"], plugin, model=model)
+    fields = await extract_fields(
+        state["raw_text"], plugin, model=model, redis_client=redis_client
+    )
     return {
         **state,
         "extraction_results": fields.model_dump(exclude={"confidence_score"}),
@@ -95,6 +98,7 @@ async def validate_node(state: DocFlowState) -> DocFlowState:
         raw_text=state["raw_text"],
         extracted_fields=state["extraction_results"],
         model=model,
+        redis_client=redis_client,
     )
     reasons = list(validation.review_reasons)
     if validation.status != "human_review" and (
