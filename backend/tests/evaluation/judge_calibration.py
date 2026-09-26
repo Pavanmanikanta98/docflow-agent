@@ -8,7 +8,9 @@ is the mean + spread (max-min), not a single sample.
 This module builds the control cases and provides the decision logic.
 """
 
+import csv
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
@@ -31,6 +33,10 @@ class ControlResult:
     """The golden ground truth."""
     scores: list[float]
     """List of scores from 3 judge runs."""
+    field_name: str = "unknown"
+    """Which scoped field this control is for (termination_clause or
+    key_obligations) - defaults to "unknown" for backward compatibility
+    with callers that pre-date this field."""
 
     @property
     def mean_score(self) -> float:
@@ -81,6 +87,43 @@ def calibration_passed(
 
     # If we have at least one of each type, or at least one of either type, pass
     return len(controls) > 0
+
+
+CALIBRATION_CSV_FIELDS = [
+    "case_id",
+    "field_name",
+    "is_positive",
+    "candidate",
+    "expected",
+    "scores",
+    "mean_score",
+    "spread",
+    "human_verdict",
+]
+
+
+def write_calibration_csv(controls: list[ControlResult], path: Path) -> None:
+    """Write real calibration outputs to a CSV for manual spot-checking
+    later (ADR 008). `human_verdict` is left empty - nothing in the
+    calibration decision depends on it being filled in."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CALIBRATION_CSV_FIELDS)
+        writer.writeheader()
+        for control in controls:
+            writer.writerow(
+                {
+                    "case_id": control.case_id,
+                    "field_name": control.field_name,
+                    "is_positive": control.is_positive,
+                    "candidate": control.candidate,
+                    "expected": control.expected,
+                    "scores": control.scores,
+                    "mean_score": control.mean_score,
+                    "spread": control.spread,
+                    "human_verdict": "",
+                }
+            )
 
 
 # ---------------------------------------------------------------------------

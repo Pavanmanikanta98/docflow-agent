@@ -375,29 +375,56 @@ ADR 006 (token budget + chunking + cost model), ADR 007 (OCR evaluation), ADR 00
 (DeepEval judge). Branches stack: 1 → 2 → 3 → 4 → 7 (7 also merges 5 and 6 into
 itself only — nothing here merges into `main`).
 
-- [ ] **0b** — Scanned invoice dataset: CORD-v2 (CC BY 4.0), 50 docs from the test
+- [x] **0b** — Scanned invoice dataset: CORD-v2 (CC BY 4.0), 50 docs from the test
       split, scored on vendor/subtotal/tax/total/line_items only. SROIE dropped
       (license unverifiable). `evals/datasets/`.
-- [ ] **1** `docs/adr-006-008` — ADR 006/007/008, CLAUDE.md rule 7, this section.
-- [ ] **2** `feat/token-budget` (base 1) — Redis token bucket (TPM/RPM/TPD/RPD),
+      *Evidence:* `evals/datasets/cord-v2/` (50 images + `labels.json`),
+      `evals/datasets/README.md`, `evals/datasets/cord-v2/LICENSE.md`.
+- [x] **1** `docs/adr-006-008` — ADR 006/007/008, CLAUDE.md rule 7, this section.
+      *Evidence:* `ARCHITECTURE_DECISIONS.md` ADR 006/007/008.
+- [x] **2** `feat/token-budget` (base 1) — Redis token bucket (TPM/RPM/TPD/RPD),
       `reserve`/`settle`/`sync_from_headers`, worker defers instead of failing on
       capacity, per-session in-flight cap, `waiting_for_capacity` status,
       `scripts/fake_groq.py`, `scripts/load_test.py`.
-- [ ] **3** `feat/big-doc-chunking` (base 2) — page-boundary chunking above
+      *Evidence:* `backend/core/token_budget.py`, `backend/queue/worker.py`
+      (`_defer_for_capacity`), `evals/results/2026-09-24-load-test.json`
+      (30 small + 1 large doc, 0 failures, against `scripts/fake_groq.py`).
+- [x] **3** `feat/big-doc-chunking` (base 2) — page-boundary chunking above
       `LLM_MAX_REQUEST_SHARE`, per-field merge policies, `chunk_conflict:<field>`,
       round-robin fairness, re-run load test with a large doc.
-- [ ] **4** `feat/cost-model-and-batch` (base 3) — `backend/core/pricing.py`,
+      *Evidence:* `backend/core/chunking.py`, `backend/core/chunk_merge.py`,
+      `backend/core/chunk_state.py`; load test above includes the large doc.
+- [x] **4** `feat/cost-model-and-batch` (base 3) — `backend/core/pricing.py`,
       `scripts/cost_report.py`, `scripts/bulk_submit.py` (Batch API, mocked only —
       needs the paid Developer tier, not run live).
-- [ ] **5** `eval/ocr-real` (base 1) — synthetic degraded scans (Set A) + CORD-v2
+      *Evidence:* `backend/core/pricing.py` (pricing verified live 24 Sep 2026
+      against `GET /openai/v1/models`), `evals/results/2026-09-24-cost.json`
+      (honestly reports per-doc cost as "not measured yet" — no run has
+      per-case token usage).
+- [x] **5** `eval/ocr-real` (base 1) — synthetic degraded scans (Set A) + CORD-v2
       (Set B), CER/WER via `jiwer`, field-accuracy gap vs text layer, preprocessing
       experiment, CI CER guard.
-- [ ] **6** `eval/deepeval-judge` (base 2) — GEval judge (gpt-oss-120b) for contract
+      *Evidence:* `backend/core/ocr_synthetic.py`, `backend/core/ocr_metrics.py`,
+      `backend/tests/evaluation/run_ocr_eval.py`,
+      `backend/tests/unit/test_ocr_cer_guard.py`; live run 26 Sep 2026, 0 failures,
+      `evals/results/2026-09-26-ocr-openai-gpt-oss-20b.json` (Set A baseline 86.25%,
+      Set B 35.5% on 50/50 scored). README "OCR robustness (ADR 007)".
+- [x] **6** `eval/deepeval-judge` (base 2) — GEval judge (gpt-oss-120b) for contract
       `termination_clause`/`key_obligations` only, calibration controls,
       `evals/judge_calibration.csv`, `docs/deepeval.md`.
-- [ ] **7** `integration/design-2026-09` (base 4, merges 5 + 6 in) — full suite +
+      *Evidence:* `backend/core/deepeval_judge.py`, `backend/tests/evaluation/
+      judge_calibration.py`, `backend/tests/evaluation/run_judge_eval.py`,
+      `docs/deepeval.md`, `evals/judge_calibration.csv`; live run 26 Sep 2026,
+      calibration passed (positive 1.0, negative 0.0-0.067),
+      `evals/results/2026-09-26-judge-openai-gpt-oss-20b.json` (GEval avg 0.993
+      termination_clause / 0.946 key_obligations vs fuzzy's 35.7% pass rate on
+      termination_clause). README "Free-text field judge (ADR 008)".
+- [x] **7** `integration/design-2026-09` (base 4, merges 5 + 6 in) — full suite +
       ruff green, README Evaluation/Rate-limits-and-cost/Known-limitations
       rewritten, SPRINT.md ticks with evidence.
+      *Evidence:* this branch — 215 unit/integration tests pass, `ruff check`
+      clean; README "Evaluation" (OCR + judge subsections), "Rate limits and
+      cost", "Known limitations" sections; this checklist.
 
 **R5 reversed.** The "Proposed removals" table below lists removing `deepeval` as
 a dev dependency (unused at the time). ADR 008 reverses that: `deepeval` is kept,

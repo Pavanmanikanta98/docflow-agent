@@ -96,12 +96,108 @@ Run on 18 Sep 2026 via Groq. Raw logs in `evals/results/`.
 **Not measured yet**
 
 - Per-case latency and token counts.
-- Real OCR. `inv_013` is text shaped like Tesseract output, typed by hand — the OCR path
-  is tested separately in `backend/tests/unit/test_parser.py`, but it is not part of this score.
+
+### OCR robustness (ADR 007)
+
+Run 26 Sep 2026 via Groq (`openai/gpt-oss-20b`), real API, zero extraction failures
+across all 230 calls (~90 min, gated by the free tier's 8000 TPM ceiling — see
+"Rate limits and cost" below). Raw results: `evals/results/2026-09-26-ocr-openai-gpt-oss-20b.json`.
+
+**Set A — synthetic degraded scans** (20 clean golden cases, 8 degradation variants
+each: DPI downsampling, rotation, blur, noise, JPEG recompression, and a realistic
+"phone photo" composite). Text-layer (no OCR) baseline field accuracy: **86.25%**.
+Preprocessing (grayscale + Otsu threshold + deskew) was tested and measured *worse*
+than no preprocessing (CER 0.0416 vs 0.0407) — not added to `backend/agents/parser.py`;
+see ADR 007 for the full comparison.
+
+**Set B — CORD-v2 (real scans)**: 50 test-split receipt images (CC BY 4.0, see
+`evals/datasets/README.md`), scored on `vendor_name`/`subtotal`/`tax_amount`/
+`total_amount`/`line_items`. Field accuracy: **35.5%**, all 50 cases scored.
+Reading this honestly: CORD-v2's receipts are Indonesian retail formats (menu items,
+IDR-style amounts) that don't match this pipeline's invoice schema assumptions nearly
+as well as the synthetic Set A does — a real gap, not a measurement artifact.
+
+### Free-text field judge (ADR 008)
+
+Structured fields (amounts, dates, names) are scored by the deterministic matchers
+above. Two contract free-text fields — `termination_clause` and `key_obligations` —
+are not: correct-but-reworded text has no single right string to fuzzy-match against.
+A DeepEval `GEval` judge (`openai/gpt-oss-120b`, a different and larger model than the
+extractor, temperature 0) scores these instead, but only after passing calibration:
+hand-authored positive controls (faithful rewording — must score high) and negative
+controls (a changed notice period or a dropped obligation — must score low), each run
+3 times for mean + spread.
+
+Run 26 Sep 2026, real Groq API, zero case failures (~90 min):
+`evals/results/2026-09-26-judge-openai-gpt-oss-20b.json`.
+
+| | Result |
+|---|---|
+| Calibration | **Passed** — positive controls 1.0, negative controls 0.0–0.067 |
+| GEval, `termination_clause` (14 cases) | **0.993** average |
+| GEval, `key_obligations` (13 cases) | **0.946** average |
+| Fuzzy matcher, `termination_clause` | 35.7% pass rate |
+
+The gap between the last two rows is the point: the fuzzy matcher badly underrates
+correct-but-reworded contract text, while the calibrated judge scores it near-perfect.
+Full mechanism, calibration methodology, and how to read the scores: `docs/deepeval.md`.
 
 ```bash
 uv run pytest backend/tests/evaluation -s   # real LLM calls — costs API credits
+uv run python -m backend.tests.evaluation.run_ocr_eval       # real LLM calls, ~1.5-2h
+uv run python -m backend.tests.evaluation.run_judge_eval     # real LLM calls, ~1.5h
 ```
+
+## Rate limits and cost
+
+Groq's free tier (confirmed live, `GET /openai/v1/models`, 24 Sep 2026):
+**30 requests/min, 8000 tokens/min, 1000 requests/day, 200000 tokens/day.** The 8000
+TPM ceiling is the binding constraint in practice — a handful of sequential extraction
+calls exhausts a whole minute's budget, so every real-LLM script in this repo (the
+evaluation runs above, `backend/queue/worker.py`) either backs off using the server's
+own `Retry-After` / `x-ratelimit-reset-*` headers or defers the job via a Redis token
+bucket (ADR 006, `backend/core/token_budget.py`) rather than failing it.
+
+**Simulated load** (`scripts/load_test.py` against `scripts/fake_groq.py`, a local
+mock — not real Groq): 30 small documents + 1 large (chunked) document, 5 concurrent
+sessions, **0 failures**, the large document completed, 62 capacity waits total,
+median wait 118s / p95 300s for a small document. Full config and numbers:
+`evals/results/2026-09-24-load-test.json`.
+
+**Pricing** (verified live against `GET /openai/v1/models`'s own billing metadata,
+24 Sep 2026 — see `backend/core/pricing.py`):
+
+| Model | Input | Output | Batch (50% off, untested live) |
+|---|---|---|---|
+| `openai/gpt-oss-20b` | $0.075 / 1M tokens | $0.30 / 1M tokens | $0.0375 / $0.15 |
+| `openai/gpt-oss-120b` | $0.15 / 1M tokens | $0.60 / 1M tokens | $0.075 / $0.30 |
+
+**Cost per document: not measured yet.** No evaluation run has captured per-case
+token usage (the metrics/usage-tracking work in SPRINT.md's V1-7 was not finished),
+so a $/1000-docs number would be a guess dressed as a measurement. `scripts/cost_report.py`
+is built to compute this the moment that data exists — see `evals/results/2026-09-24-cost.json`,
+which currently reports "not measured yet" for exactly this reason rather than
+inventing a number.
+
+## Known limitations
+
+- **Cost per document is not measured** (see above) — only $/token pricing is real.
+- **CORD-v2 field accuracy (35.5%) is real but low** — this pipeline's invoice schema
+  doesn't match Indonesian retail receipt formats well; see the OCR section above.
+- **Batch API and multi-chunk large-document paths are built and unit-tested with
+  mocks, never run against the real Groq API** — both need the paid Developer tier
+  (`scripts/bulk_submit.py`) or a genuinely oversized document under real load, neither
+  of which this free-tier session could exercise live.
+- **The OCR and judge evaluation runs are single runs, not repeated trials** — an LLM
+  judge and an LLM extractor are not perfectly deterministic even at temperature 0;
+  a second run on a different day could move these numbers by a few points.
+- **Set A (OCR) is 20 cases** — enough to see a real signal, not enough for tight
+  confidence bounds; a few individual variants show a small *negative* gap (scoring
+  above the clean-text baseline), which is plausible small-sample noise rather than
+  OCR genuinely helping.
+- **The DeepEval judge is scoped to two contract fields only** (`termination_clause`,
+  `key_obligations`) — every other field, on every document type, still uses the
+  deterministic matchers; this was a deliberate scope decision (ADR 008), not a gap.
 
 ---
 
