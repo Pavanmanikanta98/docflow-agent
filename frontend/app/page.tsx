@@ -345,7 +345,7 @@ export default function Home() {
             Get in touch
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-4xl">
-            Most extraction demos fall apart the moment a document breaks the pattern.
+            The easy part is a clean invoice. This is built for what isn&apos;t.
           </h2>
 
           <div className="relative mt-10">
