@@ -345,7 +345,7 @@ export default function Home() {
             Get in touch
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-4xl">
-            Have documents that don&apos;t look like these?
+            Most extraction demos fall apart the moment a document breaks the pattern.
           </h2>
 
           <div className="relative mt-10">
@@ -365,11 +365,11 @@ export default function Home() {
 
               <div className="font-letter mt-8 text-[1.15rem] leading-8 text-amber-950/90 dark:text-amber-50/85">
                 <p className="first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:text-6xl first-letter:font-semibold first-letter:leading-[0.8] first-letter:text-amber-800 dark:first-letter:text-amber-400">
-                  Pavan here — I built this pipeline myself, parsing, extraction,
-                  validation, the review queue, all of it. If you&apos;ve got invoices,
-                  contracts, or something else that needs the same treatment, tell me
-                  what&apos;s different about yours and I&apos;ll tell you honestly
-                  whether it&apos;s a good fit.
+                  Pavan here — I built this one to survive that: a gate that catches
+                  invoices whose numbers don&apos;t add up, a review queue for anything
+                  the model isn&apos;t confident about, nothing shipping unchecked. Your
+                  documents will break it in a different way. Tell me how, and
+                  I&apos;ll tell you honestly whether it&apos;s worth building for.
                 </p>
                 <p className="mt-5">No forms, no sales call. Just write to me directly, at:</p>
               </div>
