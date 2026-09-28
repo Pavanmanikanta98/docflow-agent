@@ -26,10 +26,14 @@ function AntdThemeProvider({ children }: { children: React.ReactNode }) {
           colorLinkActive: '#92400e',
           borderRadius: 14,
           fontFamily: 'inherit',
+          ...(resolvedTheme === 'dark'
+            ? { colorBgContainer: '#0f172a', colorBgElevated: '#0f172a' }
+            : {}),
         },
         components: {
           Button: { controlHeight: 40, fontWeight: 500 },
           Card: { borderRadiusLG: 20 },
+          Table: { borderRadius: 16 },
         },
       }}
     >
