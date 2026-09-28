@@ -339,7 +339,7 @@ export default function Home() {
         </SurfaceCard>
       </section>
 
-      <section id="contact" className="mx-auto max-w-2xl">
+      <section id="contact" className="mx-auto max-w-3xl">
         <div className="border-t border-slate-200 pt-16 dark:border-white/10">
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
             Get in touch
@@ -348,38 +348,55 @@ export default function Home() {
             Have documents that don&apos;t look like these?
           </h2>
 
-          <div className="mt-8 space-y-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
-            <p>
-              I&apos;m Pavan. I built this pipeline myself — parsing, extraction,
-              validation, the review queue, all of it. If you&apos;ve got invoices,
-              contracts, or something else that needs the same treatment, tell me
-              what&apos;s different about yours and I&apos;ll tell you honestly
-              whether it&apos;s a good fit.
-            </p>
-            <p>No forms, no sales call. Just write to me directly:</p>
+          <div className="relative mt-10">
+            <div className="absolute -top-6 left-9 z-10 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#faf6ec] bg-gradient-to-br from-amber-600 to-amber-800 shadow-[0_6px_18px_-4px_rgba(146,64,14,0.55)] dark:border-[#1a1510]">
+              <span className="font-letter text-lg italic text-amber-50">PM</span>
+            </div>
+
+            <div className="rounded-sm border border-amber-900/10 bg-[#faf6ec] px-7 py-12 shadow-[0_20px_60px_-30px_rgba(120,80,20,0.45)] dark:border-amber-100/10 dark:bg-[#1a1510] sm:px-14 sm:py-16">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-dashed border-amber-900/15 pb-5 dark:border-amber-100/10">
+                <p className="font-letter text-sm italic text-amber-900/60 dark:text-amber-100/50">
+                  From the desk of Pavan
+                </p>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-900/40 dark:text-amber-100/30">
+                  No forms, no funnel
+                </p>
+              </div>
+
+              <div className="font-letter mt-8 text-[1.15rem] leading-8 text-amber-950/90 dark:text-amber-50/85">
+                <p className="first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:text-6xl first-letter:font-semibold first-letter:leading-[0.8] first-letter:text-amber-800 dark:first-letter:text-amber-400">
+                  Pavan here — I built this pipeline myself, parsing, extraction,
+                  validation, the review queue, all of it. If you&apos;ve got invoices,
+                  contracts, or something else that needs the same treatment, tell me
+                  what&apos;s different about yours and I&apos;ll tell you honestly
+                  whether it&apos;s a good fit.
+                </p>
+                <p className="mt-5">No forms, no sales call. Just write to me directly, at:</p>
+              </div>
+
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="font-letter mt-6 inline-block text-2xl italic !text-amber-900 !underline decoration-amber-700/40 decoration-1 underline-offset-4 hover:!text-amber-700 dark:!text-amber-200 dark:decoration-amber-200/30 dark:hover:!text-amber-100"
+              >
+                {CONTACT_EMAIL.split(',')[0]}
+              </a>
+
+              <p className="mt-10 text-sm text-amber-900/60 dark:text-amber-100/40">
+                Prefer to read the code first?{' '}
+                <a
+                  href={GITHUB_URL}
+                  className="font-medium !text-amber-900/80 !underline decoration-amber-900/25 underline-offset-2 hover:!text-amber-700 dark:!text-amber-100/70 dark:decoration-amber-100/20 dark:hover:!text-amber-50"
+                >
+                  Here&apos;s the source and every architecture decision behind it
+                </a>
+                .
+              </p>
+
+              <p className="font-signature mt-10 -rotate-2 text-4xl text-amber-900/80 dark:text-amber-200/70">
+                Pavan
+              </p>
+            </div>
           </div>
-
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
-            className="mt-6 inline-block text-2xl font-medium !text-slate-950 !underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-700 dark:!text-white dark:hover:!text-amber-300"
-          >
-            {CONTACT_EMAIL.split(',')[0]}
-          </a>
-
-          <p className="mt-10 text-sm text-slate-500 dark:text-slate-400">
-            Prefer to read the code first?{' '}
-            <a
-              href={GITHUB_URL}
-              className="font-medium !text-slate-700 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600"
-            >
-              Here&apos;s the source and every architecture decision behind it
-            </a>
-            .
-          </p>
-
-          <p className="mt-16 font-serif text-xl italic text-slate-400 dark:text-slate-500">
-            — Pavan
-          </p>
         </div>
       </section>
     </div>

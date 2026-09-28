@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Source_Serif_4, Caveat } from 'next/font/google';
 import './globals.css';
 import { ThemeRegistry } from '@/components/ThemeRegistry';
 import { Navbar } from '@/components/Navbar';
@@ -16,6 +16,19 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const sourceSerif = Source_Serif_4({
+  variable: '--font-letter-serif',
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  style: ['normal', 'italic'],
+});
+
+const caveat = Caveat({
+  variable: '--font-signature',
+  subsets: ['latin'],
+  weight: ['500', '700'],
+});
+
 export const metadata: Metadata = {
   title: 'DocFlow | Document Data Extraction',
   description: 'AI-powered document extraction and review platform',
@@ -28,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-slate-50 transition-colors duration-200`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} ${caveat.variable} antialiased min-h-screen flex flex-col bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-slate-50 transition-colors duration-200`}>
         <ThemeRegistry>
           <AppTour>
 
