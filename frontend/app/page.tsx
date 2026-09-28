@@ -152,7 +152,7 @@ export default function Home() {
           </div>
 
           <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white md:text-6xl md:leading-[1.02]">
-            Turn a messy invoice into clean, structured data.
+            Stop retyping invoices. Get clean, structured data instead.
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
