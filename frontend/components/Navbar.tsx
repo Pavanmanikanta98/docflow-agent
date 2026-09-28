@@ -23,7 +23,7 @@ export function Navbar() {
           <Link
             href="/"
             data-tour="logo"
-            className="flex items-center gap-2 font-bold text-xl text-indigo-600 dark:text-indigo-400"
+            className="flex items-center gap-2 font-bold text-xl text-cyan-600 dark:text-cyan-400"
           >
             <FileText className="w-6 h-6" />
             <span>DocFlow</span>
@@ -32,32 +32,32 @@ export function Navbar() {
             <Link
               href="/#upload"
               data-tour="nav-upload"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               Upload
             </Link>
             <Link
               href="/#how-it-works"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               How it works
             </Link>
             <Link
               href="/#capabilities"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               Capabilities
             </Link>
             <Link
               href="/documents"
               data-tour="nav-documents"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               Documents
             </Link>
             <Link
               href="/#contact"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               Contact
             </Link>

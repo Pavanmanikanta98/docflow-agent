@@ -20,9 +20,13 @@ function AntdThemeProvider({ children }: { children: React.ReactNode }) {
         algorithm:
           resolvedTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#6366f1',
-          borderRadius: 8,
+          colorPrimary: '#0891b2',
+          borderRadius: 14,
           fontFamily: 'inherit',
+        },
+        components: {
+          Button: { controlHeight: 40, fontWeight: 500 },
+          Card: { borderRadiusLG: 20 },
         },
       }}
     >

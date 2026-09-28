@@ -9,14 +9,16 @@ import {
   BadgeCheck,
   Bot,
   Cable,
-  ChartNoAxesCombined,
   CheckCircle2,
   Cpu,
   Download,
-  FileSearch,
   FileText,
+  Gauge,
+  Code2,
   MessageSquareMore,
+  ScrollText,
   ShieldCheck,
+  Sparkles,
   UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -91,19 +93,19 @@ const steps: Step[] = [
 
 const signals: Signal[] = [
   {
-    title: 'Product-led first impression',
-    desc: 'The upload box is the hero. Visitors understand the workflow before they read a single feature grid.',
-    icon: FileSearch,
+    title: 'Every number links to a file',
+    desc: 'Accuracy, latency, and rate-limit behavior all come from files in evals/results/ — not a claim with nothing behind it.',
+    icon: ScrollText,
   },
   {
-    title: 'Human review stays in the story',
-    desc: 'This is not generic OCR. Confidence scoring and human approval are core to the product and should stay visible.',
+    title: 'A human always has the final say',
+    desc: 'Fields the model is unsure about route to a review queue with the reason spelled out — "math mismatch", "low confidence: 0.62" — not silently guessed.',
     icon: UserCheck,
   },
   {
-    title: 'Technical depth without clutter',
-    desc: 'Developer buyers want proof. The page should show agent orchestration, exports, privacy, and extension paths without feeling academic.',
-    icon: Cpu,
+    title: "Built for the free tier's real ceiling",
+    desc: 'Groq caps the free tier at 8000 tokens/minute. Requests defer and retry against a Redis token budget instead of failing outright.',
+    icon: Gauge,
   },
 ];
 
@@ -137,6 +139,8 @@ const capabilities: Capability[] = [
 ];
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'contact@yourdomain.com';
+const GITHUB_URL =
+  process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/Pavanmanikanta98/docflow-agent';
 
 const finalActions: FinalAction[] = [
   {
@@ -148,12 +152,12 @@ const finalActions: FinalAction[] = [
     note: 'Response within 24 hours',
   },
   {
-    title: 'Extend DocFlow',
-    desc: 'The plugin architecture means adding a new document type is a single file. Propose an extension or request a new document type.',
-    icon: ChartNoAxesCombined,
-    href: `mailto:${CONTACT_EMAIL}`,
-    cta: 'Request an extension',
-    note: 'Open to collaboration',
+    title: 'Read the engineering notes',
+    desc: 'Every architecture decision — why a queue instead of inline processing, why a second LLM call grades the first, why a judge needed calibration controls before it could be trusted — is written down, not just coded.',
+    icon: ScrollText,
+    href: GITHUB_URL,
+    cta: 'View the source + ADRs',
+    note: 'Open source',
   },
 ];
 
@@ -184,7 +188,7 @@ export default function Home() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/75 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-cyan-700 shadow-sm backdrop-blur dark:border-cyan-500/20 dark:bg-slate-950/60 dark:text-cyan-300">
               <BadgeCheck className="h-3.5 w-3.5" />
-              Multi-agent document extraction
+              Real Groq API · every claim measured
             </div>
 
             <h1 className="mt-6 text-5xl font-semibold tracking-[-0.07em] text-slate-950 dark:text-white md:text-7xl md:leading-[0.94]">
@@ -322,9 +326,9 @@ export default function Home() {
       <section id="capabilities" className="mx-auto max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <SectionHeading
-            eyebrow="Why this feels serious"
-            title="Every claim is anchored to a real operating model."
-            description="The strongest product pages do not hide behind abstract AI language. They explain the mechanism, show where humans stay in control, and make the export path explicit."
+            eyebrow="Architecture"
+            title="Built like production, not a weekend demo."
+            description="A queue instead of inline processing. A second LLM call to grade the first. A calibrated judge instead of a self-graded score. These are the decisions that separate a working pipeline from a prompt in a loop."
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -358,23 +362,23 @@ export default function Home() {
 
       <section id="proof" className="mx-auto max-w-6xl">
         <SectionHeading
-          eyebrow="Operational proof"
-          title="Built for real document workflows, not just a good screenshot."
-          description="The landing page should communicate measurable extraction quality, privacy posture, deployment flexibility, and the extension story for future document types."
+          eyebrow="Measured, not marketed"
+          title="Every figure below comes from a committed results file."
+          description="No case study copy. The evaluation harness, the golden dataset, and the raw run logs all live in this repository — click through and check the math yourself."
           align="center"
         />
 
         <div className="mt-12 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
           <SurfaceCard className="p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
-              Benchmarks
+              Live evaluation results
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {[
-                { value: '20/20', label: 'Evaluation tests passing', detail: '10 invoices + 10 contracts' },
-                { value: '3-layer', label: 'Agent pipeline', detail: 'Parse → Extract → Validate' },
-                { value: '<2s', label: 'Extraction latency', detail: 'Groq LLM inference' },
-                { value: '2', label: 'Document types', detail: 'Invoices + Contracts (plugin-based)' },
+                { value: '96.7%', label: 'Structured field accuracy', detail: 'gpt-oss-120b, 32-case golden set' },
+                { value: '86.25%', label: 'OCR text-layer baseline', detail: '20-case synthetic evaluation' },
+                { value: '0.993', label: 'Calibrated judge score', detail: 'termination_clause, GEval vs 35.7% fuzzy' },
+                { value: '8000 TPM', label: 'Free-tier ceiling, handled', detail: 'Redis token budget, defers not fails' },
               ].map((s) => (
                 <div key={s.label}>
                   <div
@@ -399,12 +403,13 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 <h3 className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
-                  Privacy posture
+                  Honest about what&apos;s not measured
                 </h3>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Documents are processed in-memory, with an option to switch providers or run locally
-                for tighter control over where data moves.
+                Cost-per-document isn&apos;t reported here because no run has captured per-case
+                token usage yet. A confident-sounding number with nothing behind it is worse
+                than admitting the gap.
               </p>
             </SurfaceCard>
 
@@ -416,12 +421,53 @@ export default function Home() {
                 </h3>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                The plugin architecture matters for the homepage too. New document types should feel
-                like an obvious next step, not a rewrite.
+                New document types are a plugin — one file implementing a shared interface,
+                not a rewrite of the pipeline that already works.
               </p>
             </SurfaceCard>
           </div>
         </div>
+      </section>
+
+      <section id="about" className="mx-auto max-w-6xl">
+        <SurfaceCard className="relative overflow-hidden p-8 md:p-12">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-fuchsia-500/10" />
+          <div className="relative grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-600 dark:text-cyan-300">
+                Who built this
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-3xl">
+                Pavan — this is a working system, built and measured end to end.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Every layer here — the queue, the confidence gate, the rate-limit handling,
+                the calibrated LLM judge — was a deliberate call, written up in this
+                repository&apos;s architecture decisions rather than left implicit. If you&apos;re
+                hiring or have a document pipeline that needs the same rigor, I&apos;d like to
+                talk.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={GITHUB_URL}
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-slate-950"
+                >
+                  <Code2 className="h-4 w-4" />
+                  View the repository
+                </Link>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-medium text-slate-800 backdrop-blur transition-colors hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                >
+                  Get in touch
+                </a>
+              </div>
+            </div>
+          </div>
+        </SurfaceCard>
       </section>
 
       <section id="contact" className="mx-auto max-w-6xl">
