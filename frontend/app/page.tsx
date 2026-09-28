@@ -5,15 +5,12 @@ import { ProcessStep } from '@/components/landing/ProcessStep';
 import { SectionHeading } from '@/components/landing/SectionHeading';
 import { SurfaceCard } from '@/components/landing/SurfaceCard';
 import {
-  ArrowRight,
-  BadgeCheck,
   Bot,
   Cable,
   CheckCircle2,
   Cpu,
   Download,
   FileText,
-  Gauge,
   Code2,
   MessageSquareMore,
   ScrollText,
@@ -23,22 +20,11 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-interface TechBadge {
-  label: string;
-  detail: string;
-}
-
 interface Step {
   icon: LucideIcon;
   step: string;
   label: string;
   desc: string;
-}
-
-interface Signal {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
 }
 
 interface Capability {
@@ -57,12 +43,6 @@ interface FinalAction {
   cta: string;
   note: string;
 }
-
-const techBadges: TechBadge[] = [
-  { label: 'LangGraph', detail: 'Stateful agent orchestration' },
-  { label: 'pydantic-ai', detail: 'Typed structured extraction' },
-  { label: 'Groq', detail: 'Sub-second LLM inference' },
-];
 
 const steps: Step[] = [
   {
@@ -88,24 +68,6 @@ const steps: Step[] = [
     step: '04',
     label: 'Export',
     desc: 'Download JSON, CSV or fire a webhook to your system.',
-  },
-];
-
-const signals: Signal[] = [
-  {
-    title: 'Every number links to a file',
-    desc: 'Accuracy, latency, and rate-limit behavior all come from files in evals/results/ — not a claim with nothing behind it.',
-    icon: ScrollText,
-  },
-  {
-    title: 'A human always has the final say',
-    desc: 'Fields the model is unsure about route to a review queue with the reason spelled out — "math mismatch", "low confidence: 0.62" — not silently guessed.',
-    icon: UserCheck,
-  },
-  {
-    title: "Built for the free tier's real ceiling",
-    desc: 'Groq caps the free tier at 8000 tokens/minute. Requests defer and retry against a Redis token budget instead of failing outright.',
-    icon: Gauge,
   },
 ];
 
@@ -182,133 +144,62 @@ export default function Home() {
 
       <section
         id="top"
-        className="relative -mx-4 overflow-hidden px-4 pt-10 md:-mx-8 md:px-8 md:pt-16"
+        className="relative -mx-4 overflow-hidden px-4 pt-14 md:-mx-8 md:px-8 md:pt-20"
       >
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/75 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-cyan-700 shadow-sm backdrop-blur dark:border-cyan-500/20 dark:bg-slate-950/60 dark:text-cyan-300">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Real Groq API · every claim measured
-            </div>
-
-            <h1 className="mt-6 text-5xl font-semibold tracking-[-0.07em] text-slate-950 dark:text-white md:text-7xl md:leading-[0.94]">
-              Upload a document.
-              <span className="block text-slate-500 dark:text-slate-400">
-                Leave with structured data.
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300 md:text-xl">
-              DocFlow turns invoices and contracts into review-ready structured output.
-              Parser, extractor, and validator agents do the heavy lift, while low-confidence
-              fields pause for human approval before export.
-            </p>
-
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Free to try below, no signup — built for anyone who deals with invoices or
-              contracts, not just developers. Documents are processed in-memory and never
-              stored beyond what a review needs.{' '}
-              <Link href="#contact" className="font-medium !text-slate-800 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-200 dark:decoration-slate-600">
-                Need a private or custom deployment?
-              </Link>
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="#upload"
-                className="inline-flex items-center justify-center gap-2 rounded-full !bg-slate-950 px-6 py-3 text-sm font-medium !text-white transition-transform hover:-translate-y-0.5 dark:!bg-white dark:!text-slate-950"
-              >
-                Start with an upload
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 !bg-white/70 px-6 py-3 text-sm font-medium !text-slate-800 backdrop-blur transition-colors hover:border-amber-400 hover:!text-amber-700 dark:border-slate-700 dark:!bg-slate-950/50 dark:!text-slate-100 dark:hover:border-amber-500 dark:hover:!text-amber-300"
-              >
-                Explore the pipeline
-              </Link>
-            </div>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {techBadges.map((b) => (
-                <SurfaceCard key={b.label} className="p-5">
-                  <div
-                    className="text-lg font-semibold tracking-[-0.03em] text-slate-950 dark:text-white"
-                    style={{ fontFamily: 'var(--font-geist-mono)' }}
-                  >
-                    {b.label}
-                  </div>
-                  <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                    {b.detail}
-                  </div>
-                </SurfaceCard>
-              ))}
-            </div>
-
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {signals.map(({ title, desc, icon: Icon }) => (
-                <div
-                  key={title}
-                  className="rounded-3xl border border-slate-200/70 bg-white/55 p-5 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/45"
-                >
-                  <Icon className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
-                  <h2 className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">
-                    {title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center gap-2 border-l-2 border-amber-500 pl-3 text-left text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            Free to try, right now · no signup · real Groq API underneath
           </div>
 
-          <SurfaceCard
-            id="upload"
-            className="relative overflow-hidden p-2 shadow-[0_40px_120px_-44px_rgba(14,116,144,0.6)]"
-          >
-            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
-            <div className="rounded-[24px] border border-slate-200/70 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_46%),linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(240,249,255,0.88))] p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.14),_transparent_44%),linear-gradient(180deg,_rgba(15,23,42,0.9),_rgba(2,6,23,0.95))]">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-5 dark:border-white/10">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.8)]" />
-                    </span>
-                    <p className="text-xs uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
-                      Live intake
-                    </p>
-                  </div>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-                    Drop a document into the pipeline
-                  </h2>
-                </div>
-                <div className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300">
-                  Invoices + contracts
-                </div>
-              </div>
+          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white md:text-6xl md:leading-[1.02]">
+            Turn a messy invoice into clean data — before you finish reading this sentence.
+          </h1>
 
-              <div className="mt-6">
-                <DocumentUploader variant="embedded" />
-              </div>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+            This is the same pipeline I&apos;d build for your documents — try it below, then{' '}
+            <Link href="#contact" className="font-medium !text-slate-800 underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-600 dark:!text-slate-100 dark:decoration-amber-500">
+              tell me what&apos;s different about yours
+            </Link>
+            .
+          </p>
+        </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                {[
-                  'Agent pipeline routes the document automatically',
-                  'Human review only appears where confidence drops',
-                  'Exports stay ready for JSON, CSV, or webhook delivery',
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300"
-                  >
-                    {item}
-                  </div>
-                ))}
+        <SurfaceCard
+          id="upload"
+          className="relative mx-auto mt-12 max-w-5xl overflow-hidden p-2 shadow-[0_50px_140px_-40px_rgba(14,116,144,0.55)]"
+        >
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+          <div className="rounded-[24px] border border-slate-200/70 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.1),_transparent_46%),linear-gradient(180deg,_rgba(255,255,255,0.97),_rgba(248,250,252,0.9))] p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_44%),linear-gradient(180deg,_rgba(15,23,42,0.92),_rgba(2,6,23,0.96))] md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-5 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.8)]" />
+                </span>
+                <p className="text-xs uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
+                  Live — invoices + contracts
+                </p>
               </div>
+              <Link
+                href="#how-it-works"
+                className="text-xs font-medium !text-slate-500 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-400 dark:decoration-slate-600"
+              >
+                See how it works under the hood →
+              </Link>
             </div>
-          </SurfaceCard>
+
+            <div className="mt-6">
+              <DocumentUploader variant="embedded" />
+            </div>
+          </div>
+        </SurfaceCard>
+
+        <div className="mx-auto mt-8 flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center text-sm text-slate-500 dark:text-slate-400">
+          <span><strong className="font-semibold text-slate-900 dark:text-white">96.7%</strong> field accuracy, real test set</span>
+          <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
+          <span><strong className="font-semibold text-slate-900 dark:text-white">0</strong> failures across 230 live API calls</span>
+          <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
+          <span>every number above links to a <Link href="#proof" className="font-medium !text-slate-700 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600">committed results file</Link></span>
         </div>
       </section>
 
