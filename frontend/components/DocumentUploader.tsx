@@ -67,7 +67,7 @@ export default function DocumentUploader({
     <>
       <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <span className="font-semibold text-sm flex items-center gap-2 text-slate-700 dark:text-slate-300">
-          <FileText className="w-4 h-4 text-indigo-500" />
+          <FileText className="w-4 h-4 text-amber-500" />
           Document Type
         </span>
         <Select

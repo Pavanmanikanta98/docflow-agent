@@ -20,7 +20,10 @@ function AntdThemeProvider({ children }: { children: React.ReactNode }) {
         algorithm:
           resolvedTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#0891b2',
+          colorPrimary: '#d97706',
+          colorLink: '#d97706',
+          colorLinkHover: '#b45309',
+          colorLinkActive: '#92400e',
           borderRadius: 14,
           fontFamily: 'inherit',
         },

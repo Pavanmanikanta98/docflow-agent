@@ -204,17 +204,26 @@ export default function Home() {
               fields pause for human approval before export.
             </p>
 
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Free to try below, no signup — built for anyone who deals with invoices or
+              contracts, not just developers. Documents are processed in-memory and never
+              stored beyond what a review needs.{' '}
+              <Link href="#contact" className="font-medium !text-slate-800 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-200 dark:decoration-slate-600">
+                Need a private or custom deployment?
+              </Link>
+            </p>
+
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="#upload"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-slate-950"
+                className="inline-flex items-center justify-center gap-2 rounded-full !bg-slate-950 px-6 py-3 text-sm font-medium !text-white transition-transform hover:-translate-y-0.5 dark:!bg-white dark:!text-slate-950"
               >
                 Start with an upload
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white/70 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur transition-colors hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 !bg-white/70 px-6 py-3 text-sm font-medium !text-slate-800 backdrop-blur transition-colors hover:border-amber-400 hover:!text-amber-700 dark:border-slate-700 dark:!bg-slate-950/50 dark:!text-slate-100 dark:hover:border-amber-500 dark:hover:!text-amber-300"
               >
                 Explore the pipeline
               </Link>
@@ -453,14 +462,14 @@ export default function Home() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href={GITHUB_URL}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-slate-950"
+                  className="inline-flex items-center gap-2 rounded-full !bg-slate-950 px-5 py-2.5 text-sm font-medium !text-white transition-transform hover:-translate-y-0.5 dark:!bg-white dark:!text-slate-950"
                 >
                   <Code2 className="h-4 w-4" />
                   View the repository
                 </Link>
                 <a
                   href={`mailto:${CONTACT_EMAIL}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-medium text-slate-800 backdrop-blur transition-colors hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 !bg-white/70 px-5 py-2.5 text-sm font-medium !text-slate-800 backdrop-blur transition-colors hover:border-amber-400 hover:!text-amber-700 dark:border-slate-700 dark:!bg-slate-950/50 dark:!text-slate-100 dark:hover:border-amber-500 dark:hover:!text-amber-300"
                 >
                   Get in touch
                 </a>

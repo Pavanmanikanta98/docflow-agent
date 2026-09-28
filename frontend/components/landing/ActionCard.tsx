@@ -35,7 +35,7 @@ export function ActionCard({
       </p>
       <a
         href={href}
-        className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-slate-950 transition-colors hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300"
+        className="mt-8 inline-flex items-center gap-2 text-sm font-medium !text-slate-950 transition-colors hover:!text-amber-700 dark:!text-white dark:hover:!text-amber-300"
       >
         {cta}
         <ArrowUpRight className="h-4 w-4" />

@@ -55,9 +55,10 @@ const steps = [
     selector: '[data-tour="settings"]',
     content: (
       <div>
-        <strong className="block text-base mb-1">Usage & API Key ⚡</strong>
+        <strong className="block text-base mb-1">Usage ⚡</strong>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Track your remaining free extractions here. You get 10 per day. Need more? Paste your own Groq API key for unlimited access.
+          Track your remaining free extractions here. Need more than the shared demo
+          limit allows? Get in touch about production access.
         </p>
       </div>
     ),
@@ -100,11 +101,11 @@ export function AppTour({ children }: { children: React.ReactNode }) {
         }),
         badge: (base) => ({
           ...base,
-          background: '#6366f1',
+          background: '#d97706',
         }),
         dot: (base, state) => ({
           ...base,
-          background: state?.current ? '#6366f1' : '#d1d5db',
+          background: state?.current ? '#d97706' : '#d1d5db',
         }),
       }}
       padding={{ mask: 8, popover: [8, 10] }}

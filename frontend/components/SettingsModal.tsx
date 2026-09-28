@@ -93,7 +93,7 @@ export function UsageBanner() {
           {isOut ? (
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
           ) : (
-            <Sparkles className="w-12 h-12 text-indigo-500 mx-auto mb-3" />
+            <Sparkles className="w-12 h-12 text-amber-500 mx-auto mb-3" />
           )}
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
@@ -108,7 +108,7 @@ export function UsageBanner() {
             <Progress
               percent={100 - pct}
               showInfo={false}
-              strokeColor={isOut ? '#ef4444' : isLow ? '#f59e0b' : '#6366f1'}
+              strokeColor={isOut ? '#ef4444' : isLow ? '#f59e0b' : '#d97706'}
               trailColor="rgba(0,0,0,0.06)"
               size="small"
             />
@@ -120,7 +120,7 @@ export function UsageBanner() {
 
         <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-4 h-4 text-indigo-500" />
+            <Mail className="w-4 h-4 text-amber-500" />
             <Text strong className="text-sm">
               Need production access?
             </Text>
@@ -132,7 +132,7 @@ export function UsageBanner() {
           <Space direction="vertical" className="w-full" size="small">
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-500 transition-colors"
+              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-amber-600 transition-colors"
             >
               <Mail className="w-4 h-4" />
               {CONTACT_EMAIL}
@@ -141,7 +141,7 @@ export function UsageBanner() {
               href={UPWORK_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-500 transition-colors"
+              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-amber-600 transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Hire me on Upwork
