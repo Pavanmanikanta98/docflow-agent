@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import DocumentUploader from '@/components/DocumentUploader';
-import { ActionCard } from '@/components/landing/ActionCard';
 import { ProcessStep } from '@/components/landing/ProcessStep';
 import { SectionHeading } from '@/components/landing/SectionHeading';
 import { SurfaceCard } from '@/components/landing/SurfaceCard';
@@ -12,8 +11,6 @@ import {
   Download,
   FileText,
   Code2,
-  MessageSquareMore,
-  ScrollText,
   ShieldCheck,
   Sparkles,
   UserCheck,
@@ -33,15 +30,6 @@ interface Capability {
   icon: LucideIcon;
   accent: string;
   className?: string;
-}
-
-interface FinalAction {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
-  href: string;
-  cta: string;
-  note: string;
 }
 
 const steps: Step[] = [
@@ -104,25 +92,6 @@ const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'contact@yourdoma
 const GITHUB_URL =
   process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/Pavanmanikanta98/docflow-agent';
 
-const finalActions: FinalAction[] = [
-  {
-    title: 'Custom implementation',
-    desc: 'Need invoices, contracts, or a custom document type wired into your existing workflow? Get in touch to discuss scope and timeline.',
-    icon: MessageSquareMore,
-    href: `mailto:${CONTACT_EMAIL}`,
-    cta: 'Send a message',
-    note: 'Response within 24 hours',
-  },
-  {
-    title: 'Read the engineering notes',
-    desc: 'Every architecture decision — why a queue instead of inline processing, why a second LLM call grades the first, why a judge needed calibration controls before it could be trusted — is written down, not just coded.',
-    icon: ScrollText,
-    href: GITHUB_URL,
-    cta: 'View the source + ADRs',
-    note: 'Open source',
-  },
-];
-
 export default function Home() {
   return (
     <div className="relative flex flex-col gap-24 pb-24">
@@ -157,7 +126,7 @@ export default function Home() {
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
             This is the same pipeline I&apos;d build for your documents — try it below, then{' '}
-            <Link href="#contact" className="font-medium !text-slate-800 underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-600 dark:!text-slate-100 dark:decoration-amber-500">
+            <Link href="#contact" className="font-medium !text-slate-800 !underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-600 dark:!text-slate-100 dark:decoration-amber-500">
               tell me what&apos;s different about yours
             </Link>
             .
@@ -182,7 +151,7 @@ export default function Home() {
               </div>
               <Link
                 href="#how-it-works"
-                className="text-xs font-medium !text-slate-500 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-400 dark:decoration-slate-600"
+                className="text-xs font-medium !text-slate-500 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-400 dark:decoration-slate-600"
               >
                 See how it works under the hood →
               </Link>
@@ -199,7 +168,7 @@ export default function Home() {
           <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
           <span><strong className="font-semibold text-slate-900 dark:text-white">0</strong> failures across 230 live API calls</span>
           <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
-          <span>every number above links to a <Link href="#proof" className="font-medium !text-slate-700 underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600">committed results file</Link></span>
+          <span>every number above links to a <Link href="#proof" className="font-medium !text-slate-700 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600">committed results file</Link></span>
         </div>
       </section>
 
@@ -370,26 +339,47 @@ export default function Home() {
         </SurfaceCard>
       </section>
 
-      <section id="contact" className="mx-auto max-w-6xl">
-        <SectionHeading
-          eyebrow="Work with me"
-          title="Two ways to take this further."
-          description="Custom document pipelines, new document type plugins, or just a conversation about what you're building."
-          align="center"
-        />
+      <section id="contact" className="mx-auto max-w-2xl">
+        <div className="border-t border-slate-200 pt-16 dark:border-white/10">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+            Get in touch
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-4xl">
+            Have documents that don&apos;t look like these?
+          </h2>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-2">
-          {finalActions.map((item) => (
-            <ActionCard
-              key={item.title}
-              icon={item.icon}
-              title={item.title}
-              description={item.desc}
-              href={item.href}
-              cta={item.cta}
-              note={item.note}
-            />
-          ))}
+          <div className="mt-8 space-y-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
+            <p>
+              I&apos;m Pavan. I built this pipeline myself — parsing, extraction,
+              validation, the review queue, all of it. If you&apos;ve got invoices,
+              contracts, or something else that needs the same treatment, tell me
+              what&apos;s different about yours and I&apos;ll tell you honestly
+              whether it&apos;s a good fit.
+            </p>
+            <p>No forms, no sales call. Just write to me directly:</p>
+          </div>
+
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="mt-6 inline-block text-2xl font-medium !text-slate-950 !underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-700 dark:!text-white dark:hover:!text-amber-300"
+          >
+            {CONTACT_EMAIL.split(',')[0]}
+          </a>
+
+          <p className="mt-10 text-sm text-slate-500 dark:text-slate-400">
+            Prefer to read the code first?{' '}
+            <a
+              href={GITHUB_URL}
+              className="font-medium !text-slate-700 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600"
+            >
+              Here&apos;s the source and every architecture decision behind it
+            </a>
+            .
+          </p>
+
+          <p className="mt-16 font-serif text-xl italic text-slate-400 dark:text-slate-500">
+            — Pavan
+          </p>
         </div>
       </section>
     </div>
