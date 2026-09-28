@@ -43,11 +43,13 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
 
   if (visibleKeys.length === 0) {
     return (
-      <Alert
-        type="info"
-        showIcon
-        title="No extraction results yet or processing failed."
-      />
+      <Form form={form}>
+        <Alert
+          type="info"
+          showIcon
+          title="No extraction results yet or processing failed."
+        />
+      </Form>
     );
   }
 

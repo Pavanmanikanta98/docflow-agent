@@ -86,7 +86,7 @@ export function UsageBanner() {
         onCancel={() => setModalOpen(false)}
         footer={null}
         width={480}
-        destroyOnClose
+        destroyOnHidden
         centered
       >
         <div className="text-center pt-2 pb-4">
