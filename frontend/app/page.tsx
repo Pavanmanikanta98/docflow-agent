@@ -55,7 +55,7 @@ const steps: Step[] = [
     icon: Download,
     step: '04',
     label: 'Export',
-    desc: 'Download JSON, CSV or fire a webhook to your system.',
+    desc: 'Download JSON or CSV. Webhook delivery exists in the API, opt-in.',
   },
 ];
 
@@ -81,7 +81,7 @@ const capabilities: Capability[] = [
   },
   {
     title: 'Export layer',
-    desc: 'Clean JSON, CSV, or webhook delivery gives the pipeline a real destination inside your system.',
+    desc: 'JSON and CSV export today; a signed, SSRF-guarded webhook exists in the API for anyone wiring this into their own system.',
     icon: Cable,
     accent: 'from-fuchsia-500/20 via-purple-500/10 to-transparent',
     className: 'md:col-span-2',
