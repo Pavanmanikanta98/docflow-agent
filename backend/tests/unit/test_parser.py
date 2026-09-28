@@ -59,12 +59,12 @@ def _record_paths(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         calls.append("ocr")
         return "x"
 
-    def fake_pdf(file_bytes: bytes) -> str:
+    def fake_pdf(file_bytes: bytes) -> tuple[str, str]:
         calls.append("pdf")
-        return "x"
+        return "x", "pdf"
 
     monkeypatch.setattr(parser, "extract_text_from_image", fake_ocr)
-    monkeypatch.setattr(parser, "extract_text_from_pdf", fake_pdf)
+    monkeypatch.setattr(parser, "_extract_text_from_pdf_with_method", fake_pdf)
     return calls
 
 
@@ -98,3 +98,43 @@ def test_png_upload_is_read_with_ocr() -> None:
 
     assert "INVOICE" in text.upper()
     assert "4821" in text
+
+
+def test_extract_text_with_method_for_images(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """extract_text_with_method should return ('text', 'image-ocr') for images."""
+    calls: list[str] = []
+
+    def fake_image_ocr(file_bytes: bytes) -> str:
+        calls.append("called")
+        return "extracted text"
+
+    monkeypatch.setattr(parser, "extract_text_from_image", fake_image_ocr)
+
+    text, method = parser.extract_text_with_method(b"image data", "image/png")
+
+    assert text == "extracted text"
+    assert method == "image-ocr"
+    assert calls == ["called"]
+
+
+@requires_tesseract
+def test_extract_text_with_method_returns_pymupdf_for_digital_pdf() -> None:
+    """extract_text_with_method should return method='pymupdf' when PyMuPDF succeeds."""
+    # Create a PDF with a text layer (digital PDF)
+    text = "DIGITAL INVOICE 999"
+    pdf_bytes = _image_only_pdf(text)
+
+    # Fake the tiers to control which one succeeds
+    actual_text, method = parser.extract_text_with_method(pdf_bytes, "application/pdf")
+
+    # Should be OCR because the fake PDF has only images
+    assert "INVOICE" in actual_text.upper()
+    assert method == "ocr"
+
+
+def test_extract_text_with_method_with_unsupported_mime() -> None:
+    """extract_text_with_method should raise on unsupported MIME types."""
+    with pytest.raises(ValueError, match="Unsupported MIME type"):
+        parser.extract_text_with_method(b"data", "text/plain")

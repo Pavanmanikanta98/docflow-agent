@@ -6,7 +6,7 @@ satisfies the plugin's extraction_schema."""
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from backend.agents.extractor import extract_fields
+from backend.agents.extractor import extract_fields, extract_fields_with_usage
 from backend.plugins.contract import ContractPlugin
 from backend.plugins.invoice import InvoiceFields, InvoicePlugin
 
@@ -100,3 +100,44 @@ async def test_extractor_with_empty_text() -> None:
     )
 
     assert isinstance(result, InvoiceFields)
+
+
+@pytest.mark.asyncio
+async def test_extract_fields_with_usage_returns_fields_and_usage() -> None:
+    """extract_fields_with_usage should return both fields and usage info."""
+    plugin = InvoicePlugin()
+    model = TestModel()
+
+    fields, usage = await extract_fields_with_usage(
+        raw_text=SAMPLE_INVOICE_TEXT,
+        plugin=plugin,
+        model=model,
+    )
+
+    # Should return the correct fields
+    assert isinstance(fields, InvoiceFields)
+    assert 0.0 <= fields.confidence_score <= 1.0
+
+    # Should return usage info with token counts
+    assert usage is not None
+    assert hasattr(usage, "input_tokens")
+    assert hasattr(usage, "output_tokens")
+    # TestModel returns non-None usage
+    assert usage.input_tokens is not None or usage.output_tokens is not None
+
+
+@pytest.mark.asyncio
+async def test_extract_fields_with_usage_contract() -> None:
+    """extract_fields_with_usage should work with contract plugin too."""
+    plugin = ContractPlugin()
+    model = TestModel()
+
+    fields, usage = await extract_fields_with_usage(
+        raw_text=SAMPLE_CONTRACT_TEXT,
+        plugin=plugin,
+        model=model,
+    )
+
+    # Verify structure
+    assert isinstance(fields, plugin.extraction_schema)
+    assert usage is not None

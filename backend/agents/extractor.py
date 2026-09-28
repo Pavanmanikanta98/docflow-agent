@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.usage import RunUsage
 
 from backend.plugins.base import DocumentPlugin
 
@@ -23,7 +24,27 @@ async def extract_fields(
         model: pydantic-ai model instance, resolved by the pipeline (server
             key, or a caller-supplied key when that is enabled).
     """
+    fields, _ = await extract_fields_with_usage(raw_text, plugin, model)
+    return fields
 
+
+async def extract_fields_with_usage(
+    raw_text: str,
+    plugin: DocumentPlugin,
+    model: Any,
+) -> tuple[BaseModel, RunUsage]:
+    """
+    Extract structured fields and return usage info (tokens, cost).
+
+    Args:
+        raw_text: Raw text extracted from the document.
+        plugin: Document plugin with extraction schema and prompt.
+        model: pydantic-ai model instance.
+
+    Returns:
+        (fields, usage) where fields is the extraction schema instance
+        and usage is pydantic-ai's RunUsage object with token counts.
+    """
     agent = Agent(
         model=model,
         output_type=plugin.extraction_schema,
@@ -31,4 +52,4 @@ async def extract_fields(
     )
 
     result = await agent.run(raw_text)
-    return result.output
+    return result.output, result.usage
