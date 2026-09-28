@@ -85,7 +85,12 @@ If a day slips, move the row, not the order. If you are more than 3 days behind 
 ### V1-0 · Repo hygiene — `chore/repo-hygiene` — 30 min
 - [ ] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
       Recover `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` if present.
-      *Not done:* all three are still only in `stash@{0}`, not recovered anywhere.
+      *Checked 28 Sep 2026, unrecoverable from this container:* `git stash list` returns
+      empty here — this working copy never had the 3 Sep stash to begin with (it's a
+      fresh clone). `git fsck --unreachable` found 2 dangling commits, neither matching
+      this stash's contents. The three files can only be recovered from whichever
+      machine still holds that stash — if that machine is gone, they're gone. Leaving
+      this unticked; it isn't fixable from here.
 - [ ] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
       `MARKET_ANALYSIS.md` out of the repo (private notes folder). They contain claims
       the code does not support ("SOC-2 ready", audit logs, $150k roles).
@@ -174,12 +179,15 @@ The validator's `status` is also ignored by `route_after_validate`.
       `test_validate_routing.py::test_math_mismatch_routes_to_review_with_reason`,
       `test_validator_gate.py::test_missing_or_unusable_numbers_skip_the_gate`,
       `test_validate_routing.py::test_low_confidence_routes_to_review_and_says_the_score`.
-- [ ] Add `subtotal`/`tax_amount` to golden invoices where the input text has them.
-      *Not done:* no golden invoice has either label. Four inputs contain them:
-      `inv_001_standard` (subtotal + tax), `inv_003_multiple_items` (subtotal only),
-      `inv_004_non_usd_currency` (subtotal + GST), `inv_007_european_format`
-      (Zwischensumme + MwSt). Do this before the V1-7 runs, or the eval table will not
-      measure the two fields the gate depends on.
+- [x] Add `subtotal`/`tax_amount` to golden invoices where the input text has them.
+      *Done, found already resolved on re-check 28 Sep 2026:* picked up as a side effect
+      of the design-sprint golden-set expansion (item 7's evidence: "the invoice
+      evaluation now scores `subtotal` and `tax_amount`"), never back-ticked here.
+      `backend/tests/evaluation/golden/invoices.json`: `inv_001_standard` has both
+      (650.0 + 65.0 = 715.0), `inv_003_multiple_items` has `subtotal: 26450.0` only
+      (input has "Insurance", not tax — correctly no `tax_amount`), `inv_004_non_usd_currency`
+      has both (1,050,000 + 189,000 = 1,239,000 INR), `inv_007_european_format` has both
+      (12,800 + 2,432 = 15,232 EUR). All four check out arithmetically against their input text.
 
 ### V1-5 · Webhooks: safe and actually idempotent — `fix/webhook-signing-ssrf` — 2 h
 - [x] Idempotency key is `uuid4()` per send, so retries look like new events.
