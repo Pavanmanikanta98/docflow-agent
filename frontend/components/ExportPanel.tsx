@@ -52,8 +52,8 @@ export default function ExportPanel({ documentId, disabled = false }: Props) {
   };
 
   return (
-    <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/10">
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
         Export Results
       </p>
       <Space>

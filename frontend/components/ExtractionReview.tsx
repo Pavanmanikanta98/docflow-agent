@@ -55,7 +55,7 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
     <Form layout="vertical" form={form}>
       {/* Status + confidence summary */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        <Tag color="cyan">{doc.document_type.toUpperCase()}</Tag>
+        <Tag color="default">{doc.document_type.toUpperCase()}</Tag>
         <Tag color={doc.confidence_score != null && doc.confidence_score >= 0.75 ? 'success' : 'warning'}>
           {doc.confidence_score != null
             ? `Confidence: ${(doc.confidence_score * 100).toFixed(0)}%`
