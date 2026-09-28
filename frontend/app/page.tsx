@@ -367,9 +367,12 @@ export default function Home() {
                 <p className="first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:text-6xl first-letter:font-semibold first-letter:leading-[0.8] first-letter:text-amber-800 dark:first-letter:text-amber-400">
                   Pavan here — I built this one to survive that: a gate that catches
                   invoices whose numbers don&apos;t add up, a review queue for anything
-                  the model isn&apos;t confident about, nothing shipping unchecked. Your
-                  documents will break it in a different way. Tell me how, and
-                  I&apos;ll tell you honestly whether it&apos;s worth building for.
+                  the model isn&apos;t confident about, nothing shipping unchecked. So far
+                  the edge cases have been European invoices with comma decimals, a PDF
+                  with a prompt-injection attempt written into the text, a contract that
+                  quietly supersedes an earlier one. Your documents will break it in a
+                  different way — tell me how, and I&apos;ll tell you honestly whether
+                  it&apos;s worth building for.
                 </p>
                 <p className="mt-5">No forms, no sales call. Just write to me directly, at:</p>
               </div>
