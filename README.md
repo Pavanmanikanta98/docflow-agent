@@ -85,45 +85,47 @@ total: both models returned `03/04/2026` verbatim on the ambiguous-date invoice 
 normalising it, and the 20b took the referenced original invoice number on a credit note
 instead of the credit note's own, missing its date.
 
-**28 Sep 2026 — reproducible run with per-field, latency and token metrics.** Same golden
-set, now 18 invoices + 14 contracts after later relabelling. Results in
-`evals/results/2026-09-28-openai-gpt-oss-20b.json` (includes per-case latency and tokens).
+**28-29 Sep 2026 — reproducible two-model run with per-field, latency and token metrics.**
+Same golden set, now 18 invoices + 14 contracts after later relabelling. Full per-case
+latency and token counts are in the result files, not reproduced here.
 
-| Metric | Value |
-|---|---|
-| Model | openai/gpt-oss-20b |
-| Total field checks | 261 |
-| Passed | 235/261 (90.0%) |
-| Wall clock time | 133.97 s |
+| Metric | gpt-oss-20b | gpt-oss-120b |
+|---|---|---|
+| Total field checks | 261 | 261 |
+| Passed | 235 (90.0%) | 243 (93.1%) |
+| Wall clock | 133.97 s | 142.74 s |
+| Results file | `evals/results/2026-09-28-openai-gpt-oss-20b.json` | `evals/results/2026-09-29-openai-gpt-oss-120b.json` |
 
 **Per-field results**
 
-| Field | Passed / Total | Accuracy |
+| Field | gpt-oss-20b | gpt-oss-120b |
 |---|---|---|
-| invoice_number | 18/18 | 100% |
-| line_items | 18/18 | 100% |
-| currency | 31/32 | 97% |
-| due_date | 17/18 | 94% |
-| invoice_date | 17/18 | 94% |
-| vendor_name | 17/18 | 94% |
-| total_amount | 17/18 | 94% |
-| subtotal | 12/12 | 100% |
-| tax_amount | 11/11 | 100% |
-| parties | 13/14 | 93% |
-| effective_date | 13/14 | 93% |
-| expiry_date | 13/14 | 93% |
-| contract_value | 12/14 | 86% |
-| jurisdiction | 10/14 | 71% |
-| key_obligations | 12/14 | 86% |
-| termination_clause | 4/14 | 29% |
+| invoice_number | 18/18 (100%) | 17/18 (94%) |
+| line_items | 18/18 (100%) | 18/18 (100%) |
+| currency | 31/32 (97%) | 32/32 (100%) |
+| due_date | 17/18 (94%) | 18/18 (100%) |
+| invoice_date | 17/18 (94%) | 18/18 (100%) |
+| vendor_name | 17/18 (94%) | 18/18 (100%) |
+| total_amount | 17/18 (94%) | 18/18 (100%) |
+| subtotal | 12/12 (100%) | 12/12 (100%) |
+| tax_amount | 11/11 (100%) | 11/11 (100%) |
+| parties | 13/14 (93%) | 14/14 (100%) |
+| effective_date | 13/14 (93%) | 13/14 (93%) |
+| expiry_date | 13/14 (93%) | 14/14 (100%) |
+| contract_value | 12/14 (86%) | 13/14 (93%) |
+| jurisdiction | 10/14 (71%) | 10/14 (71%) |
+| key_obligations | 12/14 (86%) | 13/14 (93%) |
+| termination_clause | 4/14 (29%) | 4/14 (29%) |
 
-**Weakest field: termination_clause (29%)** — free-text extraction where contract changes
-are subtle, and deterministic fuzzy matching penalizes reformatting rather than meaning.
-An LLM-as-judge for free-text fields is a candidate fix, not yet built.
+**Weakest field: termination_clause (29% on both models)** — free-text extraction where
+contract changes are subtle, and deterministic fuzzy matching penalizes reformatting
+rather than meaning. `jurisdiction` (71% on both) is the second weakest, for the same
+reason. An LLM-as-judge for free-text fields is a candidate fix, not yet built.
 
 ```bash
 # Reproduce: set the model in .env, then
 DATABASE_URL=... REDIS_URL=... uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b
+DATABASE_URL=... REDIS_URL=... uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-120b
 ```
 
 **Not measured yet:** real OCR — `inv_013` is text shaped like Tesseract output, typed by

@@ -297,14 +297,17 @@ Metrics infrastructure complete and evaluated on real 32-case golden set.
       *Evidence:* `run_eval.py` (376 lines). Run command: `DATABASE_URL=... REDIS_URL=...
       uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b`.
 
-- [x] Evaluation run on 28 Sep 2026 via `openai/gpt-oss-20b`.
-      *Evidence:* `evals/results/2026-09-28-openai-gpt-oss-20b.json` (73 KB).
-      Results: 235/261 fields passed (90.0%), wall clock 133.97s.
+- [x] Evaluation run on 28 Sep 2026 via `openai/gpt-oss-20b`, and a second run on
+      29 Sep 2026 via `openai/gpt-oss-120b` (the two-model comparison the original
+      task asked for, done with the new metrics infra instead of hand logs).
+      *Evidence:* `evals/results/2026-09-28-openai-gpt-oss-20b.json` (235/261,
+      90.0%, wall clock 133.97s) and `evals/results/2026-09-29-openai-gpt-oss-120b.json`
+      (243/261, 93.1%, wall clock 142.74s). Both real runs, same 32-case golden set.
 
-- [x] `README.md` — Evaluation section rewritten with real numbers from the run.
-      Per-field accuracy table, weakest field (`termination_clause`, 29%), how to
-      reproduce, no invented numbers.
-      *Evidence:* `README.md:60-108` (Evaluation section).
+- [x] `README.md` — Evaluation section rewritten with real numbers from both runs.
+      Per-field accuracy table for both models, weakest field (`termination_clause`,
+      29% on both), how to reproduce, no invented numbers.
+      *Evidence:* `README.md` Evaluation section, "28-29 Sep 2026" subsection.
 
 ### V1-8 · CI — `chore/github-actions-ci` — 45-60 min
 
