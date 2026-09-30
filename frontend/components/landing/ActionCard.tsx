@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowUpRight } from 'lucide-react';
 import { SurfaceCard } from '@/components/landing/SurfaceCard';
@@ -34,13 +33,13 @@ export function ActionCard({
       <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
         {note}
       </p>
-      <Link
+      <a
         href={href}
-        className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-slate-950 transition-colors hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300"
+        className="mt-8 inline-flex items-center gap-2 text-sm font-medium !text-slate-950 transition-colors hover:!text-amber-700 dark:!text-white dark:hover:!text-amber-300"
       >
         {cta}
         <ArrowUpRight className="h-4 w-4" />
-      </Link>
+      </a>
     </SurfaceCard>
   );
 }

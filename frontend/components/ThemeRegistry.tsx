@@ -20,9 +20,20 @@ function AntdThemeProvider({ children }: { children: React.ReactNode }) {
         algorithm:
           resolvedTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#6366f1',
-          borderRadius: 8,
+          colorPrimary: '#d97706',
+          colorLink: '#d97706',
+          colorLinkHover: '#b45309',
+          colorLinkActive: '#92400e',
+          borderRadius: 14,
           fontFamily: 'inherit',
+          ...(resolvedTheme === 'dark'
+            ? { colorBgContainer: '#0f172a', colorBgElevated: '#0f172a' }
+            : {}),
+        },
+        components: {
+          Button: { controlHeight: 40, fontWeight: 500 },
+          Card: { borderRadiusLG: 20 },
+          Table: { borderRadius: 16 },
         },
       }}
     >

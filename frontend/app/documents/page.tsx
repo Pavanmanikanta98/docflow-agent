@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Table, Tag, Typography, Button, Space } from 'antd';
+import { Table, Tag, Button, Space, Empty } from 'antd';
 import { EyeOutlined, SyncOutlined } from '@ant-design/icons';
+import { Upload } from 'lucide-react';
 import api from '@/lib/api';
 import type { Document } from '@/lib/types';
 import { formatCapacityWaitMessage } from '@/lib/capacityWait';
-
-const { Title } = Typography;
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -46,13 +45,13 @@ export default function DocumentsPage() {
       title: 'File Name',
       dataIndex: 'document_url',
       key: 'document_url',
-      render: (text: string) => <span className="font-medium text-indigo-600 dark:text-indigo-400">{text}</span>,
+      render: (text: string) => <span className="font-medium text-slate-800 dark:text-slate-200">{text}</span>,
     },
     {
       title: 'Type',
       dataIndex: 'document_type',
       key: 'document_type',
-      render: (type: string) => <Tag color="blue">{type.toUpperCase()}</Tag>,
+      render: (type: string) => <Tag color="default">{type.toUpperCase()}</Tag>,
     },
     {
       title: 'Status',
@@ -111,25 +110,54 @@ export default function DocumentsPage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto shadow-sm p-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between mb-6">
-        <Title level={3} className="!m-0">Documents</Title>
-        <Button 
-          type="default" 
-          icon={<SyncOutlined spin={polling} />} 
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+            Your session
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
+            Documents
+          </h1>
+        </div>
+        <Button
+          type="default"
+          icon={<SyncOutlined spin={polling} />}
           onClick={() => setPolling(!polling)}
         >
-          {polling ? 'Auto-refresh On' : 'Auto-refresh Off'}
+          {polling ? 'Auto-refresh on' : 'Auto-refresh off'}
         </Button>
       </div>
 
-      <Table 
-        columns={columns} 
-        dataSource={documents} 
-        rowKey="id" 
-        loading={loading}
-        pagination={{ pageSize: 15 }}
-      />
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900">
+        <Table
+          columns={columns}
+          dataSource={documents}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15 }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span className="text-slate-500 dark:text-slate-400">
+                    No documents in this session yet.
+                  </span>
+                }
+              >
+                <Link
+                  href="/#upload"
+                  className="inline-flex items-center gap-2 text-sm font-medium !text-amber-700 !underline decoration-amber-400 underline-offset-2 hover:!text-amber-800 dark:!text-amber-400 dark:hover:!text-amber-300"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload your first one
+                </Link>
+              </Empty>
+            ),
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -1,42 +1,27 @@
 import Link from 'next/link';
 import DocumentUploader from '@/components/DocumentUploader';
-import { ActionCard } from '@/components/landing/ActionCard';
 import { ProcessStep } from '@/components/landing/ProcessStep';
 import { SectionHeading } from '@/components/landing/SectionHeading';
 import { SurfaceCard } from '@/components/landing/SurfaceCard';
 import {
-  ArrowRight,
-  BadgeCheck,
   Bot,
   Cable,
-  ChartNoAxesCombined,
   CheckCircle2,
   Cpu,
   Download,
-  FileSearch,
   FileText,
-  MessageSquareMore,
+  Code2,
   ShieldCheck,
+  Sparkles,
   UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-
-interface TechBadge {
-  label: string;
-  detail: string;
-}
 
 interface Step {
   icon: LucideIcon;
   step: string;
   label: string;
   desc: string;
-}
-
-interface Signal {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
 }
 
 interface Capability {
@@ -46,21 +31,6 @@ interface Capability {
   accent: string;
   className?: string;
 }
-
-interface FinalAction {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
-  href: string;
-  cta: string;
-  note: string;
-}
-
-const techBadges: TechBadge[] = [
-  { label: 'LangGraph', detail: 'Stateful agent orchestration' },
-  { label: 'pydantic-ai', detail: 'Typed structured extraction' },
-  { label: 'Groq', detail: 'Sub-second LLM inference' },
-];
 
 const steps: Step[] = [
   {
@@ -85,25 +55,7 @@ const steps: Step[] = [
     icon: Download,
     step: '04',
     label: 'Export',
-    desc: 'Download JSON, CSV or fire a webhook to your system.',
-  },
-];
-
-const signals: Signal[] = [
-  {
-    title: 'Product-led first impression',
-    desc: 'The upload box is the hero. Visitors understand the workflow before they read a single feature grid.',
-    icon: FileSearch,
-  },
-  {
-    title: 'Human review stays in the story',
-    desc: 'This is not generic OCR. Confidence scoring and human approval are core to the product and should stay visible.',
-    icon: UserCheck,
-  },
-  {
-    title: 'Technical depth without clutter',
-    desc: 'Developer buyers want proof. The page should show agent orchestration, exports, privacy, and extension paths without feeling academic.',
-    icon: Cpu,
+    desc: 'Download JSON or CSV. Webhook delivery exists in the API, opt-in.',
   },
 ];
 
@@ -129,7 +81,7 @@ const capabilities: Capability[] = [
   },
   {
     title: 'Export layer',
-    desc: 'Clean JSON, CSV, or webhook delivery gives the pipeline a real destination inside your system.',
+    desc: 'JSON and CSV export today; a signed, SSRF-guarded webhook exists in the API for anyone wiring this into their own system.',
     icon: Cable,
     accent: 'from-fuchsia-500/20 via-purple-500/10 to-transparent',
     className: 'md:col-span-2',
@@ -137,25 +89,8 @@ const capabilities: Capability[] = [
 ];
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'contact@yourdomain.com';
-
-const finalActions: FinalAction[] = [
-  {
-    title: 'Custom implementation',
-    desc: 'Need invoices, contracts, or a custom document type wired into your existing workflow? Get in touch to discuss scope and timeline.',
-    icon: MessageSquareMore,
-    href: `mailto:${CONTACT_EMAIL}`,
-    cta: 'Send a message',
-    note: 'Response within 24 hours',
-  },
-  {
-    title: 'Extend DocFlow',
-    desc: 'The plugin architecture means adding a new document type is a single file. Propose an extension or request a new document type.',
-    icon: ChartNoAxesCombined,
-    href: `mailto:${CONTACT_EMAIL}`,
-    cta: 'Request an extension',
-    note: 'Open to collaboration',
-  },
-];
+const GITHUB_URL =
+  process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/Pavanmanikanta98/docflow-agent';
 
 export default function Home() {
   return (
@@ -178,124 +113,62 @@ export default function Home() {
 
       <section
         id="top"
-        className="relative -mx-4 overflow-hidden px-4 pt-10 md:-mx-8 md:px-8 md:pt-16"
+        className="relative -mx-4 overflow-hidden px-4 pt-14 md:-mx-8 md:px-8 md:pt-20"
       >
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/75 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-cyan-700 shadow-sm backdrop-blur dark:border-cyan-500/20 dark:bg-slate-950/60 dark:text-cyan-300">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Multi-agent document extraction
-            </div>
-
-            <h1 className="mt-6 text-5xl font-semibold tracking-[-0.07em] text-slate-950 dark:text-white md:text-7xl md:leading-[0.94]">
-              Upload a document.
-              <span className="block text-slate-500 dark:text-slate-400">
-                Leave with structured data.
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300 md:text-xl">
-              DocFlow turns invoices and contracts into review-ready structured output.
-              Parser, extractor, and validator agents do the heavy lift, while low-confidence
-              fields pause for human approval before export.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="#upload"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-slate-950"
-              >
-                Start with an upload
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white/70 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur transition-colors hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-100 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
-              >
-                Explore the pipeline
-              </Link>
-            </div>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {techBadges.map((b) => (
-                <SurfaceCard key={b.label} className="p-5">
-                  <div
-                    className="text-lg font-semibold tracking-[-0.03em] text-slate-950 dark:text-white"
-                    style={{ fontFamily: 'var(--font-geist-mono)' }}
-                  >
-                    {b.label}
-                  </div>
-                  <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                    {b.detail}
-                  </div>
-                </SurfaceCard>
-              ))}
-            </div>
-
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {signals.map(({ title, desc, icon: Icon }) => (
-                <div
-                  key={title}
-                  className="rounded-3xl border border-slate-200/70 bg-white/55 p-5 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/45"
-                >
-                  <Icon className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
-                  <h2 className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">
-                    {title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center gap-2 border-l-2 border-amber-500 pl-3 text-left text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            Free to try, right now · no signup · real Groq API underneath
           </div>
 
-          <SurfaceCard
-            id="upload"
-            className="relative overflow-hidden p-2 shadow-[0_40px_120px_-44px_rgba(14,116,144,0.6)]"
-          >
-            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
-            <div className="rounded-[24px] border border-slate-200/70 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.12),_transparent_46%),linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(240,249,255,0.88))] p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.14),_transparent_44%),linear-gradient(180deg,_rgba(15,23,42,0.9),_rgba(2,6,23,0.95))]">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-5 dark:border-white/10">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.8)]" />
-                    </span>
-                    <p className="text-xs uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
-                      Live intake
-                    </p>
-                  </div>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-                    Drop a document into the pipeline
-                  </h2>
-                </div>
-                <div className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-300">
-                  Invoices + contracts
-                </div>
-              </div>
+          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white md:text-6xl md:leading-[1.02]">
+            Messy PDF in. Clean data out.
+          </h1>
 
-              <div className="mt-6">
-                <DocumentUploader variant="embedded" />
-              </div>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+            This is the same pipeline I&apos;d build for your documents — try it below, then{' '}
+            <Link href="#contact" className="font-medium !text-slate-800 !underline decoration-amber-400 decoration-2 underline-offset-4 hover:!text-amber-600 dark:!text-slate-100 dark:decoration-amber-500">
+              tell me what&apos;s different about yours
+            </Link>
+            .
+          </p>
+        </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                {[
-                  'Agent pipeline routes the document automatically',
-                  'Human review only appears where confidence drops',
-                  'Exports stay ready for JSON, CSV, or webhook delivery',
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300"
-                  >
-                    {item}
-                  </div>
-                ))}
+        <SurfaceCard
+          id="upload"
+          className="relative mx-auto mt-12 max-w-5xl overflow-hidden p-2 shadow-[0_50px_140px_-40px_rgba(14,116,144,0.55)]"
+        >
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+          <div className="rounded-[24px] border border-slate-200/70 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.1),_transparent_46%),linear-gradient(180deg,_rgba(255,255,255,0.97),_rgba(248,250,252,0.9))] p-6 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.12),_transparent_44%),linear-gradient(180deg,_rgba(15,23,42,0.92),_rgba(2,6,23,0.96))] md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-5 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.8)]" />
+                </span>
+                <p className="text-xs uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
+                  Live — invoices + contracts
+                </p>
               </div>
+              <Link
+                href="#how-it-works"
+                className="text-xs font-medium !text-slate-500 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-400 dark:decoration-slate-600"
+              >
+                See how it works under the hood →
+              </Link>
             </div>
-          </SurfaceCard>
+
+            <div className="mt-6">
+              <DocumentUploader variant="embedded" />
+            </div>
+          </div>
+        </SurfaceCard>
+
+        <div className="mx-auto mt-8 flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center text-sm text-slate-500 dark:text-slate-400">
+          <span><strong className="font-semibold text-slate-900 dark:text-white">96.7%</strong> field accuracy, real test set</span>
+          <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
+          <span><strong className="font-semibold text-slate-900 dark:text-white">0</strong> failures across 230 live API calls</span>
+          <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
+          <span>every number above links to a <Link href="#proof" className="font-medium !text-slate-700 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600">committed results file</Link></span>
         </div>
       </section>
 
@@ -322,9 +195,9 @@ export default function Home() {
       <section id="capabilities" className="mx-auto max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <SectionHeading
-            eyebrow="Why this feels serious"
-            title="Every claim is anchored to a real operating model."
-            description="The strongest product pages do not hide behind abstract AI language. They explain the mechanism, show where humans stay in control, and make the export path explicit."
+            eyebrow="Architecture"
+            title="Built like production, not a weekend demo."
+            description="A queue instead of inline processing. A second LLM call to grade the first. A calibrated judge instead of a self-graded score. These are the decisions that separate a working pipeline from a prompt in a loop."
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -358,23 +231,23 @@ export default function Home() {
 
       <section id="proof" className="mx-auto max-w-6xl">
         <SectionHeading
-          eyebrow="Operational proof"
-          title="Built for real document workflows, not just a good screenshot."
-          description="The landing page should communicate measurable extraction quality, privacy posture, deployment flexibility, and the extension story for future document types."
+          eyebrow="Measured, not marketed"
+          title="Every figure below comes from a committed results file."
+          description="No case study copy. The evaluation harness, the golden dataset, and the raw run logs all live in this repository — click through and check the math yourself."
           align="center"
         />
 
         <div className="mt-12 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
           <SurfaceCard className="p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
-              Benchmarks
+              Live evaluation results
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {[
-                { value: '20/20', label: 'Evaluation tests passing', detail: '10 invoices + 10 contracts' },
-                { value: '3-layer', label: 'Agent pipeline', detail: 'Parse → Extract → Validate' },
-                { value: '<2s', label: 'Extraction latency', detail: 'Groq LLM inference' },
-                { value: '2', label: 'Document types', detail: 'Invoices + Contracts (plugin-based)' },
+                { value: '96.7%', label: 'Structured field accuracy', detail: 'gpt-oss-120b, 32-case golden set' },
+                { value: '86.25%', label: 'OCR text-layer baseline', detail: '20-case synthetic evaluation' },
+                { value: '0.993', label: 'Calibrated judge score', detail: 'termination_clause, GEval vs 35.7% fuzzy' },
+                { value: '8000 TPM', label: 'Free-tier ceiling, handled', detail: 'Redis token budget, defers not fails' },
               ].map((s) => (
                 <div key={s.label}>
                   <div
@@ -399,12 +272,13 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 <h3 className="text-xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white">
-                  Privacy posture
+                  Honest about what&apos;s not measured
                 </h3>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Documents are processed in-memory, with an option to switch providers or run locally
-                for tighter control over where data moves.
+                Cost-per-document isn&apos;t reported here because no run has captured per-case
+                token usage yet. A confident-sounding number with nothing behind it is worse
+                than admitting the gap.
               </p>
             </SurfaceCard>
 
@@ -416,34 +290,116 @@ export default function Home() {
                 </h3>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                The plugin architecture matters for the homepage too. New document types should feel
-                like an obvious next step, not a rewrite.
+                New document types are a plugin — one file implementing a shared interface,
+                not a rewrite of the pipeline that already works.
               </p>
             </SurfaceCard>
           </div>
         </div>
       </section>
 
-      <section id="contact" className="mx-auto max-w-6xl">
-        <SectionHeading
-          eyebrow="Work with me"
-          title="Two ways to take this further."
-          description="Custom document pipelines, new document type plugins, or just a conversation about what you're building."
-          align="center"
-        />
+      <section id="about" className="mx-auto max-w-6xl">
+        <SurfaceCard className="relative overflow-hidden p-8 md:p-12">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-fuchsia-500/10" />
+          <div className="relative grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-600 dark:text-cyan-300">
+                Who built this
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-3xl">
+                Pavan — this is a working system, built and measured end to end.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Every layer here — the queue, the confidence gate, the rate-limit handling,
+                the calibrated LLM judge — was a deliberate call, written up in this
+                repository&apos;s architecture decisions rather than left implicit. If you&apos;re
+                hiring or have a document pipeline that needs the same rigor, I&apos;d like to
+                talk.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={GITHUB_URL}
+                  className="inline-flex items-center gap-2 rounded-full !bg-slate-950 px-5 py-2.5 text-sm font-medium !text-white transition-transform hover:-translate-y-0.5 dark:!bg-white dark:!text-slate-950"
+                >
+                  <Code2 className="h-4 w-4" />
+                  View the repository
+                </Link>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 !bg-white/70 px-5 py-2.5 text-sm font-medium !text-slate-800 backdrop-blur transition-colors hover:border-amber-400 hover:!text-amber-700 dark:border-slate-700 dark:!bg-slate-950/50 dark:!text-slate-100 dark:hover:border-amber-500 dark:hover:!text-amber-300"
+                >
+                  Get in touch
+                </a>
+              </div>
+            </div>
+          </div>
+        </SurfaceCard>
+      </section>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-2">
-          {finalActions.map((item) => (
-            <ActionCard
-              key={item.title}
-              icon={item.icon}
-              title={item.title}
-              description={item.desc}
-              href={item.href}
-              cta={item.cta}
-              note={item.note}
-            />
-          ))}
+      <section id="contact" className="mx-auto max-w-3xl">
+        <div className="border-t border-slate-200 pt-16 dark:border-white/10">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+            Get in touch
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white md:text-4xl">
+            The easy part is a clean invoice. This is built for what isn&apos;t.
+          </h2>
+
+          <div className="relative mt-10">
+            <div className="absolute -top-6 left-9 z-10 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#faf6ec] bg-gradient-to-br from-amber-600 to-amber-800 shadow-[0_6px_18px_-4px_rgba(146,64,14,0.55)] dark:border-[#1a1510]">
+              <span className="font-letter text-lg italic text-amber-50">PM</span>
+            </div>
+
+            <div className="rounded-sm border border-amber-900/10 bg-[#faf6ec] px-7 py-12 shadow-[0_20px_60px_-30px_rgba(120,80,20,0.45)] dark:border-amber-100/10 dark:bg-[#1a1510] sm:px-14 sm:py-16">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-dashed border-amber-900/15 pb-5 dark:border-amber-100/10">
+                <p className="font-letter text-sm italic text-amber-900/60 dark:text-amber-100/50">
+                  From the desk of Pavan
+                </p>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-900/40 dark:text-amber-100/30">
+                  No forms, no funnel
+                </p>
+              </div>
+
+              <div className="font-letter mt-8 text-[1.15rem] leading-8 text-amber-950/90 dark:text-amber-50/85">
+                <p className="first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:text-6xl first-letter:font-semibold first-letter:leading-[0.8] first-letter:text-amber-800 dark:first-letter:text-amber-400">
+                  Pavan here — I built this one to survive that: a gate that catches
+                  invoices whose numbers don&apos;t add up, a review queue for anything
+                  the model isn&apos;t confident about, nothing shipping unchecked. So far
+                  the edge cases have been European invoices with comma decimals, a PDF
+                  with a prompt-injection attempt written into the text, a contract that
+                  quietly supersedes an earlier one. Your documents will break it in a
+                  different way — tell me how, and I&apos;ll tell you honestly whether
+                  it&apos;s worth building for.
+                </p>
+                <p className="mt-5">No forms, no sales call. Just write to me directly, at:</p>
+              </div>
+
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="font-letter mt-6 inline-block text-2xl italic !text-amber-900 !underline decoration-amber-700/40 decoration-1 underline-offset-4 hover:!text-amber-700 dark:!text-amber-200 dark:decoration-amber-200/30 dark:hover:!text-amber-100"
+              >
+                {CONTACT_EMAIL.split(',')[0]}
+              </a>
+
+              <p className="mt-10 text-sm text-amber-900/60 dark:text-amber-100/40">
+                Prefer to read the code first?{' '}
+                <a
+                  href={GITHUB_URL}
+                  className="font-medium !text-amber-900/80 !underline decoration-amber-900/25 underline-offset-2 hover:!text-amber-700 dark:!text-amber-100/70 dark:decoration-amber-100/20 dark:hover:!text-amber-50"
+                >
+                  Here&apos;s the source and every architecture decision behind it
+                </a>
+                .
+              </p>
+
+              <p className="font-signature mt-10 -rotate-2 text-4xl text-amber-900/80 dark:text-amber-200/70">
+                Pavan
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </div>

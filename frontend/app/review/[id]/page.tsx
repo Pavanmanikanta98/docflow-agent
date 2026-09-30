@@ -2,15 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Alert, Card, Typography, Spin, App, Button, Modal, Input } from 'antd';
+import { Alert, Card, Spin, App, Button, Modal, Input } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import api, { getSessionId } from '@/lib/api';
 import ExtractionReview from '@/components/ExtractionReview';
 import ExportPanel from '@/components/ExportPanel';
 import type { Document } from '@/lib/types';
 import { formatCapacityWaitMessage } from '@/lib/capacityWait';
-
-const { Title } = Typography;
 
 /** Turn a machine reason from the pipeline into something a reviewer can read. */
 function describeReviewReason(reason: string): string {
@@ -74,8 +72,8 @@ function FilePreview({ fileUrl, filename }: { fileUrl: string; filename: string 
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
         <div className="text-5xl opacity-30">📄</div>
-        <p className="font-semibold text-gray-600 dark:text-gray-300">{filename}</p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
+        <p className="font-semibold text-slate-600 dark:text-slate-300">{filename}</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
           File preview is not available. As per our privacy policy, uploaded documents are
           processed in-memory and cleared immediately after extraction.
         </p>
@@ -153,7 +151,7 @@ export default function ReviewPage() {
   if (!doc) return <div className="text-center text-red-500 mt-20">Document not found.</div>;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
 
       {/* Reject reason modal */}
       <Modal
@@ -165,7 +163,7 @@ export default function ReviewPage() {
         okButtonProps={{ danger: true, loading: submitting, disabled: !rejectReason.trim() }}
       >
         <div className="py-3">
-          <p className="text-sm text-gray-500 mb-3">
+          <p className="text-sm text-slate-500 mb-3">
             This document will remain in <strong>awaiting review</strong> so it can be re-reviewed after corrections.
           </p>
           <Input.TextArea
@@ -186,7 +184,7 @@ export default function ReviewPage() {
         >
           Back to Documents
         </Button>
-        <span className="text-gray-400 dark:text-gray-500 text-sm">
+        <span className="text-slate-400 dark:text-slate-500 text-sm">
           {doc.document_url} · #{doc.id}
         </span>
       </div>
@@ -196,15 +194,17 @@ export default function ReviewPage() {
 
       {/* Left — native PDF preview (only available immediately after upload, cleared after processing) */}
       <Card
-        className="flex-1 overflow-hidden shadow-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 flex flex-col"
+        className="flex-1 overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)] bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 flex flex-col"
         styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column' } }}
       >
         <FilePreview fileUrl={fileUrl} filename={doc.document_url} />
       </Card>
 
       {/* Right — review + export */}
-      <Card className="w-full lg:w-[450px] overflow-y-auto shadow-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-gray-200 dark:border-gray-800">
-        <Title level={4} className="!mb-6">Extraction Results</Title>
+      <Card className="w-full lg:w-[450px] overflow-y-auto shadow-[0_1px_2px_rgba(15,23,42,0.04)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-slate-200 dark:border-white/10">
+        <h2 className="mb-6 text-lg font-semibold tracking-[-0.02em] text-slate-950 dark:text-white">
+          Extraction Results
+        </h2>
 
         {doc.waiting_for_capacity && (
           <Alert
