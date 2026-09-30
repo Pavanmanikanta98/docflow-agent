@@ -7,7 +7,11 @@ hardcoded 0.7/0.3 fallback score)."""
 
 import pytest
 
-from backend.tests.evaluation.run_judge_eval import (
+pytest.importorskip(
+    "deepeval", reason="deepeval lives in the 'eval' extra, not installed in CI"
+)
+
+from backend.tests.evaluation.run_judge_eval import (  # noqa: E402
     _faithful_reword,
     _judge_score,
     _material_change,

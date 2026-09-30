@@ -8,8 +8,12 @@ short."""
 import pytest
 from pydantic_ai.exceptions import ModelHTTPError
 
-from backend.core.token_budget import CapacityWaitError
-from backend.tests.evaluation.run_judge_eval import _with_capacity_retry
+pytest.importorskip(
+    "deepeval", reason="deepeval lives in the 'eval' extra, not installed in CI"
+)
+
+from backend.core.token_budget import CapacityWaitError  # noqa: E402
+from backend.tests.evaluation.run_judge_eval import _with_capacity_retry  # noqa: E402
 
 
 @pytest.mark.asyncio
