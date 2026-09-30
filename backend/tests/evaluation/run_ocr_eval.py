@@ -35,7 +35,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import jiwer
 import pytesseract
 from PIL import Image
 from pydantic_ai.exceptions import ModelHTTPError
@@ -246,6 +245,8 @@ def _clean_cases(filename: str) -> list[dict]:
 
 
 async def run_set_a(preprocess: bool, checkpoint: dict) -> dict:
+    import jiwer
+
     invoices = _clean_cases("invoices.json")
     contracts = _clean_cases("contracts.json")
 
@@ -438,6 +439,8 @@ def run_preprocessing_experiment() -> dict:
     runs cheaply as its own step rather than doubling the real API cost of
     the full field-accuracy run below. Decides `preprocess` for run_set_a/b.
     """
+    import jiwer
+
     invoices = _clean_cases("invoices.json")
     contracts = _clean_cases("contracts.json")
     texts = [c["input"] for c in invoices + contracts]
