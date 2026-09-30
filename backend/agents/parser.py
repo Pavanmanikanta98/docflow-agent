@@ -84,7 +84,28 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     PDF path. Tries 3 extraction methods in order.
     Returns the first non-empty result, or "" if all fail.
     """
-    return "\n".join(p for p in extract_pages_from_pdf(file_bytes) if p.strip())
+    text, _ = _extract_text_from_pdf_with_method(file_bytes)
+    return text
+
+
+def _extract_text_from_pdf_with_method(file_bytes: bytes) -> tuple[str, str]:
+    """
+    PDF path. Tries 3 extraction methods in order, reusing the same
+    page-preserving tiers as extract_pages_from_pdf (ADR 006) so the two
+    never diverge on which tier "wins".
+    Returns (text, method) where method is "pymupdf", "pdfplumber", or "ocr".
+    If all fail, returns ("", "").
+    """
+    for pages, method in (
+        (_try_pymupdf_pages(file_bytes), "pymupdf"),
+        (_try_pdfplumber_pages(file_bytes), "pdfplumber"),
+        (_try_tesseract_pages(file_bytes), "ocr"),
+    ):
+        text = "\n".join(p for p in pages if p.strip())
+        if text:
+            return text, method
+
+    return "", ""
 
 
 IMAGE_MIME_TYPES = frozenset({"image/png", "image/jpeg"})
@@ -118,10 +139,37 @@ def extract_text(file_bytes: bytes, mime_type: str) -> str:
     Raises:
         ValueError: if the MIME type is not a supported document type.
     """
+    text, _ = extract_text_with_method(file_bytes, mime_type)
+    return text
+
+
+def extract_text_with_method(
+    file_bytes: bytes, mime_type: str
+) -> tuple[str, str]:
+    """
+    Extract text from a file and return which method was used.
+
+    Args:
+        file_bytes: Raw document bytes.
+        mime_type: MIME type of the file ("application/pdf", "image/png", "image/jpeg").
+
+    Returns:
+        (text, method) where method is one of:
+        - "image-ocr" for images
+        - "pymupdf" for digital PDFs
+        - "pdfplumber" for complex PDFs
+        - "ocr" for scanned PDFs
+        - "" if extraction completely failed
+
+    Raises:
+        ValueError: if the MIME type is not a supported document type.
+    """
     if mime_type in IMAGE_MIME_TYPES:
-        return extract_text_from_image(file_bytes)
+        text = extract_text_from_image(file_bytes)
+        return text, "image-ocr"
     if mime_type == PDF_MIME_TYPE:
-        return extract_text_from_pdf(file_bytes)
+        text, pdf_method = _extract_text_from_pdf_with_method(file_bytes)
+        return text, pdf_method
     raise ValueError(f"Unsupported MIME type for parsing: {mime_type!r}")
 
 

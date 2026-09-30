@@ -14,11 +14,12 @@ from typing import Optional, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from backend.agents.parser import extract_text
+from backend.agents.parser import extract_text_with_method
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
 from backend.core.db import redis_client
 from backend.core.llm import llm_client
+from backend.core.metrics import timed
 
 # ---------------------------------------------------------------------------
 # State — the single dict that travels through every node
@@ -40,6 +41,7 @@ class DocFlowState(TypedDict):
     # "processing" → "completed" | "awaiting_review" | "failed"
     status: str
     error: Optional[str]          # Only populated on failure
+    metrics: Optional[dict]       # Performance metrics (timings, tokens)
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +52,7 @@ async def parse_node(state: DocFlowState) -> DocFlowState:
     """
     Node 1: Extract raw text from the uploaded PDF or image.
     If no text can be extracted (text layer and OCR both empty), marks state as failed.
+    Collects parsing method and timing.
 
     If `raw_text` is already populated (the worker pre-parses every document
     once — ADR 006 — to decide whether it needs chunking), this is a no-op:
@@ -57,17 +60,24 @@ async def parse_node(state: DocFlowState) -> DocFlowState:
     """
     if state.get("raw_text"):
         return state
+    metrics: dict[str, float] = state.get("metrics") or {}
     try:
-        raw_text = extract_text(state["file_bytes"], state["mime_type"])
+        with timed("parse", metrics):
+            raw_text, parse_method = extract_text_with_method(
+                state["file_bytes"], state["mime_type"]
+            )
+        # Store the parsing method used
+        metrics["parse_method"] = parse_method
     except ValueError as exc:
-        return {**state, "status": "failed", "error": str(exc)}
+        return {**state, "status": "failed", "error": str(exc), "metrics": metrics}
     if not raw_text.strip():
         return {
             **state,
             "status": "failed",
             "error": "No text could be extracted (text layer and OCR both empty)",
+            "metrics": metrics,
         }
-    return {**state, "raw_text": raw_text}
+    return {**state, "raw_text": raw_text, "metrics": metrics}
 
 
 def _resolve_model():
@@ -78,20 +88,31 @@ def _resolve_model():
 async def extract_node(state: DocFlowState) -> DocFlowState:
     """
     Node 2: Send raw text to LLM via pydantic-ai.
+    Collects token usage and timing.
     """
 
-    from backend.agents.extractor import extract_fields
+    from backend.agents.extractor import extract_fields_with_usage
     from backend.plugins import get_plugin
 
     plugin = get_plugin(state["document_type"])
     model = _resolve_model()
 
-    fields = await extract_fields(
-        state["raw_text"], plugin, model=model, redis_client=redis_client
-    )
+    metrics: dict[str, float] = state.get("metrics") or {}
+    with timed("extract", metrics):
+        fields, usage = await extract_fields_with_usage(
+            state["raw_text"], plugin, model=model, redis_client=redis_client
+        )
+
+    # Store token usage
+    if usage.input_tokens is not None:
+        metrics["input_tokens"] = float(usage.input_tokens)
+    if usage.output_tokens is not None:
+        metrics["output_tokens"] = float(usage.output_tokens)
+
     return {
         **state,
         "extraction_results": fields.model_dump(exclude={"confidence_score"}),
+        "metrics": metrics,
     }
 
 
@@ -125,14 +146,17 @@ def resolve_validation_outcome(
 async def validate_node(state: DocFlowState) -> DocFlowState:
     """
     Node 3: Independent per-field confidence scoring.
+    Collects validation timing.
     """
     model = _resolve_model()
-    validation = await validate_fields(
-        raw_text=state["raw_text"],
-        extracted_fields=state["extraction_results"],
-        model=model,
-        redis_client=redis_client,
-    )
+    metrics: dict[str, float] = state.get("metrics") or {}
+    with timed("validate", metrics):
+        validation = await validate_fields(
+            raw_text=state["raw_text"],
+            extracted_fields=state["extraction_results"],
+            model=model,
+            redis_client=redis_client,
+        )
     status, reasons = resolve_validation_outcome(
         validation, settings.confidence_threshold
     )
@@ -143,6 +167,7 @@ async def validate_node(state: DocFlowState) -> DocFlowState:
         "field_confidences": validation.field_scores,
         "review_reasons": reasons,
         "status": status,
+        "metrics": metrics,
     }
 
 

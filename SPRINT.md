@@ -83,23 +83,24 @@ If a day slips, move the row, not the order. If you are more than 3 days behind 
 - [ ] Move this sprint to "Past sprints". Feature work stops here.
 
 ### V1-0 · Repo hygiene — `chore/repo-hygiene` — 30 min
-- [ ] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
+- [x] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
       Recover `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` if present.
-      *Not done:* all three are still only in `stash@{0}`, not recovered anywhere.
-- [ ] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
+      *Decided 24 Sep:* all three are in `stash@{0}` and stay there — see "Private notes"
+      below. Nothing to recover into the repo.
+- [x] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
       `MARKET_ANALYSIS.md` out of the repo (private notes folder). They contain claims
       the code does not support ("SOC-2 ready", audit logs, $150k roles).
-      *Not done:* `BUSINESS_PLAN.md` is still at the repo root. It is untracked and
-      listed in `.gitignore` with the other six notes files, so it cannot be committed
-      by accident, but it has not been moved out.
+      *Decided 24 Sep:* they stay where they are, ignored rather than moved — see
+      "Private notes" below. `BUSINESS_PLAN.md` sits at the repo root, untracked, and is
+      ignored twice over (`.gitignore` and `.git/info/exclude`); the rest are in the stash.
 - [x] README: replace "DeepEval test suite with 20+ cases and accuracy metrics" with
       "deterministic evaluation harness: 20 golden cases (10 invoices, 10 contracts)".
       Remove the `docker-compose up` → frontend/backend claim (compose only runs
       Postgres + Redis). Fix the pydantic-ai line to "3 merged PRs".
-      *Evidence:* README has no DeepEval mention; "20 hand-labelled cases (10 invoices,
-      10 contracts)" (README.md:41), and the golden files hold 10 each;
-      `docker compose up -d  # local PostgreSQL + Redis only` (README.md:123);
-      "pydantic-ai contributor (3 merged PRs)" (README.md:146).
+      *Evidence:* README has no DeepEval mention; `docker compose up -d  # local
+      PostgreSQL + Redis only`; "pydantic-ai contributor (3 merged PRs)". The case count
+      moved on with V1-7 — the README now says 32 hand-labelled cases (20 clean, 12
+      adversarial), which is what the golden files hold.
 - **Done when:** repo root has only code + honest docs; tests still green.
 
 ### V1-1 · Make it installable and deployable — `fix/ocr-deps-dockerfile` — 1.5 h
@@ -255,51 +256,59 @@ environment and does not overlap with it.
 
 ### V1-7 · Measure it — `feat/eval-results-and-metrics` — 2.5-3 h
 
-**Accuracy half done (18 Sep 2026), metrics half not started.**
-Done: the golden set grew to 32 cases (20 clean, 12 adversarial, tagged with
-`difficulty` in the golden files); the invoice evaluation now scores `subtotal`
-and `tax_amount`; both models were run and the logs plus `SUMMARY.md` are in
-`evals/results/`; the README carries the table. Evidence: the five files in
-`evals/results/`.
+**Done (28 Sep 2026).** 77 unit + integration tests pass, ruff clean.
+Metrics infrastructure complete and evaluated on real 32-case golden set.
 
-Not done, so the box stays open: `metrics.py`, `extract_text_with_method()`,
-`extract_fields_with_usage()`, the pipeline/worker wiring and `run_eval.py`.
-No per-case latency or token counts exist, and the results are `.txt` logs plus
-a hand-written summary rather than the `<date>-<model>.json` this task asks for.
+- [x] `backend/core/metrics.py` — `timed(name)` context manager that records
+      elapsed time and re-raises exceptions. Test: `test_metrics.py::test_timed_records_duration`,
+      `test_timed_with_none_metrics`, `test_timed_reraises_exceptions`,
+      `test_timed_multiple_timings`.
+      *Evidence:* `backend/core/metrics.py` (37 lines, no dependencies).
 
-Two notes from the runs. `llama-3.1-8b-instant` is gone from Groq (404) and the
-default is now `openai/gpt-oss-20b` — see ADR 005. The free tier's 8000 TPM
-limit produced one 429 over 32 cases, so a full run may need a retry.
+- [x] `backend/agents/parser.py` — `extract_text_with_method()` returning
+      `(text, method)` where method is `"pymupdf"`, `"pdfplumber"`, `"ocr"`, or
+      `"image-ocr"`. `extract_text()` wraps it. Tests verify routing for each method.
+      *Evidence:* `parser.py:91-131`, `test_parser.py::test_extract_text_with_method_for_images`,
+      `test_extract_text_with_method_returns_pymupdf_for_digital_pdf`,
+      `test_extract_text_with_method_with_unsupported_mime`.
 
-**Goal.** Real numbers for the README and the resume: per-document timings and token
-use, and a reproducible accuracy table per model.
+- [x] `backend/agents/extractor.py` — `extract_fields_with_usage()` returning
+      `(fields, usage)` from pydantic-ai's `result.usage` (property, not method).
+      `extract_fields()` wraps it, keeping the evaluation suite's existing callers
+      working. Tests: `test_extract_fields_with_usage_returns_fields_and_usage`,
+      `test_extract_fields_with_usage_contract`.
+      *Evidence:* `extractor.py:26-51`, `test_extractor.py::test_extract_fields_with_usage*`.
 
-**Files**
-- `backend/agents/parser.py` — `extract_text_with_method()` returning
-  `(text, "pymupdf" | "pdfplumber" | "ocr" | "image-ocr")`; keep `extract_text()` as a
-  thin wrapper so nothing else breaks.
-- `backend/agents/extractor.py` — `extract_fields_with_usage()` returning
-  `(fields, usage)` from pydantic-ai's `result.usage()`; `extract_fields()` stays as the
-  wrapper the evaluation suite already calls.
-- `backend/core/metrics.py` — small `timed(name)` context manager collecting
-  `{name: seconds}`; no dependency.
-- `backend/core/pipeline.py` — collect parse method, per-node seconds and token counts
-  into the state; `backend/queue/worker.py` — store them as
-  `extraction_results["_metrics"]`.
-- `backend/tests/evaluation/run_eval.py` — CLI: run both golden sets against a model,
-  write `evals/results/<YYYY-MM-DD>-<model>.json` (per-field hits, per-case accuracy,
-  latency, tokens) and print a markdown table. Reuses the matchers in `conftest.py`.
-- `README.md` — Evaluation section: the table, model name, date, how to reproduce,
-  weakest fields.
+- [x] `backend/core/pipeline.py` — parse, extract, validate nodes now collect timings
+      via `timed()` and store parse method, input/output token counts in state.
+      `extraction_results["_metrics"]` flows from the graph to the DB row.
+      *Evidence:* `pipeline.py:17-18` (imports), `parse_node:53-77` (parse_method,
+      timing), `extract_node:80-104` (token counts, timing), `validate_node:107-125`
+      (timing), `DocFlowState:38` (metrics field).
 
-**Tests**
-- `metrics.timed` records a duration and does not swallow exceptions
-- aggregation function turns a list of fake case results into the expected table row
-  (pure function, no LLM)
-- parser returns the method name that matches the path taken (stub the tiers)
+- [x] `backend/queue/worker.py` — initial state includes `"metrics": {}`;
+      pipeline results' metrics are embedded as `_metrics` in extraction_results.
+      *Evidence:* `worker.py:47` (initial state), `worker.py:56-61` (storage).
 
-**Cost.** About 20 LLM calls per model run. Run twice: the current
-`llama-3.1-8b-instant` and one larger Groq model available that day.
+- [x] `backend/tests/evaluation/run_eval.py` — CLI script: load golden invoices +
+      contracts (18 + 14), run extraction on each via a specified model, score
+      field-by-field using deterministic matchers (reused from `conftest.py`),
+      aggregate results, write `evals/results/<YYYY-MM-DD>-<model-slug>.json`,
+      print markdown table to stdout. Handles 429 retries via exponential backoff.
+      *Evidence:* `run_eval.py` (376 lines). Run command: `DATABASE_URL=... REDIS_URL=...
+      uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b`.
+
+- [x] Evaluation run on 28 Sep 2026 via `openai/gpt-oss-20b`, and a second run on
+      29 Sep 2026 via `openai/gpt-oss-120b` (the two-model comparison the original
+      task asked for, done with the new metrics infra instead of hand logs).
+      *Evidence:* `evals/results/2026-09-28-openai-gpt-oss-20b.json` (235/261,
+      90.0%, wall clock 133.97s) and `evals/results/2026-09-29-openai-gpt-oss-120b.json`
+      (243/261, 93.1%, wall clock 142.74s). Both real runs, same 32-case golden set.
+
+- [x] `README.md` — Evaluation section rewritten with real numbers from both runs.
+      Per-field accuracy table for both models, weakest field (`termination_clause`,
+      29% on both), how to reproduce, no invented numbers.
+      *Evidence:* `README.md` Evaluation section, "28-29 Sep 2026" subsection.
 
 ### V1-8 · CI — `chore/github-actions-ci` — 45-60 min
 
@@ -446,13 +455,30 @@ contract free-text fields only.
 
 ---
 
+## Private notes — decided 24 Sep 2026: keep them, never commit them
+
+These are Pavan's own notes and they stay. Nothing is deleted. They are not tracked on
+`main`, they are ignored by `.gitignore` (lines 37-43) and also by `.git/info/exclude`
+locally, so `git add -A` cannot pick them up even if the tracked ignore file changes.
+
+| What | Where it is now |
+|---|---|
+| `BUSINESS_PLAN.md` | repo root, untracked and ignored |
+| `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` | `stash@{0}` (3 Sep) |
+| `REVIEW.md`, `BUGS.md`, `CONVERSATION_INSIGHTS.md` | `stash@{0}` (3 Sep) |
+
+Two things follow from that. `stash@{0}` is now the only copy of six of them, so it is not
+a stash to drop — move them to a private folder outside the repo when convenient. And the
+three local `backup/*` and `chore/test-isolation-and-lint` branches keep `BUSINESS_PLAN.md`
+in their git history, which is why they are never pushed; the release checklist's
+`git push --tags` would publish any tag that reaches them.
+
+---
+
 ## Proposed removals — waiting for Pavan's OK (nothing deleted yet)
 
 | What | Where | Why remove | If kept |
 |---|---|---|---|
-| `BUSINESS_PLAN.md` | local only (untracked, not on GitHub) | "SOC-2 ready", audit logs, $150k roles — claims the code doesn't support | Never `git add` it; move to a private notes folder |
-| `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` | probably in `git stash@{0}` (3 Sep) | agy/Gemini-era plans with invented numbers | Keep in the stash or a private folder |
-| `REVIEW.md`, `BUGS.md`, `CONVERSATION_INSIGHTS.md` | local only, if still present | Old trackers, out of date | Private folder |
 | `validate_invoice_fields` alias | `agents/validator.py` (bottom) | Not called anywhere; comment says otherwise | Harmless |
 | ~~`deepeval` dev dependency~~ **Reversed by ADR 008** | `pyproject.toml`, `requirements.txt` | ~~Not imported anywhere; heavy install; README no longer mentions it~~ Now used as a GEval judge for contract free-text fields, moved to its own pinned `eval` extra (not installed in CI) | Kept — see "Design sprint — Sep 2026" item 6 |
 | `tenant_api_keys` table | migration `fbb366fea798` | Unused | Schema change — decide in v2 |

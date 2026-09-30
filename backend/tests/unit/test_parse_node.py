@@ -16,9 +16,11 @@ def _state(mime_type: str) -> pipeline.DocFlowState:
         "extraction_results": None,
         "confidence_score": None,
         "field_confidences": None,
+        "review_reasons": None,
         "human_review_required": None,
         "status": "processing",
         "error": None,
+        "metrics": {},
     }
 
 
@@ -26,8 +28,13 @@ async def test_parse_node_passes_mime_type_and_keeps_text(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seen: list[str] = []
+
+    def fake_extract(b: bytes, mime: str) -> tuple[str, str]:
+        seen.append(mime)
+        return "INVOICE 1", "test-method"
+
     monkeypatch.setattr(
-        pipeline, "extract_text", lambda b, mime: seen.append(mime) or "INVOICE 1"
+        pipeline, "extract_text_with_method", fake_extract
     )
 
     result = await pipeline.parse_node(_state("image/png"))
@@ -40,7 +47,11 @@ async def test_parse_node_passes_mime_type_and_keeps_text(
 async def test_parse_node_fails_when_no_text_found(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(pipeline, "extract_text", lambda b, mime: "   ")
+    monkeypatch.setattr(
+        pipeline,
+        "extract_text_with_method",
+        lambda b, mime: ("   ", "test-method"),
+    )
 
     result = await pipeline.parse_node(_state("application/pdf"))
 
