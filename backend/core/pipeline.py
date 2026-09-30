@@ -17,6 +17,7 @@ from langgraph.graph import END, START, StateGraph
 from backend.agents.parser import extract_text_with_method
 from backend.agents.validator import validate_fields
 from backend.core.config import settings
+from backend.core.db import redis_client
 from backend.core.llm import llm_client
 from backend.core.metrics import timed
 
@@ -52,7 +53,13 @@ async def parse_node(state: DocFlowState) -> DocFlowState:
     Node 1: Extract raw text from the uploaded PDF or image.
     If no text can be extracted (text layer and OCR both empty), marks state as failed.
     Collects parsing method and timing.
+
+    If `raw_text` is already populated (the worker pre-parses every document
+    once — ADR 006 — to decide whether it needs chunking), this is a no-op:
+    parsing never runs twice.
     """
+    if state.get("raw_text"):
+        return state
     metrics: dict[str, float] = state.get("metrics") or {}
     try:
         with timed("parse", metrics):
@@ -93,7 +100,7 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
     metrics: dict[str, float] = state.get("metrics") or {}
     with timed("extract", metrics):
         fields, usage = await extract_fields_with_usage(
-            state["raw_text"], plugin, model=model
+            state["raw_text"], plugin, model=model, redis_client=redis_client
         )
 
     # Store token usage
@@ -109,6 +116,33 @@ async def extract_node(state: DocFlowState) -> DocFlowState:
     }
 
 
+def resolve_validation_outcome(
+    validation, confidence_threshold: float, extra_reasons: Optional[list[str]] = None
+) -> tuple[str, list[str]]:
+    """The single place that turns a ValidatorOutput into (status, reasons).
+
+    Shared by the normal (LangGraph) path and the chunked path
+    (`backend.queue.worker`) so a chunked document is routed by exactly the
+    same rules as a single-request one — a math-mismatch or low-confidence
+    gate does not mean something different depending on how the document
+    was split.
+    """
+    reasons = list(validation.review_reasons) + list(extra_reasons or [])
+    if validation.status != "human_review" and (
+        validation.overall_confidence < confidence_threshold
+    ):
+        reasons.append(f"low_confidence:{validation.overall_confidence:.2f}")
+
+    if validation.status == "human_review" or reasons:
+        status = "awaiting_review"
+    elif validation.overall_confidence >= confidence_threshold:
+        status = "completed"
+    else:
+        status = "awaiting_review"
+
+    return status, reasons
+
+
 async def validate_node(state: DocFlowState) -> DocFlowState:
     """
     Node 3: Independent per-field confidence scoring.
@@ -121,19 +155,18 @@ async def validate_node(state: DocFlowState) -> DocFlowState:
             raw_text=state["raw_text"],
             extracted_fields=state["extraction_results"],
             model=model,
+            redis_client=redis_client,
         )
-    reasons = list(validation.review_reasons)
-    if validation.status != "human_review" and (
-        validation.overall_confidence < settings.confidence_threshold
-    ):
-        reasons.append(f"low_confidence:{validation.overall_confidence:.2f}")
+    status, reasons = resolve_validation_outcome(
+        validation, settings.confidence_threshold
+    )
 
     return {
         **state,
         "confidence_score": validation.overall_confidence,
         "field_confidences": validation.field_scores,
         "review_reasons": reasons,
-        "status": validation.status or state["status"],
+        "status": status,
         "metrics": metrics,
     }
 
@@ -165,13 +198,10 @@ def route_after_parse(state: DocFlowState) -> str:
 
 
 def route_after_validate(state: DocFlowState) -> str:
-    """After validation: a deterministic gate wins; otherwise route on confidence."""
-    if state.get("status") == "human_review" or state.get("review_reasons"):
-        return "awaiting_review"
-    score = state.get("confidence_score") or 0.0
-    if score >= settings.confidence_threshold:
-        return "completed"
-    return "awaiting_review"
+    """After validation: use the status `resolve_validation_outcome` already
+    decided in validate_node — the single source of truth for this decision
+    (shared with the chunked path in backend.queue.worker)."""
+    return state.get("status") or "awaiting_review"
 
 
 # ---------------------------------------------------------------------------

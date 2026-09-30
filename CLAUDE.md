@@ -44,8 +44,9 @@ multi-tenant SaaS features. If a task drifts into these, stop and say so.
 6. **Keep SPRINT.md true.** Tick the task you finished, add anything you discovered under
    "Open polish", and never mark a task done if a test is missing.
 7. The evaluation suite is a **custom deterministic harness** (pytest + golden JSON +
-   fuzzy/number/date matchers in `backend/tests/evaluation/conftest.py`). It does not
-   use DeepEval. Describe it that way in docs.
+   fuzzy/number/date matchers in `backend/tests/evaluation/conftest.py`). Structured
+   fields use the deterministic harness; the contract free-text fields are also
+   scored by a DeepEval GEval judge (ADR 008). Describe it that way in docs.
 
 ## Useful commands
 

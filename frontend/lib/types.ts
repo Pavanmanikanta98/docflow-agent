@@ -30,6 +30,10 @@ export interface Document {
   human_review_rejection_reason: string | null;
   created_at: string;
   updated_at: string | null;
+  /** ADR 006 — true while this document is deferred for LLM capacity. */
+  waiting_for_capacity: boolean;
+  /** ISO 8601 estimate of when processing will resume, when waiting. */
+  capacity_wait_estimated_start: string | null;
 }
 
 export interface DocumentListResponse {

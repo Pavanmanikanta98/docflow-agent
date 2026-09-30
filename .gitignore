@@ -18,6 +18,9 @@ htmlcov/
 .env.local
 *.local
 
+# Local Redis persistence snapshot (started manually in this sandbox)
+dump.rdb
+
 # Node / Next.js
 frontend/node_modules/
 frontend/.next/
@@ -33,6 +36,14 @@ Thumbs.db
 .idea/
 *.swp
 
+# Eval-run resume state (see backend/tests/evaluation/run_ocr_eval.py and
+# run_judge_eval.py) — not a result, just scratch progress so a crash
+# doesn't lose an in-flight run.
+evals/results/.ocr_eval_checkpoint.json
+evals/results/.ocr_eval_checkpoint.tmp
+evals/results/.judge_eval_checkpoint.json
+evals/results/.judge_eval_checkpoint.tmp
+
 # Private notes — never publish (see SPRINT.md V1-0)
 BUSINESS_PLAN.md
 ROADMAP.md
@@ -41,3 +52,7 @@ MARKET_ANALYSIS.md
 REVIEW.md
 BUGS.md
 CONVERSATION_INSIGHTS.md
+
+# Local redis-server snapshot (created by running redis-server without
+# --save "" during local dev/testing)
+dump.rdb

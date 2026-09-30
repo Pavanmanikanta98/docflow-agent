@@ -28,6 +28,7 @@ dependencies = [
     "python-multipart>=0.0.22",
     "groq>=1.1.1",
     "cryptography>=44.0.0",
+    "tiktoken>=0.14.0",
 ]
 
 [project.optional-dependencies]
@@ -37,7 +38,13 @@ dev = [
     "pytest-cov>=7.0.0",
     "black>=26.3.1",
     "ruff>=0.15.9",
-    "deepeval>=3.8.4",
+]
+# Real-LLM evaluation extras — pinned, not installed in CI or by
+# `uv sync --extra dev`. deepeval: ADR 008's GEval judge. jiwer: ADR 007's
+# CER/WER scoring for the OCR evaluation.
+eval = [
+    "deepeval==4.2.0",
+    "jiwer>=3.0.0",
 ]
 
 [tool.black]
