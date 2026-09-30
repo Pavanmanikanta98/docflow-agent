@@ -256,51 +256,59 @@ environment and does not overlap with it.
 
 ### V1-7 · Measure it — `feat/eval-results-and-metrics` — 2.5-3 h
 
-**Accuracy half done (18 Sep 2026), metrics half not started.**
-Done: the golden set grew to 32 cases (20 clean, 12 adversarial, tagged with
-`difficulty` in the golden files); the invoice evaluation now scores `subtotal`
-and `tax_amount`; both models were run and the logs plus `SUMMARY.md` are in
-`evals/results/`; the README carries the table. Evidence: the five files in
-`evals/results/`.
+**Done (28 Sep 2026).** 77 unit + integration tests pass, ruff clean.
+Metrics infrastructure complete and evaluated on real 32-case golden set.
 
-Not done, so the box stays open: `metrics.py`, `extract_text_with_method()`,
-`extract_fields_with_usage()`, the pipeline/worker wiring and `run_eval.py`.
-No per-case latency or token counts exist, and the results are `.txt` logs plus
-a hand-written summary rather than the `<date>-<model>.json` this task asks for.
+- [x] `backend/core/metrics.py` — `timed(name)` context manager that records
+      elapsed time and re-raises exceptions. Test: `test_metrics.py::test_timed_records_duration`,
+      `test_timed_with_none_metrics`, `test_timed_reraises_exceptions`,
+      `test_timed_multiple_timings`.
+      *Evidence:* `backend/core/metrics.py` (37 lines, no dependencies).
 
-Two notes from the runs. `llama-3.1-8b-instant` is gone from Groq (404) and the
-default is now `openai/gpt-oss-20b` — see ADR 005. The free tier's 8000 TPM
-limit produced one 429 over 32 cases, so a full run may need a retry.
+- [x] `backend/agents/parser.py` — `extract_text_with_method()` returning
+      `(text, method)` where method is `"pymupdf"`, `"pdfplumber"`, `"ocr"`, or
+      `"image-ocr"`. `extract_text()` wraps it. Tests verify routing for each method.
+      *Evidence:* `parser.py:91-131`, `test_parser.py::test_extract_text_with_method_for_images`,
+      `test_extract_text_with_method_returns_pymupdf_for_digital_pdf`,
+      `test_extract_text_with_method_with_unsupported_mime`.
 
-**Goal.** Real numbers for the README and the resume: per-document timings and token
-use, and a reproducible accuracy table per model.
+- [x] `backend/agents/extractor.py` — `extract_fields_with_usage()` returning
+      `(fields, usage)` from pydantic-ai's `result.usage` (property, not method).
+      `extract_fields()` wraps it, keeping the evaluation suite's existing callers
+      working. Tests: `test_extract_fields_with_usage_returns_fields_and_usage`,
+      `test_extract_fields_with_usage_contract`.
+      *Evidence:* `extractor.py:26-51`, `test_extractor.py::test_extract_fields_with_usage*`.
 
-**Files**
-- `backend/agents/parser.py` — `extract_text_with_method()` returning
-  `(text, "pymupdf" | "pdfplumber" | "ocr" | "image-ocr")`; keep `extract_text()` as a
-  thin wrapper so nothing else breaks.
-- `backend/agents/extractor.py` — `extract_fields_with_usage()` returning
-  `(fields, usage)` from pydantic-ai's `result.usage()`; `extract_fields()` stays as the
-  wrapper the evaluation suite already calls.
-- `backend/core/metrics.py` — small `timed(name)` context manager collecting
-  `{name: seconds}`; no dependency.
-- `backend/core/pipeline.py` — collect parse method, per-node seconds and token counts
-  into the state; `backend/queue/worker.py` — store them as
-  `extraction_results["_metrics"]`.
-- `backend/tests/evaluation/run_eval.py` — CLI: run both golden sets against a model,
-  write `evals/results/<YYYY-MM-DD>-<model>.json` (per-field hits, per-case accuracy,
-  latency, tokens) and print a markdown table. Reuses the matchers in `conftest.py`.
-- `README.md` — Evaluation section: the table, model name, date, how to reproduce,
-  weakest fields.
+- [x] `backend/core/pipeline.py` — parse, extract, validate nodes now collect timings
+      via `timed()` and store parse method, input/output token counts in state.
+      `extraction_results["_metrics"]` flows from the graph to the DB row.
+      *Evidence:* `pipeline.py:17-18` (imports), `parse_node:53-77` (parse_method,
+      timing), `extract_node:80-104` (token counts, timing), `validate_node:107-125`
+      (timing), `DocFlowState:38` (metrics field).
 
-**Tests**
-- `metrics.timed` records a duration and does not swallow exceptions
-- aggregation function turns a list of fake case results into the expected table row
-  (pure function, no LLM)
-- parser returns the method name that matches the path taken (stub the tiers)
+- [x] `backend/queue/worker.py` — initial state includes `"metrics": {}`;
+      pipeline results' metrics are embedded as `_metrics` in extraction_results.
+      *Evidence:* `worker.py:47` (initial state), `worker.py:56-61` (storage).
 
-**Cost.** About 20 LLM calls per model run. Run twice: the current
-`llama-3.1-8b-instant` and one larger Groq model available that day.
+- [x] `backend/tests/evaluation/run_eval.py` — CLI script: load golden invoices +
+      contracts (18 + 14), run extraction on each via a specified model, score
+      field-by-field using deterministic matchers (reused from `conftest.py`),
+      aggregate results, write `evals/results/<YYYY-MM-DD>-<model-slug>.json`,
+      print markdown table to stdout. Handles 429 retries via exponential backoff.
+      *Evidence:* `run_eval.py` (376 lines). Run command: `DATABASE_URL=... REDIS_URL=...
+      uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b`.
+
+- [x] Evaluation run on 28 Sep 2026 via `openai/gpt-oss-20b`, and a second run on
+      29 Sep 2026 via `openai/gpt-oss-120b` (the two-model comparison the original
+      task asked for, done with the new metrics infra instead of hand logs).
+      *Evidence:* `evals/results/2026-09-28-openai-gpt-oss-20b.json` (235/261,
+      90.0%, wall clock 133.97s) and `evals/results/2026-09-29-openai-gpt-oss-120b.json`
+      (243/261, 93.1%, wall clock 142.74s). Both real runs, same 32-case golden set.
+
+- [x] `README.md` — Evaluation section rewritten with real numbers from both runs.
+      Per-field accuracy table for both models, weakest field (`termination_clause`,
+      29% on both), how to reproduce, no invented numbers.
+      *Evidence:* `README.md` Evaluation section, "28-29 Sep 2026" subsection.
 
 ### V1-8 · CI — `chore/github-actions-ci` — 45-60 min
 

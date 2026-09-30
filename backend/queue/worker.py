@@ -195,6 +195,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
             "human_review_required": None,
             "status": "processing",
             "error": None,
+            "metrics": {},
         }
         model_name = settings.llm_model
         try:
@@ -214,12 +215,15 @@ async def process_document(ctx: dict, document_id: int) -> None:
         if result["status"] == "failed":
             raise ValueError(result.get("error") or "Pipeline failed")
 
-        # Embed per-field confidences into extraction_results (no new DB column needed)
+        # Embed per-field confidences, review reasons, and metrics
+        # into extraction_results (no new DB column needed)
         extraction_results = result["extraction_results"] or {}
         if result.get("field_confidences"):
             extraction_results["_field_confidences"] = result["field_confidences"]
         if result.get("review_reasons"):
             extraction_results["_review_reasons"] = result["review_reasons"]
+        if result.get("metrics"):
+            extraction_results["_metrics"] = result["metrics"]
 
         doc.extraction_results = extraction_results
         doc.confidence_score = result["confidence_score"]

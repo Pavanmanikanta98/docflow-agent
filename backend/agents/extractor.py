@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.usage import RunUsage
 
 from backend.core.config import settings
 from backend.core.token_budget import (
@@ -40,7 +41,31 @@ async def extract_fields(
             right now. The caller (the pipeline, via the worker) turns this
             into a deferred retry rather than a failed document.
     """
+    fields, _ = await extract_fields_with_usage(raw_text, plugin, model, redis_client)
+    return fields
 
+
+async def extract_fields_with_usage(
+    raw_text: str,
+    plugin: DocumentPlugin,
+    model: Any,
+    redis_client: Any = None,
+) -> tuple[BaseModel, RunUsage]:
+    """
+    Extract structured fields and return usage info (tokens, cost).
+
+    Args:
+        raw_text: Raw text extracted from the document.
+        plugin: Document plugin with extraction schema and prompt.
+        model: pydantic-ai model instance.
+        redis_client: When given, reserves capacity against ADR 006's token
+            budget before calling the model and settles it against the real
+            usage afterward. `None` skips budgeting entirely.
+
+    Returns:
+        (fields, usage) where fields is the extraction schema instance
+        and usage is pydantic-ai's RunUsage object with token counts.
+    """
     model_name = getattr(model, "model_name", str(model))
     reservation = None
     if redis_client is not None:
@@ -67,4 +92,4 @@ async def extract_fields(
         actual = (usage.input_tokens or 0) + (usage.output_tokens or 0)
         get_budget_for_model(redis_client, model_name).settle(reservation, actual)
 
-    return result.output
+    return result.output, result.usage
