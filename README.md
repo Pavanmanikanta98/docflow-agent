@@ -28,6 +28,57 @@ Invoice / Contract (PDF, PNG, JPEG)
   Export       — JSON, CSV, or webhook
 ```
 
+### Architecture
+
+```mermaid
+flowchart LR
+    U[Browser<br/>Next.js] -->|upload| A[FastAPI]
+    A -->|enqueue job| R[(Redis)]
+    R --> W[ARQ Worker]
+    W --> P[Parse]
+    P --> E[Extract<br/>LLM call #1]
+    E --> V[Validate<br/>LLM call #2 +<br/>deterministic math gate]
+    V -->|score ≥ threshold| D[(PostgreSQL)]
+    V -->|score < threshold| RQ[Review Queue]
+    RQ -->|approve / reject| U
+    D --> X[Export<br/>JSON · CSV · Webhook]
+```
+
+The API and worker are two processes reading the same queue, deployable as one
+container (`backend/start.sh all`, for free-tier hosts with no background-worker
+tier) or two separate ones. Either way, an upload request never runs the pipeline
+itself — it only enqueues a job and returns.
+
+**The LangGraph pipeline itself**, generated directly from the compiled graph
+(`pipeline.get_graph().draw_mermaid()` in `backend/core/pipeline.py`) rather than
+hand-drawn, so it can't drift from the actual routing:
+
+```mermaid
+graph TD;
+	__start__([__start__]):::first
+	parse(parse)
+	extract(extract)
+	validate(validate)
+	completed(completed)
+	awaiting_review(awaiting_review)
+	failed(failed)
+	__end__([__end__]):::last
+	__start__ --> parse;
+	extract --> validate;
+	parse -.-> extract;
+	parse -.-> failed;
+	validate -.-> awaiting_review;
+	validate -.-> completed;
+	awaiting_review --> __end__;
+	completed --> __end__;
+	failed --> __end__;
+```
+
+```bash
+# Reproduce this diagram:
+uv run python -c "from backend.core.pipeline import pipeline; print(pipeline.get_graph().draw_mermaid())"
+```
+
 ---
 
 ## Key Features
@@ -214,11 +265,56 @@ to produce an actual $/1000-docs figure yet — so that number would still be a 
 dressed as a measurement until it is. `evals/results/2026-09-24-cost.json` reports
 "not measured yet" for exactly this reason rather than inventing a number.
 
+---
+
+## Design decisions and trade-offs
+
+**Queue instead of inline processing.** An upload request enqueues a job and returns;
+an ARQ worker does the actual parsing/extraction/validation. This costs latency (the
+client polls or waits for a webhook instead of getting a synchronous response) but
+means a slow OCR pass or a rate-limited LLM call can never tie up a request thread,
+and documents survive a worker restart instead of being lost mid-processing.
+
+**Deterministic checks alongside the LLM, not instead of it.** The validate step is a
+second LLM call that scores each extracted field against the source text, but the
+invoice math gate (`subtotal + tax == total`, `abs(...) > 0.01`) is a plain function
+with no model involved. The LLM can be wrong about how confident it should be; it
+cannot talk its way around arithmetic. The LLM also cannot set the pipeline's status
+directly — it only returns scores, and code decides routing.
+
+**Deterministic eval metrics, not LLM-as-judge, for structured fields.** The eval
+harness (`backend/tests/evaluation/conftest.py`) scores extracted fields with plain
+matchers — numbers within a tolerance, dates parsed to the same day, names
+fuzzy-matched, null-vs-value checked — not a second model grading the first one's
+output. That makes every eval score reproducible and free to re-run. The trade-off
+shows up on free-text fields like `termination_clause`: a fuzzy-match score penalizes
+a correct answer that's *worded* differently from the golden text, which is why that
+field scores lowest in the table above despite the extraction usually being right in
+substance. The DeepEval judge above exists for exactly this reason, scoped to the two
+contract fields where it matters most.
+
+**One container in production, two processes always.** `backend/start.sh all` runs the
+API and the ARQ worker in the same container for free-tier hosts with no background-worker
+tier (Render's free plan, for instance). They're still two separate processes reading the
+same Redis queue — nothing about the pipeline assumes they share memory — so splitting
+them into separate services later is a deploy config change, not a code change.
+
+---
+
 ## Known limitations
 
+- **Not deployed yet.** No live URL exists; see "Demo and walkthrough video" above.
 - **Cost per document is not measured** (see above) — only $/token pricing is real.
+- **Free-text fields score lowest on the deterministic harness, not because extraction
+  is wrong.** `termination_clause` (29%) and `jurisdiction` (71%) are penalized by
+  fuzzy-string matching against reworded-but-correct answers — see "Design decisions"
+  below.
 - **CORD-v2 field accuracy (35.5%) is real but low** — this pipeline's invoice schema
   doesn't match Indonesian retail receipt formats well; see the OCR section above.
+- **The structured-field eval set doesn't include real OCR output.** One case
+  (`inv_013`) is text shaped like Tesseract output but typed by hand; the actual OCR
+  path is tested separately (`backend/tests/unit/test_parser.py`) and scored on its
+  own in the OCR robustness section above, not as part of the field-accuracy table.
 - **Batch API and multi-chunk large-document paths are built and unit-tested with
   mocks, never run against the real Groq API** — both need the paid Developer tier
   (`scripts/bulk_submit.py`) or a genuinely oversized document under real load, neither
@@ -233,6 +329,17 @@ dressed as a measurement until it is. `evals/results/2026-09-24-cost.json` repor
 - **The DeepEval judge is scoped to two contract fields only** (`termination_clause`,
   `key_obligations`) — every other field, on every document type, still uses the
   deterministic matchers; this was a deliberate scope decision (ADR 008), not a gap.
+- **Webhooks are off by default and API-only.** `WEBHOOKS_ENABLED=false` on the public
+  demo; there's no UI for configuring a webhook URL, only the upload API accepts one.
+- **Session isolation, not accounts.** Each browser gets a stable session id used as
+  the tenant; there's no login, so clearing browser storage loses access to your own
+  documents. Fine for a demo, not for multiple people sharing one install.
+- **A Groq rate limit fails the document, it doesn't retry.** The free tier this runs
+  on is 8000 TPM; if a burst of uploads hits that limit, the affected document's
+  status goes straight to `failed` (`backend/queue/worker.py`) — there's no backoff
+  or re-queueing for LLM capacity yet.
+- **No vendor resolution, duplicate-invoice detection, audit log, or ERP connectors.**
+  Deliberately out of scope until there's an actual client — see `SPRINT.md`.
 
 ---
 
