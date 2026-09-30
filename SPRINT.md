@@ -368,6 +368,45 @@ Check both providers' current free-tier terms on the day.
 
 ---
 
+## Design sprint — Sep 2026
+
+Groq free-tier capacity, chunking for oversized documents, a cost model, real
+OCR data, and a DeepEval judge for contract free text. ADRs: `ARCHITECTURE_DECISIONS.md`
+ADR 006 (token budget + chunking + cost model), ADR 007 (OCR evaluation), ADR 008
+(DeepEval judge). Branches stack: 1 → 2 → 3 → 4 → 7 (7 also merges 5 and 6 into
+itself only — nothing here merges into `main`).
+
+- [ ] **0b** — Scanned invoice dataset: CORD-v2 (CC BY 4.0), 50 docs from the test
+      split, scored on vendor/subtotal/tax/total/line_items only. SROIE dropped
+      (license unverifiable). `evals/datasets/`.
+- [ ] **1** `docs/adr-006-008` — ADR 006/007/008, CLAUDE.md rule 7, this section.
+- [ ] **2** `feat/token-budget` (base 1) — Redis token bucket (TPM/RPM/TPD/RPD),
+      `reserve`/`settle`/`sync_from_headers`, worker defers instead of failing on
+      capacity, per-session in-flight cap, `waiting_for_capacity` status,
+      `scripts/fake_groq.py`, `scripts/load_test.py`.
+- [ ] **3** `feat/big-doc-chunking` (base 2) — page-boundary chunking above
+      `LLM_MAX_REQUEST_SHARE`, per-field merge policies, `chunk_conflict:<field>`,
+      round-robin fairness, re-run load test with a large doc.
+- [ ] **4** `feat/cost-model-and-batch` (base 3) — `backend/core/pricing.py`,
+      `scripts/cost_report.py`, `scripts/bulk_submit.py` (Batch API, mocked only —
+      needs the paid Developer tier, not run live).
+- [ ] **5** `eval/ocr-real` (base 1) — synthetic degraded scans (Set A) + CORD-v2
+      (Set B), CER/WER via `jiwer`, field-accuracy gap vs text layer, preprocessing
+      experiment, CI CER guard.
+- [ ] **6** `eval/deepeval-judge` (base 2) — GEval judge (gpt-oss-120b) for contract
+      `termination_clause`/`key_obligations` only, calibration controls,
+      `evals/judge_calibration.csv`, `docs/deepeval.md`.
+- [ ] **7** `integration/design-2026-09` (base 4, merges 5 + 6 in) — full suite +
+      ruff green, README Evaluation/Rate-limits-and-cost/Known-limitations
+      rewritten, SPRINT.md ticks with evidence.
+
+**R5 reversed.** The "Proposed removals" table below lists removing `deepeval` as
+a dev dependency (unused at the time). ADR 008 reverses that: `deepeval` is kept,
+moved to a new `eval` extra (pinned, not installed in CI), and scoped to judging
+contract free-text fields only.
+
+---
+
 ## Deferred — until an offer or a paying client asks
 
 - Vendor name normalisation and duplicate-invoice detection
@@ -406,7 +445,7 @@ in their git history, which is why they are never pushed; the release checklist'
 | What | Where | Why remove | If kept |
 |---|---|---|---|
 | `validate_invoice_fields` alias | `agents/validator.py` (bottom) | Not called anywhere; comment says otherwise | Harmless |
-| `deepeval` dev dependency | `pyproject.toml`, `requirements.txt` | Not imported anywhere; heavy install; README no longer mentions it | Slower installs and CI |
+| ~~`deepeval` dev dependency~~ **Reversed by ADR 008** | `pyproject.toml`, `requirements.txt` | ~~Not imported anywhere; heavy install; README no longer mentions it~~ Now used as a GEval judge for contract free-text fields, moved to its own pinned `eval` extra (not installed in CI) | Kept — see "Design sprint — Sep 2026" item 6 |
 | `tenant_api_keys` table | migration `fbb366fea798` | Unused | Schema change — decide in v2 |
 | `DocumentUploadRequest`, `DocumentListRequest` | `models/schemas.py` | Imported nowhere; both still carry the `tenant_id` field V1-6 removed from the API | Harmless, but they describe a request shape that no longer exists |
 | `requirements.txt` | repo root | Duplicates `pyproject.toml` + `uv.lock` and drifts | Keep in sync by hand |
