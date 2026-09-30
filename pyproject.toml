@@ -38,12 +38,12 @@ dev = [
     "pytest-cov>=7.0.0",
     "black>=26.3.1",
     "ruff>=0.15.9",
-    "deepeval>=3.8.4",
 ]
-# ADR 007 — CER/WER scoring for the OCR evaluation. Not installed in CI or
-# by `uv sync --extra dev`; only backend/tests/evaluation/run_ocr_eval.py
-# needs it.
+# ADR 007 — CER/WER scoring for the OCR evaluation. ADR 008 — the DeepEval
+# GEval judge for contract free-text fields. Neither is installed in CI or
+# by `uv sync --extra dev`; only backend/tests/evaluation/ scripts need them.
 eval = [
+    "deepeval==4.2.0",
     "jiwer>=3.0.0",
 ]
 
