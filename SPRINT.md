@@ -83,23 +83,24 @@ If a day slips, move the row, not the order. If you are more than 3 days behind 
 - [ ] Move this sprint to "Past sprints". Feature work stops here.
 
 ### V1-0 · Repo hygiene — `chore/repo-hygiene` — 30 min
-- [ ] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
+- [x] `git stash list`; `git stash show --include-untracked --name-only stash@{0}`.
       Recover `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` if present.
-      *Not done:* all three are still only in `stash@{0}`, not recovered anywhere.
-- [ ] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
+      *Decided 24 Sep:* all three are in `stash@{0}` and stay there — see "Private notes"
+      below. Nothing to recover into the repo.
+- [x] Move `BUSINESS_PLAN.md`, `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`,
       `MARKET_ANALYSIS.md` out of the repo (private notes folder). They contain claims
       the code does not support ("SOC-2 ready", audit logs, $150k roles).
-      *Not done:* `BUSINESS_PLAN.md` is still at the repo root. It is untracked and
-      listed in `.gitignore` with the other six notes files, so it cannot be committed
-      by accident, but it has not been moved out.
+      *Decided 24 Sep:* they stay where they are, ignored rather than moved — see
+      "Private notes" below. `BUSINESS_PLAN.md` sits at the repo root, untracked, and is
+      ignored twice over (`.gitignore` and `.git/info/exclude`); the rest are in the stash.
 - [x] README: replace "DeepEval test suite with 20+ cases and accuracy metrics" with
       "deterministic evaluation harness: 20 golden cases (10 invoices, 10 contracts)".
       Remove the `docker-compose up` → frontend/backend claim (compose only runs
       Postgres + Redis). Fix the pydantic-ai line to "3 merged PRs".
-      *Evidence:* README has no DeepEval mention; "20 hand-labelled cases (10 invoices,
-      10 contracts)" (README.md:41), and the golden files hold 10 each;
-      `docker compose up -d  # local PostgreSQL + Redis only` (README.md:123);
-      "pydantic-ai contributor (3 merged PRs)" (README.md:146).
+      *Evidence:* README has no DeepEval mention; `docker compose up -d  # local
+      PostgreSQL + Redis only`; "pydantic-ai contributor (3 merged PRs)". The case count
+      moved on with V1-7 — the README now says 32 hand-labelled cases (20 clean, 12
+      adversarial), which is what the golden files hold.
 - **Done when:** repo root has only code + honest docs; tests still green.
 
 ### V1-1 · Make it installable and deployable — `fix/ocr-deps-dockerfile` — 1.5 h
@@ -380,13 +381,30 @@ Check both providers' current free-tier terms on the day.
 
 ---
 
+## Private notes — decided 24 Sep 2026: keep them, never commit them
+
+These are Pavan's own notes and they stay. Nothing is deleted. They are not tracked on
+`main`, they are ignored by `.gitignore` (lines 37-43) and also by `.git/info/exclude`
+locally, so `git add -A` cannot pick them up even if the tracked ignore file changes.
+
+| What | Where it is now |
+|---|---|
+| `BUSINESS_PLAN.md` | repo root, untracked and ignored |
+| `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` | `stash@{0}` (3 Sep) |
+| `REVIEW.md`, `BUGS.md`, `CONVERSATION_INSIGHTS.md` | `stash@{0}` (3 Sep) |
+
+Two things follow from that. `stash@{0}` is now the only copy of six of them, so it is not
+a stash to drop — move them to a private folder outside the repo when convenient. And the
+three local `backup/*` and `chore/test-isolation-and-lint` branches keep `BUSINESS_PLAN.md`
+in their git history, which is why they are never pushed; the release checklist's
+`git push --tags` would publish any tag that reaches them.
+
+---
+
 ## Proposed removals — waiting for Pavan's OK (nothing deleted yet)
 
 | What | Where | Why remove | If kept |
 |---|---|---|---|
-| `BUSINESS_PLAN.md` | local only (untracked, not on GitHub) | "SOC-2 ready", audit logs, $150k roles — claims the code doesn't support | Never `git add` it; move to a private notes folder |
-| `ROADMAP.md`, `ARCHITECTURE_AUDIT.md`, `MARKET_ANALYSIS.md` | probably in `git stash@{0}` (3 Sep) | agy/Gemini-era plans with invented numbers | Keep in the stash or a private folder |
-| `REVIEW.md`, `BUGS.md`, `CONVERSATION_INSIGHTS.md` | local only, if still present | Old trackers, out of date | Private folder |
 | `validate_invoice_fields` alias | `agents/validator.py` (bottom) | Not called anywhere; comment says otherwise | Harmless |
 | `deepeval` dev dependency | `pyproject.toml`, `requirements.txt` | Not imported anywhere; heavy install; README no longer mentions it | Slower installs and CI |
 | `tenant_api_keys` table | migration `fbb366fea798` | Unused | Schema change — decide in v2 |
