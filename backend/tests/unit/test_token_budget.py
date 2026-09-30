@@ -13,6 +13,7 @@ import redis as redis_lib
 
 from backend.core.token_budget import (
     CapacityWaitError,
+    RequestTooLargeError,
     TokenBudget,
     _parse_groq_duration,
     estimate_tokens,
@@ -279,3 +280,22 @@ def test_reserve_or_raise_raises_capacity_wait_error(redis_client, clock, monkey
         reserve_or_raise(redis_client, model, estimated_tokens=100)
     assert exc_info.value.model == model
     assert exc_info.value.wait_seconds > 0
+
+
+@requires_redis
+def test_reserve_or_raise_raises_request_too_large_not_capacity_wait(
+    redis_client, monkeypatch
+):
+    """A request bigger than the entire TPM ceiling can never be granted —
+    no amount of waiting fixes that, so it must not be treated as a
+    transient CapacityWaitError (which the worker retries forever)."""
+    model = unique_model()
+    monkeypatch.setattr("backend.core.config.settings.llm_tpm", 1000)
+    monkeypatch.setattr("backend.core.config.settings.llm_rpm", 1000)
+    monkeypatch.setattr("backend.core.config.settings.llm_tpd", 100000)
+    monkeypatch.setattr("backend.core.config.settings.llm_rpd", 10000)
+
+    with pytest.raises(RequestTooLargeError) as exc_info:
+        reserve_or_raise(redis_client, model, estimated_tokens=1001)
+    assert exc_info.value.tpm == 1000
+    assert exc_info.value.estimated_tokens == 1001

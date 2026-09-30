@@ -359,6 +359,29 @@ class CapacityWaitError(Exception):
         )
 
 
+class RequestTooLargeError(Exception):
+    """Raised when a single request's own size exceeds TPM outright.
+
+    Distinct from CapacityWaitError on purpose: a request bigger than the
+    entire per-minute ceiling can never be granted no matter how long the
+    caller waits, so retrying it is not "capacity is temporarily busy" —
+    it is a genuine failure. This is the one case ADR 006's chunker cannot
+    fully prevent: a single page whose own text already exceeds the budget
+    (backend.core.chunking.split_pages_into_chunks still gives it its own
+    chunk rather than dropping it, since that chunk might still fit after a
+    future TPM increase, but it cannot fit today).
+    """
+
+    def __init__(self, estimated_tokens: int, tpm: int, model: str):
+        self.estimated_tokens = estimated_tokens
+        self.tpm = tpm
+        self.model = model
+        super().__init__(
+            f"Request for {estimated_tokens} tokens exceeds the {tpm} TPM "
+            f"ceiling for model {model!r} outright — no wait makes it fit."
+        )
+
+
 def get_budget_for_model(redis_client, model: str) -> TokenBudget:
     """Build a TokenBudget for `model` from the configured settings.
 
@@ -385,6 +408,8 @@ def reserve_or_raise(redis_client, model: str, estimated_tokens: int) -> Reserva
     The single call site pipeline nodes use before an LLM call.
     """
     budget = get_budget_for_model(redis_client, model)
+    if estimated_tokens > budget.tpm:
+        raise RequestTooLargeError(estimated_tokens, budget.tpm, model)
     result = budget.reserve(estimated_tokens)
     if not result.granted:
         raise CapacityWaitError(wait_seconds=result.wait_seconds, model=model)
