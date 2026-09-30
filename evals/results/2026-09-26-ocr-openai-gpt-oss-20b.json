@@ -1,0 +1,81 @@
+{
+  "date": "2026-09-26",
+  "model": "openai/gpt-oss-20b",
+  "tesseract_version": "5.3.4",
+  "tesseract_psm": "default (PSM 3, fully automatic page segmentation)",
+  "preprocessing_experiment": {
+    "avg_cer_no_preprocessing": 0.0406901311499412,
+    "avg_cer_with_preprocessing": 0.041571755379299594,
+    "improvement": -0.0008816242293583909,
+    "kept": false
+  },
+  "preprocessing_kept": false,
+  "set_a": {
+    "text_layer_field_accuracy": 0.8625,
+    "extraction_failures": [],
+    "variants": {
+      "dpi_300": {
+        "cer": 0.030959355550712227,
+        "wer": 0.14639148065793986,
+        "field_accuracy": 0.90625,
+        "accuracy_gap_vs_text_layer": -0.043749999999999956
+      },
+      "dpi_200": {
+        "cer": 0.03123108400450738,
+        "wer": 0.15228063536288403,
+        "field_accuracy": 0.8916666666666666,
+        "accuracy_gap_vs_text_layer": -0.029166666666666563
+      },
+      "dpi_150": {
+        "cer": 0.03164637957092301,
+        "wer": 0.1479012647335134,
+        "field_accuracy": 0.8791666666666668,
+        "accuracy_gap_vs_text_layer": -0.01666666666666672
+      },
+      "rotated_1.5deg": {
+        "cer": 0.03491608985077277,
+        "wer": 0.15087427326239933,
+        "field_accuracy": 0.8729166666666668,
+        "accuracy_gap_vs_text_layer": -0.01041666666666674
+      },
+      "blurred": {
+        "cer": 0.03167920761713726,
+        "wer": 0.14765455420719759,
+        "field_accuracy": 0.8791666666666668,
+        "accuracy_gap_vs_text_layer": -0.01666666666666672
+      },
+      "noisy": {
+        "cer": 0.08478870182430286,
+        "wer": 0.3676722494860992,
+        "field_accuracy": 0.8708333333333333,
+        "accuracy_gap_vs_text_layer": -0.008333333333333304
+      },
+      "jpeg_q40": {
+        "cer": 0.03147336292499244,
+        "wer": 0.1490755071577558,
+        "field_accuracy": 0.90625,
+        "accuracy_gap_vs_text_layer": -0.043749999999999956
+      },
+      "phone_like": {
+        "cer": 0.04882686785618185,
+        "wer": 0.24535401089684178,
+        "field_accuracy": 0.8791666666666668,
+        "accuracy_gap_vs_text_layer": -0.01666666666666672
+      }
+    }
+  },
+  "set_b": {
+    "extraction_failures": [],
+    "cases": 50,
+    "cases_scored": 50,
+    "field_accuracy": 0.355,
+    "fields_scored": [
+      "subtotal",
+      "tax_amount",
+      "total_amount",
+      "line_items"
+    ]
+  },
+  "elapsed_seconds": 6507.022735118866,
+  "against": "real Groq API"
+}
