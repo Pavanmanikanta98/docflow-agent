@@ -175,12 +175,14 @@ The validator's `status` is also ignored by `route_after_validate`.
       `test_validate_routing.py::test_math_mismatch_routes_to_review_with_reason`,
       `test_validator_gate.py::test_missing_or_unusable_numbers_skip_the_gate`,
       `test_validate_routing.py::test_low_confidence_routes_to_review_and_says_the_score`.
-- [ ] Add `subtotal`/`tax_amount` to golden invoices where the input text has them.
-      *Not done:* no golden invoice has either label. Four inputs contain them:
-      `inv_001_standard` (subtotal + tax), `inv_003_multiple_items` (subtotal only),
-      `inv_004_non_usd_currency` (subtotal + GST), `inv_007_european_format`
-      (Zwischensumme + MwSt). Do this before the V1-7 runs, or the eval table will not
-      measure the two fields the gate depends on.
+- [x] Add `subtotal`/`tax_amount` to golden invoices where the input text has them.
+      *Evidence:* `backend/tests/evaluation/golden/invoices.json` — all four cases
+      carry both labels (`inv_003_multiple_items` has no tax line in its input text,
+      so `tax_amount: null` there is correct, not missing): `inv_001_standard`
+      (subtotal 650.0, tax 65.0), `inv_003_multiple_items` (subtotal 26450.0),
+      `inv_004_non_usd_currency` (subtotal 1050000.0, tax 189000.0),
+      `inv_007_european_format` (subtotal 12800.0, tax 2432.0). Landed as part of
+      the design-sprint golden-set expansion; this tick was the only thing missing.
 
 ### V1-5 · Webhooks: safe and actually idempotent — `fix/webhook-signing-ssrf` — 2 h
 - [x] Idempotency key is `uuid4()` per send, so retries look like new events.
