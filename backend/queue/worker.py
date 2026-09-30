@@ -196,7 +196,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
             "status": "processing",
             "error": None,
         }
-        model_name = getattr(llm_client.get_model(), "model_name", "")
+        model_name = settings.llm_model
         try:
             result = await pipeline.ainvoke(initial_state)
         except CapacityWaitError as exc:
