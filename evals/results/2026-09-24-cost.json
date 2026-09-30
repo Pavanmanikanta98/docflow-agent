@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-24",
+  "generated_at": "2026-09-24T17:38:52.592854+00:00",
+  "pricing_source": "https://api.groq.com/openai/v1/models",
+  "pricing_checked_date": "2026-09-24",
+  "per_model": {
+    "openai/gpt-oss-20b": "not measured yet \u2014 no evals/results/*.json file has per-case token usage yet (see SPRINT.md V1-7)",
+    "openai/gpt-oss-120b": "not measured yet \u2014 no evals/results/*.json file has per-case token usage yet (see SPRINT.md V1-7)"
+  },
+  "throughput": {
+    "free_tier": {
+      "requests_per_minute": 30,
+      "tokens_per_minute": 8000,
+      "requests_per_day": 1000,
+      "tokens_per_day": 200000
+    },
+    "developer_tier": "not measured yet"
+  }
+}
