@@ -55,6 +55,7 @@ from backend.tests.evaluation.judge_calibration import (
     build_key_obligations_judge,
     build_termination_clause_judge,
     calibration_passed,
+    write_calibration_csv,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,9 @@ logging.basicConfig(level=logging.INFO)
 
 RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
 CHECKPOINT_FILE = RESULTS_DIR / ".judge_eval_checkpoint.json"
+CALIBRATION_CSV_PATH = (
+    Path(__file__).resolve().parents[3] / "evals" / "judge_calibration.csv"
+)
 
 JUDGE_THRESHOLD = 0.5
 JUDGE_RUNS_PER_CONTROL = 3
@@ -183,6 +187,7 @@ async def _run_control(
             candidate=candidate,
             expected=expected,
             scores=cached["scores"],
+            field_name=field_name,
         )
 
     scores = []
@@ -198,6 +203,7 @@ async def _run_control(
         candidate=candidate,
         expected=expected,
         scores=scores,
+        field_name=field_name,
     )
     checkpoint[step_key] = {
         "field": field_name,
@@ -362,6 +368,8 @@ async def main() -> None:
 
     logger.info("Running calibration controls...")
     controls = await run_calibration(termination_judge, obligations_judge, checkpoint)
+    write_calibration_csv(controls, CALIBRATION_CSV_PATH)
+    logger.info(f"Wrote {CALIBRATION_CSV_PATH}")
     calib_passed = calibration_passed(controls, threshold=JUDGE_THRESHOLD)
     logger.info(f"Calibration: {'PASSED' if calib_passed else 'FAILED'}")
 
@@ -398,6 +406,7 @@ async def main() -> None:
             "controls": [
                 {
                     "case_id": c.case_id,
+                    "field_name": c.field_name,
                     "is_positive": c.is_positive,
                     "mean_score": c.mean_score,
                     "spread": c.spread,

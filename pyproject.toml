@@ -39,9 +39,9 @@ dev = [
     "black>=26.3.1",
     "ruff>=0.15.9",
 ]
-# ADR 007 — CER/WER scoring for the OCR evaluation. ADR 008 — the DeepEval
-# GEval judge for contract free-text fields. Neither is installed in CI or
-# by `uv sync --extra dev`; only backend/tests/evaluation/ scripts need them.
+# Real-LLM evaluation extras — pinned, not installed in CI or by
+# `uv sync --extra dev`. deepeval: ADR 008's GEval judge. jiwer: ADR 007's
+# CER/WER scoring for the OCR evaluation.
 eval = [
     "deepeval==4.2.0",
     "jiwer>=3.0.0",
