@@ -12,7 +12,11 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from backend.core.deepeval_judge import LLMClientBasedJudge
+pytest.importorskip(
+    "deepeval", reason="deepeval lives in the 'eval' extra, not installed in CI"
+)
+
+from backend.core.deepeval_judge import LLMClientBasedJudge  # noqa: E402
 
 
 @pytest.mark.asyncio

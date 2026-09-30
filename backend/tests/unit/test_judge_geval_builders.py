@@ -3,8 +3,14 @@ bare criteria string (a bare criteria string makes GEval generate its own
 steps via an internal LLM call at measure time, which defeats the point of
 a reproducible, calibrated judge)."""
 
-from backend.core.deepeval_judge import LLMClientBasedJudge
-from backend.tests.evaluation.judge_calibration import (
+import pytest
+
+pytest.importorskip(
+    "deepeval", reason="deepeval lives in the 'eval' extra, not installed in CI"
+)
+
+from backend.core.deepeval_judge import LLMClientBasedJudge  # noqa: E402
+from backend.tests.evaluation.judge_calibration import (  # noqa: E402
     build_key_obligations_judge,
     build_termination_clause_judge,
 )
