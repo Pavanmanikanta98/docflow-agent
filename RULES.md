@@ -1,7 +1,7 @@
 # RULES.md — Project Rules for docflow-agent
 
 Single source of truth for all AI agent rules in this repository.
-Imported by CLAUDE.md and GEMINI.md.
+Imported by CLAUDE.md.
 Do not duplicate these rules anywhere else.
 
 ---
@@ -120,11 +120,11 @@ docflow-agent/
 │   ├── app/             # App Router — pages live here, not pages/
 │   ├── components/      # React components
 │   └── lib/             # API client, shared types
-├── DECISIONS.md
+├── DECISIONS.md              # original log — do not edit
+├── ARCHITECTURE_DECISIONS.md # ADRs that supersede it
 ├── RULES.md
 ├── CLAUDE.md
-├── GEMINI.md
-├── DEVELOPER_GUIDE.md
+├── SPRINT.md
 └── README.md
 ```
 

@@ -45,7 +45,7 @@ TPM = 8000
 RPM = 30
 NUM_SMALL_DOCS = 30
 NUM_SESSIONS = 5
-RUN_DEADLINE_SECONDS = 480
+RUN_DEADLINE_SECONDS = 570
 
 # Every setting `backend.core.config.Settings` needs MUST be set before any
 # `backend.*` module is imported — the Settings singleton is built at import
@@ -224,7 +224,11 @@ async def main() -> None:
                     }
                 )
 
-            large_bytes = _make_pdf_bytes(LARGE_CONTRACT_PARAGRAPH * 40)
+            # ADR 006 (branch 3): sized well above the 8K TPM ceiling itself
+            # (not just the chunking threshold), so this document can only
+            # complete via real chunking — a single unsplit request this
+            # size would hit RequestTooLargeError outright.
+            large_bytes = _make_pdf_bytes(LARGE_CONTRACT_PARAGRAPH * 200)
             uploaded_at = time.time()
             resp = await client.post(
                 "/api/v1/documents/upload",
@@ -243,10 +247,10 @@ async def main() -> None:
 
         # --- Run the real ARQ worker in-process until every doc is terminal ---
         from backend.models.db import Document, DocumentStatus
-        from backend.queue.worker import process_document
+        from backend.queue.worker import process_document, process_document_chunk
 
         arq_worker = Worker(
-            functions=[process_document],
+            functions=[process_document, process_document_chunk],
             redis_settings=RedisSettings.from_dsn(os.environ["REDIS_URL"]),
             handle_signals=False,
             burst=False,

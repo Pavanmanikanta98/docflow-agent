@@ -4,7 +4,7 @@ from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
-from backend.plugins.base import DocumentPlugin
+from backend.plugins.base import DocumentPlugin, MergePolicy
 
 
 class ContractFields(BaseModel):
@@ -52,6 +52,16 @@ class ContractPlugin(DocumentPlugin):
     @property
     def extraction_schema(self) -> Type[BaseModel]:
         return ContractFields
+
+    @property
+    def merge_policy(self) -> dict[str, MergePolicy]:
+        # Parties and dates default to "first_non_null" — they should name
+        # the same thing wherever they appear. Free-text clauses legitimately
+        # span multiple pages, so every chunk's contribution is kept.
+        return {
+            "key_obligations": "concat",
+            "termination_clause": "concat",
+        }
 
     @property
     def system_prompt(self) -> str:

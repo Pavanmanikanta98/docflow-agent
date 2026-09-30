@@ -53,9 +53,22 @@ class Settings(BaseSettings):
     llm_tpd: int = Field(200000)
     llm_rpd: int = Field(1000)
     llm_max_completion_tokens: int = Field(1024)
+    # ADR 006 — a request estimated above this share of TPM gets chunked at
+    # page boundaries instead of sent as one call.
+    llm_max_request_share: float = Field(0.5)
     # How many documents one browser session may have in flight at once,
     # so one visitor's batch upload cannot starve everyone else's queue.
     session_inflight_cap: int = Field(2)
+
+    # ADR 006 — paid "Developer" tier limits, for scripts/cost_report.py's
+    # throughput comparison only (never used to gate the free-tier demo).
+    # 0 means "not verified" — this session has no Developer-tier account to
+    # check these against; cost_report.py reports "not measured yet" rather
+    # than inventing a number when they are left at 0.
+    llm_developer_tpm: int = Field(0)
+    llm_developer_rpm: int = Field(0)
+    llm_developer_tpd: int = Field(0)
+    llm_developer_rpd: int = Field(0)
 
 settings = Settings()
 
