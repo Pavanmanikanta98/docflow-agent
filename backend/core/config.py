@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     llm_model: str = Field("openai/gpt-oss-20b")
     groq_api_key: str = Field("")
     openai_api_key: str = Field("")
+    # Override Groq's base URL to point at scripts/fake_groq.py for a local
+    # load test (ADR 006). Empty means "use Groq's real endpoint" — never set
+    # in a real deployment.
+    groq_base_url: str = Field("")
 
     # Database
     database_url: str = Field(...)
@@ -41,6 +45,17 @@ class Settings(BaseSettings):
     # Outbound webhooks are off unless explicitly enabled (keep off on the public demo).
     webhooks_enabled: bool = Field(False)
     webhook_secret: str = Field("")
+
+    # ADR 006 — token budget (Groq free tier: 30 RPM, 1K RPD, 8K TPM, 200K TPD).
+    # Moving to a paid tier is an env change, not a code change.
+    llm_tpm: int = Field(8000)
+    llm_rpm: int = Field(30)
+    llm_tpd: int = Field(200000)
+    llm_rpd: int = Field(1000)
+    llm_max_completion_tokens: int = Field(1024)
+    # How many documents one browser session may have in flight at once,
+    # so one visitor's batch upload cannot starve everyone else's queue.
+    session_inflight_cap: int = Field(2)
 
 settings = Settings()
 

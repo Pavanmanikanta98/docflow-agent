@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-24",
+  "generated_at": "2026-09-24T16:35:01.672288+00:00",
+  "config": {
+    "tpm": 8000,
+    "rpm": 30,
+    "small_docs": 30,
+    "large_docs": 1,
+    "sessions": 5,
+    "llm_max_completion_tokens": 300,
+    "against": "scripts/fake_groq.py (local, not real Groq)"
+  },
+  "failures": 0,
+  "timed_out_document_ids": [],
+  "large_doc_completed": true,
+  "capacity_waits_total": 63,
+  "session_inflight_waits_total": 2,
+  "small_doc_wait_seconds": {
+    "p50": 70.5055582523346,
+    "p95": 249.5537338256836,
+    "min": 3.532960891723633,
+    "max": 249.66534185409546,
+    "count": 30
+  },
+  "pass": true
+}
