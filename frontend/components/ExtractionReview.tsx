@@ -14,8 +14,12 @@ interface Props {
   submitting: boolean;
 }
 
-/** Keys we store internally — never show as form fields */
-const INTERNAL_KEYS = new Set(['_field_confidences', 'confidence_score']);
+/** Internal bookkeeping is stored in extraction_results under `_`-prefixed keys
+ * (_field_confidences, _review_reasons, _metrics, _field_provenance) — never
+ * show those, or confidence_score, as form fields. */
+function isInternalKey(key: string): boolean {
+  return key.startsWith('_') || key === 'confidence_score';
+}
 
 function valueToString(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -33,13 +37,13 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
   useEffect(() => {
     const values: Record<string, string> = {};
     Object.keys(results).forEach((key) => {
-      if (INTERNAL_KEYS.has(key)) return;
+      if (isInternalKey(key)) return;
       values[key] = valueToString(results[key]);
     });
     form.setFieldsValue(values);
   }, [form, results]);
 
-  const visibleKeys = Object.keys(results).filter((k) => !INTERNAL_KEYS.has(k));
+  const visibleKeys = Object.keys(results).filter((k) => !isInternalKey(k));
 
   if (visibleKeys.length === 0) {
     return (
@@ -64,6 +68,11 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
             : 'No score yet'}
         </Tag>
       </div>
+
+      <Text type="secondary" className="block mb-4 text-xs">
+        Extracted values are shown for review only. Approve if they match the
+        document, or reject with a reason.
+      </Text>
 
       {visibleKeys.map((key) => {
         const confidence = fieldConfidences[key] ?? 1;
@@ -90,11 +99,15 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
             {isMultiline ? (
               <Input.TextArea
                 rows={3}
+                readOnly
+                variant="filled"
                 className={lowConfidence ? 'border-red-400' : ''}
               />
             ) : (
               <Input
                 size="large"
+                readOnly
+                variant="filled"
                 className={lowConfidence ? 'border-red-400' : ''}
               />
             )}
