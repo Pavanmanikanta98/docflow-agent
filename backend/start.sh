@@ -25,6 +25,9 @@ case "$MODE" in
     exec arq backend.queue.worker.WorkerSettings
     ;;
   all)
+    # Free-tier hosts have no pre-deploy hook, so migrate here. Idempotent
+    # (a no-op when the DB is current); set -e stops the container if it fails.
+    alembic upgrade head
     run_worker &
     WORKER_PID=$!
     run_api &
