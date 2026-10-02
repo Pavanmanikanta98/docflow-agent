@@ -4,7 +4,7 @@
 
 Document processing pipeline that extracts structured data from invoices and contracts, scores each field against the source text, and holds low-confidence documents for human review before export.
 
-**Demo and walkthrough video:** _coming soon — links added once deployed._
+**Live demo:** https://docflow-agent.vercel.app (the API sleeps when idle, so the first load can take about a minute) · **Source:** this repo · _Walkthrough video: not recorded yet._
 
 ---
 
@@ -303,7 +303,7 @@ them into separate services later is a deploy config change, not a code change.
 
 ## Known limitations
 
-- **Not deployed yet.** No live URL exists; see "Demo and walkthrough video" above.
+- **Free-tier hosting.** The frontend runs on Vercel, and the API and worker run together on Render's free plan, with Neon Postgres and Upstash Redis. Render sleeps the service after 15 minutes without traffic, so the first request after a pause can take about a minute.
 - **Cost per document is not measured** (see above) — only $/token pricing is real.
 - **Free-text fields score lowest on the deterministic harness, not because extraction
   is wrong.** `termination_clause` (29%) and `jurisdiction` (71%) are penalized by
