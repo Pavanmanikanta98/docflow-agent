@@ -1,0 +1,49 @@
+# Render Blueprint — backend API + ARQ worker in one web service.
+#
+# Render's free tier has no separate background-worker service, so both
+# processes run in one container via `backend/start.sh all` (SPRINT.md V1-9).
+#
+# Usage: Render dashboard → New → Blueprint → point at this repo. Render reads
+# this file and proposes the service below; env vars marked `sync: false` are
+# left blank for you to fill in by hand (secrets never belong in this file).
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: docflow-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: bash backend/start.sh all
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      # --- Secrets / per-environment values: fill in manually in the dashboard ---
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string, ?sslmode=require
+      - key: REDIS_URL
+        sync: false # Upstash redis:// URL (includes its password)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false # your Vercel URL, e.g. https://docflow-agent.vercel.app
+      - key: WEBHOOK_SECRET
+        sync: false # only needed if you flip WEBHOOKS_ENABLED to true later
+
+      # --- Fixed values from SPRINT.md V1-9 ---
+      - key: ENVIRONMENT
+        value: production
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.75"
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "10"
+      - key: WEBHOOK_TIMEOUT_SECONDS
+        value: "10"
+      - key: WEBHOOKS_ENABLED
+        value: "false"
+      - key: LLM_PROVIDER
+        value: groq
+      - key: LLM_MODEL
+        value: openai/gpt-oss-20b
