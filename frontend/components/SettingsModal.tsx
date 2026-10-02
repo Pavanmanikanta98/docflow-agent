@@ -6,7 +6,6 @@ import {
   Zap,
   AlertTriangle,
   Mail,
-  ExternalLink,
   Sparkles,
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -22,14 +21,12 @@ interface UsageData {
 
 const CONTACT_EMAIL =
   process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'contact@yourdomain.com';
-const UPWORK_URL =
-  process.env.NEXT_PUBLIC_UPWORK_URL ?? 'https://www.upwork.com';
 
 /**
  * UsageBanner — read-only usage badge in the navbar.
  *
  * Shows "7/10" remaining, opens a contact-only modal on click.
- * No API-key paste UI — production access goes through email/Upwork.
+ * No API-key paste UI — production access goes through email.
  */
 export function UsageBanner() {
   const [usage, setUsage] = useState<UsageData | null>(null);
@@ -136,15 +133,6 @@ export function UsageBanner() {
             >
               <Mail className="w-4 h-4" />
               {CONTACT_EMAIL}
-            </a>
-            <a
-              href={UPWORK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-amber-600 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Hire me on Upwork
             </a>
           </Space>
         </div>
