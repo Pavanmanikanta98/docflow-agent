@@ -16,6 +16,11 @@ services:
     plan: free
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
+    # Runs once per deploy, in its own isolated job, before the new code takes
+    # traffic — a failed migration blocks the deploy instead of breaking the
+    # live app. Replaces running `alembic upgrade head` by hand against Neon;
+    # every future schema change picks this up automatically too.
+    preDeployCommand: alembic upgrade head
     dockerCommand: bash backend/start.sh all
     healthCheckPath: /health
     autoDeployTrigger: commit
