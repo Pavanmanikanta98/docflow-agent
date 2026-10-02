@@ -396,7 +396,7 @@ export default function Home() {
               </p>
 
               <p className="font-signature mt-10 -rotate-2 text-4xl text-amber-900/80 dark:text-amber-200/70">
-                Pavan
+                Pavan Manikanta
               </p>
             </div>
           </div>
