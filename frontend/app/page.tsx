@@ -164,9 +164,9 @@ export default function Home() {
         </SurfaceCard>
 
         <div className="mx-auto mt-8 flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center text-sm text-slate-500 dark:text-slate-400">
-          <span><strong className="font-semibold text-slate-900 dark:text-white">96.7%</strong> field accuracy, real test set</span>
+          <span><strong className="font-semibold text-slate-900 dark:text-white">262 / 274</strong> fields correct · gpt-oss-20b · 32 test documents (12 adversarial)</span>
           <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
-          <span><strong className="font-semibold text-slate-900 dark:text-white">0</strong> failures across 230 live API calls</span>
+          <span><strong className="font-semibold text-slate-900 dark:text-white">0</strong> extraction failures in the OCR run · 50 / 50 receipts scored</span>
           <span className="hidden text-slate-300 dark:text-slate-700 sm:inline">·</span>
           <span>every number above links to a <Link href="#proof" className="font-medium !text-slate-700 !underline decoration-slate-300 underline-offset-2 hover:!text-amber-600 dark:!text-slate-300 dark:decoration-slate-600">committed results file</Link></span>
         </div>
@@ -244,9 +244,9 @@ export default function Home() {
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {[
-                { value: '96.7%', label: 'Structured field accuracy', detail: 'gpt-oss-120b, 32-case golden set' },
-                { value: '86.25%', label: 'OCR text-layer baseline', detail: '20-case synthetic evaluation' },
-                { value: '0.993', label: 'Calibrated judge score', detail: 'termination_clause, GEval vs 35.7% fuzzy' },
+                { value: '262 / 274', label: 'Field checks passed, gpt-oss-20b', detail: '32 documents. gpt-oss-120b: 265 / 274. The 3-field gap is within run-to-run noise: the same 20 cases scored 165, then 160 / 170 on two 20b runs.' },
+                { value: '86.25%', label: 'OCR text-layer baseline', detail: 'Mean over 20 cases, synthetic evaluation, gpt-oss-20b' },
+                { value: '0.993', label: 'Calibrated judge score', detail: 'termination_clause, GEval mean over 14 cases; the fuzzy matcher passes 5 / 14 (35.7%)' },
                 { value: '8000 TPM', label: 'Free-tier ceiling, handled', detail: 'Redis token budget, defers not fails' },
               ].map((s) => (
                 <div key={s.label}>

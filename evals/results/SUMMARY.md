@@ -87,12 +87,12 @@ correctness.
 
 ## Hard-case misses
 
-Only three, across both models:
+Only two cases, one per model:
 
-- `inv_014_ambiguous_date_format`, both models: returned `03/04/2026` verbatim rather than
-  a normalised date. The matcher parses that as 4 March, the label says 3 April, which is
-  what the invoice's 30-day terms require. The model copied the ambiguity through instead
-  of resolving it.
+- `inv_014_ambiguous_date_format`, 120b only (7/9; the 20b scored 9/9): returned
+  `03/04/2026` verbatim rather than a normalised date. The matcher parses that as
+  4 March, the label says 3 April, which is what the invoice's 30-day terms require.
+  The model copied the ambiguity through instead of resolving it.
 - `inv_016_credit_note`, 20b only: took the referenced original invoice number
   (`AP-2026-0912`) instead of the credit note's own (`CN-2026-0031`), and returned no date.
 
