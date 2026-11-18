@@ -4,9 +4,13 @@
 # model on pull requests that can change extraction quality, then judges the
 # result against the preregistered thresholds with check_gate.py.
 #
-# Real Groq calls: needs the GROQ_API_KEY repository secret. Fork PRs never get
-# secrets, so for them the gate is skipped with a warning; on a same-repo PR a
-# missing secret fails the job, so a misconfiguration can't pass as green.
+# Real Groq calls: needs the GROQ_API_KEY repository secret.
+# Without it the gate does not run, and says so (warning + job summary "NOT RUN").
+# Whether that also fails the job is a switch, the repository variable
+# EVAL_GATE_REQUIRED:
+#   unset / not "true" -> not run, job passes   (until the secret is added)
+#   "true"             -> not run, job FAILS    (enforce once the secret exists)
+# Fork PRs never get secrets, so they are always skipped with a warning.
 
 name: Eval gate
 
@@ -61,6 +65,7 @@ jobs:
       ENVIRONMENT: test
       WEBHOOK_TIMEOUT_SECONDS: "10"
       IS_FORK: ${{ github.event.pull_request.head.repo.fork || false }}
+      EVAL_GATE_REQUIRED: ${{ vars.EVAL_GATE_REQUIRED || 'false' }}
     steps:
       - name: Check the API key is available
         id: key
@@ -68,12 +73,16 @@ jobs:
           if [ -n "$GROQ_API_KEY" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           elif [ "$IS_FORK" = "true" ]; then
-            echo "::warning::Fork PR: no secrets, eval gate skipped."
-            echo "## Eval gate: skipped (fork PR, no secrets)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Fork PR: no secrets, eval gate NOT RUN."
+            echo "## Eval gate: NOT RUN (fork PR, no secrets)" >> "$GITHUB_STEP_SUMMARY"
             echo "present=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "::error::GROQ_API_KEY repository secret is not set (Settings → Secrets and variables → Actions)."
+          elif [ "$EVAL_GATE_REQUIRED" = "true" ]; then
+            echo "::error::GROQ_API_KEY repository secret is not set, and EVAL_GATE_REQUIRED=true."
             exit 1
+          else
+            echo "::warning::Eval gate NOT RUN: add the GROQ_API_KEY repository secret, then set the repository variable EVAL_GATE_REQUIRED=true to enforce it."
+            echo "## Eval gate: NOT RUN (GROQ_API_KEY secret not set; not enforced yet)" >> "$GITHUB_STEP_SUMMARY"
+            echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v7
