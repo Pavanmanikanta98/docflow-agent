@@ -215,6 +215,10 @@ class CaseResult:
     # An errored case is an infrastructure failure, not a wrong answer, so
     # the runner leaves it out of field accuracy and reports it separately.
     error: str | None = None
+    # Usage of the successful extraction call (retry waits excluded).
+    latency_ms: float | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
 
     @property
     def accuracy(self) -> float:
