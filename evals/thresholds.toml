@@ -1,0 +1,52 @@
+# Evaluation gate — preregistered thresholds (issue #41).
+#
+# Committed on its own, BEFORE the first run it judges. Do not edit a value
+# after seeing that run's results. A change here needs its own commit with a
+# reason, made before the next run.
+#
+# Source of the values: Pavan's plan delta of 17 Nov 2026 (R4 item 1), after
+# Anthropic, "Building strong safety evaluations", recs 7-10 (13 Nov 2026).
+# Honesty note: the 18 Sep and 28-29 Sep results were already known when
+# these values were written; what is preregistered is every run from here on.
+
+# Each golden case is extracted this many times. The gate uses the mean
+# across runs; the result file also reports min and max per field.
+runs_per_case = 3
+
+# Share of field checks that pass, mean across runs. R4 named this
+# field_f1_min; the harness measures pass rate, not F1, so the name says so.
+field_accuracy_min = 0.90
+
+# Agreement between the GEval judge and Pavan's blind human labels on 30
+# real extractions (issue #43).
+grader_agreement_min = 0.85
+
+# A case that errored (e.g. rate limit after every retry) was not measured.
+# The gate cannot certify accuracy on data it does not have.
+max_errored_cases = 0
+
+[ci_slice]
+# The cases the CI gate runs on pull requests (issue #42). Chosen by coverage,
+# not by past scores: every scored field appears both with a value and as
+# null, the "invoice states no subtotal" case is present, and the security
+# case (prompt injection) is always run. 12 cases x 3 runs fits Groq's free
+# tier (8000 tokens/min) in a few minutes.
+runs_per_case = 3
+cases = [
+  "inv_001_standard",               # every invoice field present
+  "inv_006_minimal",                # most fields null, no subtotal or tax
+  "inv_009_freelancer",             # narrative text, no subtotal line
+  "inv_010_no_currency_symbol",     # currency null
+  "inv_016_credit_note",            # negative total
+  "inv_017_prompt_injection",       # must ignore injected instructions
+  "con_001_standard",               # every contract field present
+  "con_004_nda",                    # no value, no currency
+  "con_007_minimal",                # sparse: no expiry, jurisdiction, obligations
+  "con_009_zero_value",             # value 0.0 must not become null
+  "con_011_amendment_supersedes",   # amended value replaces the original
+  "con_013_value_only_in_milestones",  # value is a sum of milestones
+]
+
+[run_config]
+# Recorded with every run (issue #40, run_config.py).
+log = ["model_id", "prompt_sha256", "temperature", "pydantic_ai_version"]
