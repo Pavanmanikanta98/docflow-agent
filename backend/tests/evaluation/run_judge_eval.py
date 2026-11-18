@@ -49,6 +49,7 @@ from backend.core.llm import llm_client
 from backend.plugins.contract import ContractPlugin
 from backend.tests.evaluation.conftest import fuzzy_match, load_golden
 from backend.tests.evaluation.judge_calibration import (
+    JUDGE_THRESHOLD,
     ControlResult,
     build_key_obligations_judge,
     build_termination_clause_judge,
@@ -68,7 +69,6 @@ CALIBRATION_CSV_PATH = (
     Path(__file__).resolve().parents[3] / "evals" / "judge_calibration.csv"
 )
 
-JUDGE_THRESHOLD = 0.5
 JUDGE_RUNS_PER_CONTROL = 3
 CALIBRATION_CASE_COUNT = 2  # keep the live cost small; see docs/deepeval.md
 
