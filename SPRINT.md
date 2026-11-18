@@ -48,6 +48,9 @@ One issue = one branch = one PR. Pavan reviews and merges.
       until the 30 labels exist and the agreement % is committed.
 - [ ] **#44** `fix/invoice-subtotal-null` — error analysis of every wrong field +
       fix for the top category, before/after on the same 32 documents.
+      *Status:* `docs/error-analysis.md` (65 wrong fields, 9 categories), invoice
+      plugin prompt + field descriptions fixed, `test_invoice_subtotal_rule.py`.
+      Not ticked until the before/after live run is committed.
 - [ ] **#45** `docs/readme-evaluation-v1.1` — README Evaluation section; remove
       claims the data contradicts.
 - [ ] **#46** tracing — waiting for Pavan's OK on the OpenTelemetry dependency.
@@ -533,6 +536,12 @@ in their git history, which is why they are never pushed; the release checklist'
       the Docker image (`TIKTOKEN_CACHE_DIR`) so neither depends on that host.
 - [ ] The 28 Sep gpt-oss-20b run followed the prompt injection in `inv_017` (vendor
       "Refund Services Ltd", total 0.0); the 18 Sep runs did not. Tracked in #44.
+- [ ] The pytest suite and `run_eval.py` use different free-text thresholds
+      (termination 0.4 vs 0.75, jurisdiction 0.5 vs 0.75), so 18 Sep and 28 Sep
+      numbers measure different things. Needs Pavan's decision (see
+      `docs/error-analysis.md`, "Open decision").
+- [ ] `con_007_minimal` label says no key obligations; the text has one. Suspect
+      label, and `evals/results/SUMMARY.md` describes it backwards.
 
 - [ ] `frontend/components/landing/ActionCard.tsx:37-43` uses `next/link` for `mailto:`
       URLs; use `<a>`.
