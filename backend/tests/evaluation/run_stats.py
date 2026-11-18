@@ -64,3 +64,36 @@ def _cost_summary(
         "per_1000_documents": mean * DOCUMENTS_PER_COST_UNIT,
         "pricing_checked": PRICING_CHECKED_DATE,
     }
+
+
+def repeat_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Mean/min/max field accuracy across repeated runs of the same cases,
+    overall and per field. Each run is a dict with `passed_fields`,
+    `total_fields` and `field_results` ({field: {passed, total}})."""
+    overall = [
+        r["passed_fields"] / r["total_fields"] for r in runs if r["total_fields"]
+    ]
+    per_field_values: dict[str, list[float]] = {}
+    per_field_counts: dict[str, dict[str, int]] = {}
+    for run in runs:
+        for name, counts in run["field_results"].items():
+            if counts["total"]:
+                per_field_values.setdefault(name, []).append(
+                    counts["passed"] / counts["total"]
+                )
+            summed = per_field_counts.setdefault(name, {"passed": 0, "total": 0})
+            summed["passed"] += counts["passed"]
+            summed["total"] += counts["total"]
+    return {
+        "field_accuracy": _spread(overall),
+        "per_field": {
+            name: {**_spread(values), **per_field_counts[name]}
+            for name, values in sorted(per_field_values.items())
+        },
+    }
+
+
+def _spread(values: list[float]) -> dict[str, float | None]:
+    if not values:
+        return {"mean": None, "min": None, "max": None}
+    return {"mean": fmean(values), "min": min(values), "max": max(values)}

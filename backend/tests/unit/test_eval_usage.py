@@ -105,7 +105,7 @@ async def test_result_file_carries_run_config_usage_and_per_case_tokens(
     from backend.tests.evaluation.run_eval import run_evaluation, write_results
 
     results = await run_evaluation(_model(), [CASE], [])
-    path = write_results(results, "openai/gpt-oss-20b", tmp_path)
+    path = write_results([results], "openai/gpt-oss-20b", tmp_path)
     data = json.loads(path.read_text())
 
     assert data["run_config"]["model_id"] == "openai/gpt-oss-20b"
