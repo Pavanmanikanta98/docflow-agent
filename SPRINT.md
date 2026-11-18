@@ -51,8 +51,11 @@ One issue = one branch = one PR. Pavan reviews and merges.
       *Status:* `docs/error-analysis.md` (65 wrong fields, 9 categories), invoice
       plugin prompt + field descriptions fixed, `test_invoice_subtotal_rule.py`.
       Not ticked until the before/after live run is committed.
-- [ ] **#45** `docs/readme-evaluation-v1.1` — README Evaluation section; remove
+- [x] **#45** `docs/readme-evaluation-v1.1` — README Evaluation section; remove
       claims the data contradicts.
+      *Evidence:* README "Evaluation" (eval gate, error analysis, past results with
+      the scorer differences), "Rate limits and cost", "Known limitations"; no new
+      number — gate, 3-run, cost and agreement figures say "not measured yet".
 - [ ] **#46** tracing — waiting for Pavan's OK on the OpenTelemetry dependency.
 
 ## Previous sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
@@ -541,7 +544,7 @@ in their git history, which is why they are never pushed; the release checklist'
       numbers measure different things. Needs Pavan's decision (see
       `docs/error-analysis.md`, "Open decision").
 - [ ] `con_007_minimal` label says no key obligations; the text has one. Suspect
-      label, and `evals/results/SUMMARY.md` describes it backwards.
+      label (SUMMARY.md's backwards description was corrected in #45).
 
 - [ ] `frontend/components/landing/ActionCard.tsx:37-43` uses `next/link` for `mailto:`
       URLs; use `<a>`.
