@@ -80,6 +80,7 @@ async def extract_fields_with_usage(
         model=model,
         output_type=plugin.extraction_schema,
         system_prompt=plugin.system_prompt,
+        retries={"output": settings.llm_output_retries},
     )
 
     result = await agent.run(
