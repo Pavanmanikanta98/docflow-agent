@@ -74,8 +74,8 @@ function FilePreview({ fileUrl, filename }: { fileUrl: string; filename: string 
         <div className="text-5xl opacity-30">📄</div>
         <p className="font-semibold text-slate-600 dark:text-slate-300">{filename}</p>
         <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
-          File preview is not available. As per our privacy policy, uploaded documents are
-          processed in-memory and cleared immediately after extraction.
+          The file is no longer available. Uploaded files are kept only while a document
+          waits for review (up to an hour), then deleted.
         </p>
       </div>
     );
