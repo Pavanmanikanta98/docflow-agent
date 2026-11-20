@@ -1,9 +1,11 @@
 """Routes: POST /{document_id}/review — human approval / rejection."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from redis import Redis
 from sqlalchemy.orm import Session
 
-from backend.api.deps import get_db, get_owned_document
+from backend.api.deps import get_db, get_owned_document, get_redis
+from backend.core.file_buffer import release
 from backend.models.db import Document, DocumentStatus, HumanReviewStatus
 from backend.models.schemas import (
     DocumentReviewRequest,
@@ -18,6 +20,7 @@ async def review_document(
     review: DocumentReviewRequest,
     doc: Document = Depends(get_owned_document),
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 ):
     if doc.status not in (DocumentStatus.awaiting_review, DocumentStatus.completed):
         raise HTTPException(
@@ -36,6 +39,9 @@ async def review_document(
         doc.status = DocumentStatus.awaiting_review
 
     db.commit()
+
+    # The reviewer has decided: nobody needs the file any more.
+    release(redis, doc.id)
 
     if review.human_review_status == HumanReviewStatus.approved and doc.webhook_url:
         from backend.core.connectors import dispatch_webhook

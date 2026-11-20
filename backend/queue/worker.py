@@ -22,6 +22,7 @@ from backend.core.chunk_state import (
 from backend.core.chunking import should_chunk, split_pages_into_chunks
 from backend.core.config import settings
 from backend.core.db import SessionLocal, redis_client
+from backend.core.file_buffer import buffer_key, keep_for_review_or_release, release
 from backend.core.llm import llm_client
 from backend.core.pipeline import DocFlowState, pipeline, resolve_validation_outcome
 from backend.core.token_budget import (
@@ -132,7 +133,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
         db.commit()
 
         # 2. pull the bytes from redis
-        redis_key = f"doc_bytes:{document_id}"
+        redis_key = buffer_key(document_id)
         file_bytes = redis_client.get(redis_key)
         if not file_bytes:
             raise ValueError(f"No bytes in Redis for key: {redis_key}")
@@ -175,9 +176,9 @@ async def process_document(ctx: dict, document_id: int) -> None:
             from backend.queue.jobs import enqueue_process_document_chunk
 
             await enqueue_process_document_chunk(document_id, chunk_index=0)
-            # The bytes and the raw text now live in the chunk plan; this
-            # job's own work (parse, decide, plan, enqueue) is done.
-            redis_client.delete(redis_key)
+            # The raw text now lives in the chunk plan; this job's own work
+            # (parse, decide, plan, enqueue) is done. The file itself stays
+            # until the final chunk decides whether a reviewer needs it.
             return
 
         # 4. Not chunking: run the existing single-request pipeline.
@@ -233,8 +234,8 @@ async def process_document(ctx: dict, document_id: int) -> None:
 
         await _dispatch_completion_webhook(doc)
 
-        # 6. clean up Redis - the uploaded bytes are no longer needed
-        redis_client.delete(redis_key)
+        # 6. the uploaded file stays only if a reviewer will need to see it
+        keep_for_review_or_release(redis_client, document_id, doc.status)
 
     except Retry:
         # A capacity wait is not a failure — never fall through to the
@@ -250,6 +251,7 @@ async def process_document(ctx: dict, document_id: int) -> None:
             # Mark as failed and log error
             doc.status = DocumentStatus.failed
             db.commit()
+        release(redis_client, document_id)
         raise e
 
     finally:
@@ -405,6 +407,7 @@ async def process_document_chunk(ctx: dict, document_id: int, chunk_index: int) 
         await _dispatch_completion_webhook(doc)
 
         clear_chunk_state(redis_client, document_id, total_chunks)
+        keep_for_review_or_release(redis_client, document_id, doc.status)
 
     except Retry:
         raise
@@ -415,6 +418,7 @@ async def process_document_chunk(ctx: dict, document_id: int, chunk_index: int) 
         if doc:
             doc.status = DocumentStatus.failed
             db.commit()
+        release(redis_client, document_id)
         raise e
 
     finally:
