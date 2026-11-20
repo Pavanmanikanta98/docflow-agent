@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Table, Tag, Button, Space, Empty } from 'antd';
-import { EyeOutlined, SyncOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, EyeOutlined, SyncOutlined } from '@ant-design/icons';
 import { Upload } from 'lucide-react';
 import api from '@/lib/api';
 import type { Document } from '@/lib/types';
@@ -62,6 +62,16 @@ export default function DocumentsPage() {
           return (
             <Tag color="gold" icon={<SyncOutlined spin />}>
               {formatCapacityWaitMessage(record.capacity_wait_estimated_start).toUpperCase()}
+            </Tag>
+          );
+        }
+
+        // A rejection keeps the status "awaiting_review" (a new status would be a
+        // database change), so the decision is read from human_review_status.
+        if (record.human_review_status === 'rejected' && status === 'awaiting_review') {
+          return (
+            <Tag color="error" icon={<CloseCircleOutlined />}>
+              REJECTED
             </Tag>
           );
         }
