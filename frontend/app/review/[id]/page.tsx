@@ -216,6 +216,20 @@ export default function ReviewPage() {
           />
         )}
 
+        {doc.human_review_status === 'rejected' && (
+          <Alert
+            className="!mb-4"
+            type="error"
+            showIcon
+            title="Rejected"
+            description={
+              doc.human_review_rejection_reason
+                ? `Reason given: ${doc.human_review_rejection_reason}`
+                : 'No reason was given.'
+            }
+          />
+        )}
+
         {reviewReasons.length > 0 && (
           <Alert
             className="!mb-4"
