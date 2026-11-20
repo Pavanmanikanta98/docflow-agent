@@ -144,7 +144,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Phones: one card per document, no sideways scrolling. */}
-      <div className="space-y-3 md:hidden" data-testid="documents-cards">
+      <div className="space-y-3 lg:hidden" data-testid="documents-cards">
         {documents.map((doc) => (
           <div
             key={doc.id}
@@ -179,7 +179,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Larger screens: the table. */}
-      <div className="hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900 md:block">
+      <div className="hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900 lg:block">
         <Table
           columns={columns}
           dataSource={documents}

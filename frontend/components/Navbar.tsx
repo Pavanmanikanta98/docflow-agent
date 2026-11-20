@@ -40,11 +40,11 @@ export function Navbar() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950">
               <FileText className="h-4 w-4" />
             </span>
-            <span className="text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-950 dark:text-white">
+            <span className="hidden text-[1.05rem] font-semibold tracking-[-0.02em] text-slate-950 dark:text-white min-[400px]:inline">
               DocFlow
             </span>
           </Link>
-          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-500 dark:text-slate-400 md:flex">
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-500 dark:text-slate-400 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -70,7 +70,7 @@ export function Navbar() {
           {mounted && <UsageBanner />}
           {mounted && (
             <Button
-              className="md:!hidden"
+              className="lg:!hidden"
               type="text"
               shape="circle"
               aria-label="Open menu"
