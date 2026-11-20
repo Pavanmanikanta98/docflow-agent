@@ -63,6 +63,7 @@ export function UsageBanner() {
   return (
     <>
       <button
+        data-tour="usage"
         onClick={() => setModalOpen(true)}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full
           text-xs font-medium transition-colors

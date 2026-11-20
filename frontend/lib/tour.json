@@ -1,0 +1,101 @@
+{
+  "pages": {
+    "home": [
+      {
+        "id": "welcome",
+        "targets": [
+          "logo"
+        ],
+        "title": "Welcome to DocFlow",
+        "body": "Upload an invoice or a contract. It is read, its fields are extracted and checked, and anything the checks are unsure about is held for you to review."
+      },
+      {
+        "id": "document-type",
+        "targets": [
+          "doc-type"
+        ],
+        "title": "1. Pick the document type",
+        "body": "Invoice or Contract. Each has its own set of fields to extract."
+      },
+      {
+        "id": "upload-zone",
+        "targets": [
+          "upload-zone"
+        ],
+        "title": "2. Drop your file",
+        "body": "PDF, PNG or JPG, up to 10 MB. Scanned pages and photos are read with OCR."
+      },
+      {
+        "id": "usage",
+        "targets": [
+          "usage"
+        ],
+        "title": "Free demo allowance",
+        "body": "How many free extractions this browser session has left."
+      },
+      {
+        "id": "documents-link",
+        "targets": [
+          "nav-documents",
+          "menu-button"
+        ],
+        "title": "3. Follow it in Documents",
+        "body": "Every upload is listed there with its status. Open the menu or the Documents link next."
+      }
+    ],
+    "documents": [
+      {
+        "id": "documents-list",
+        "targets": [
+          "documents-table",
+          "documents-cards"
+        ],
+        "title": "Your documents",
+        "body": "Only this browser session's uploads are shown. The status refreshes every 3 seconds: processing, then completed, or awaiting review when the checks were not sure."
+      },
+      {
+        "id": "review-button",
+        "targets": [
+          "review-button-table",
+          "review-button-cards"
+        ],
+        "title": "Open a document",
+        "body": "Review shows what was extracted and, when a document is held, why."
+      }
+    ],
+    "review": [
+      {
+        "id": "review-reason",
+        "targets": [
+          "review-reason"
+        ],
+        "title": "Why it was held",
+        "body": "When the checks are not sure, the reason is written here, for example that subtotal plus tax does not equal the total."
+      },
+      {
+        "id": "review-fields",
+        "targets": [
+          "review-fields"
+        ],
+        "title": "Confidence and fields",
+        "body": "The confidence summarises how sure the checks are. A field below 75% is flagged in red. The values are read-only: compare them with your document."
+      },
+      {
+        "id": "review-decision",
+        "targets": [
+          "review-decision"
+        ],
+        "title": "Approve or reject",
+        "body": "Approve completes the document. Reject asks for a reason, which is saved and shown in the list."
+      },
+      {
+        "id": "review-export",
+        "targets": [
+          "review-export"
+        ],
+        "title": "Export",
+        "body": "Once a document is completed, download its extracted data as JSON or CSV."
+      }
+    ]
+  }
+}

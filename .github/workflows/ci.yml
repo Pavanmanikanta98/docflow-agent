@@ -83,5 +83,8 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Tour targets exist
+        run: pnpm test
+
       - name: Build
         run: pnpm build

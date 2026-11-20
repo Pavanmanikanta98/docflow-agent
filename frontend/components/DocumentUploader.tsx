@@ -70,6 +70,7 @@ export default function DocumentUploader({
           <FileText className="w-4 h-4 text-amber-500" />
           Document Type
         </span>
+        <div data-tour="doc-type" className="w-full sm:w-auto">
         <Select
           value={docType}
           onChange={(v) => setDocType(v as DocumentType)}
@@ -81,13 +82,16 @@ export default function DocumentUploader({
           size="large"
           disabled={uploading}
         />
+        </div>
       </div>
 
-      <DropZone
-        customRequest={customRequest}
-        uploading={uploading}
-        accept=".pdf,.png,.jpg,.jpeg"
-      />
+      <div data-tour="upload-zone">
+        <DropZone
+          customRequest={customRequest}
+          uploading={uploading}
+          accept=".pdf,.png,.jpg,.jpeg"
+        />
+      </div>
     </>
   );
 

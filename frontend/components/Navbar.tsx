@@ -75,6 +75,7 @@ export function Navbar() {
               shape="circle"
               aria-label="Open menu"
               data-testid="menu-button"
+              data-tour="menu-button"
               icon={<Menu className="h-4 w-4 text-slate-600 dark:text-slate-300" />}
               onClick={() => setMenuOpen(true)}
             />
