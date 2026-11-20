@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     llm_tpd: int = Field(200000)
     llm_rpd: int = Field(1000)
     llm_max_completion_tokens: int = Field(1024)
+    # How many times a malformed structured reply from the model is retried
+    # before the document fails (issue #65). pydantic-ai's own default is 1.
+    llm_output_retries: int = Field(3)
     # ADR 006 — a request estimated above this share of TPM gets chunked at
     # page boundaries instead of sent as one call.
     llm_max_request_share: float = Field(0.5)

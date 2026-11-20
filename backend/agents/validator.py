@@ -208,6 +208,7 @@ async def validate_fields(
         model=model,
         output_type=LLMScores,
         system_prompt=_SYSTEM_PROMPT,
+        retries={"output": settings.llm_output_retries},
     )
 
     result = await agent.run(
