@@ -58,6 +58,43 @@ One issue = one branch = one PR. Pavan reviews and merges.
       number — gate, 3-run, cost and agreement figures say "not measured yet".
 - [ ] **#46** tracing — waiting for Pavan's OK on the OpenTelemetry dependency.
 
+### Found while testing the full flow with the real model (20 Nov 2026)
+
+Ran the whole app locally (API, worker, frontend, Postgres, Redis, Tesseract) with the
+real `gpt-oss-20b`. Each item is one issue, one branch, one PR; none is merged, so none
+is ticked. "Verified" says what was run, not what was read.
+
+- [ ] **#55** PR #62 — export was broken: `GET /documents/{id}` returned `document_id`
+      while the list returned `id`, so the page called `/documents/undefined/export`.
+- [ ] **#56** PR #63 — the review screen could not show the file: the worker deleted it
+      right after extraction. Now kept in Redis until the review decision (one module,
+      `core/file_buffer.py`; new optional `FILE_BUFFER_TTL_SECONDS`).
+- [ ] **#57** PR #64 — a rejected document looked untouched (REJECTED tag and banner added).
+- [ ] **#58** PR #67 — phones had no menu and the table hid the Review button; the header
+      overflowed at 320 and 768 px. Measured at six widths. Stacked on #64.
+- [ ] **#59** PR #72 — the tour pointed at nothing; rebuilt per page, with a Node test
+      (`pnpm test`, now in CI) that fails if a step targets a missing element. Stacked on #67.
+- [ ] **#65** PR #66 — one malformed model reply failed a whole document (1 in 7 real
+      calls, n too small for a rate); output retries now configurable (`LLM_OUTPUT_RETRIES`).
+- [ ] **#70** PR #71 — **affects the live demo.** The budget copied Groq's *daily* request
+      count into the per-minute counter, so after ~30 requests a day almost every request
+      was refused; 11 documents sat stuck 10+ minutes and drained in 2 min 40 s after the fix.
+- [ ] **#69** — to verify on Render: the per-IP limit may count all visitors as one IP
+      (uvicorn does not trust `X-Forwarded-For`). Also: the validate call's tokens are not
+      recorded, so there is no per-document token figure yet; check `NEXT_PUBLIC_CONTACT_EMAIL`.
+- [ ] **#68** — the site is not indexed and has no sitemap, robots or share card.
+      Code part is mine; Search Console and links are Pavan's.
+- [ ] **#60** — developer page, per-session webhook secret, test event (approved design,
+      not started).
+- [ ] **#61** — small fixes: `GROQ_BASE_URL` instructions double the path (the SDK adds
+      `/openai/v1`), an empty `GROQ_BASE_URL` breaks the SDK, antd `Alert` `message`
+      deprecation, bake the tiktoken file into the image.
+- [ ] Walkthrough video — PR #73 (notes + scripts). The video was delivered in chat; upload
+      it and link it from the README. Recorded on a local branch merging the fixes above.
+
+Merge notes: #63 and #66 each add a setting at the same place in `core/config.py` and in
+`.env.example`; whichever merges second needs "keep both". #67 and #72 are stacked on #64.
+
 ## Previous sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
 
 **Goal:** a live, tested, measured, honest demo that holds up when an interviewer
@@ -543,6 +580,8 @@ in their git history, which is why they are never pushed; the release checklist'
       (termination 0.4 vs 0.75, jurisdiction 0.5 vs 0.75), so 18 Sep and 28 Sep
       numbers measure different things. Needs Pavan's decision (see
       `docs/error-analysis.md`, "Open decision").
+- [ ] `DocumentStatusResponse` in `models/schemas.py` is unused since PR #62 (candidate for
+      "Proposed removals"; deleting needs Pavan's OK).
 - [ ] `con_007_minimal` label says no key obligations; the text has one. Suspect
       label (SUMMARY.md's backwards description was corrected in #45).
 
