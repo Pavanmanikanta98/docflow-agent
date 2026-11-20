@@ -233,6 +233,72 @@ def test_sync_from_headers_is_case_insensitive(redis_client, clock):
     assert result.granted is False
 
 
+# Real response headers from api.groq.com for openai/gpt-oss-20b, 20 Nov 2026.
+# The request headers describe the DAILY quota (1000, resetting in hours); the
+# token headers describe the per-minute quota.
+GROQ_REAL_HEADERS = {
+    "x-ratelimit-limit-requests": "1000",
+    "x-ratelimit-remaining-requests": "857",
+    "x-ratelimit-reset-requests": "3h25m55.199s",
+    "x-ratelimit-limit-tokens": "8000",
+    "x-ratelimit-remaining-tokens": "7693",
+    "x-ratelimit-reset-tokens": "2.302s",
+}
+
+
+@requires_redis
+def test_daily_request_header_does_not_fill_the_per_minute_counter(
+    redis_client, clock
+):
+    """Issue #70: 143 requests used today is not 143 requests this minute."""
+    budget = make_budget(redis_client, clock, tpm=8000, rpm=30, tpd=200000, rpd=1000)
+
+    budget.sync_from_headers(GROQ_REAL_HEADERS)
+
+    result = budget.reserve(estimated_tokens=1500)
+    assert result.granted is True
+
+
+@requires_redis
+def test_daily_request_header_sets_the_daily_counter(redis_client, clock):
+    budget = make_budget(redis_client, clock, tpm=8000, rpm=30, tpd=200000, rpd=1000)
+
+    budget.sync_from_headers(GROQ_REAL_HEADERS)
+
+    day_bucket = int(clock() // 86400)
+    assert int(redis_client.get(budget._key("rpd", day_bucket))) == 143
+
+
+@requires_redis
+def test_an_exhausted_daily_request_quota_refuses_reservations(redis_client, clock):
+    budget = make_budget(redis_client, clock, tpm=8000, rpm=30, tpd=200000, rpd=1000)
+
+    budget.sync_from_headers(
+        {**GROQ_REAL_HEADERS, "x-ratelimit-remaining-requests": "0"}
+    )
+
+    assert budget.reserve(estimated_tokens=100).granted is False
+
+
+@requires_redis
+def test_per_minute_request_header_still_fills_the_minute_counter(
+    redis_client, clock
+):
+    budget = make_budget(
+        redis_client, clock, tpm=100000, rpm=30, tpd=1000000, rpd=100000
+    )
+
+    budget.sync_from_headers(
+        {
+            "x-ratelimit-limit-requests": "30",
+            "x-ratelimit-remaining-requests": "0",
+            "x-ratelimit-reset-requests": "45.0s",
+        }
+    )
+
+    assert budget.reserve(estimated_tokens=100).granted is False
+
+
 # ---------------------------------------------------------------------------
 # cooldown
 # ---------------------------------------------------------------------------
