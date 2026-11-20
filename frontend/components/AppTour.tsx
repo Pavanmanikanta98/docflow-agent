@@ -75,12 +75,14 @@ function TourTrigger() {
       ghost
       size="small"
       icon={<PlayCircleOutlined />}
+      aria-label="Start tour"
       onClick={() => {
         setCurrentStep(0);
         setIsOpen(true);
       }}
     >
-      Start Tour
+      {/* Icon only on phones: the label pushed the theme toggle off screen. */}
+      <span className="hidden sm:inline">Start Tour</span>
     </Button>
   );
 }
