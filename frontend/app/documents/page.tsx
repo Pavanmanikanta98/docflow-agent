@@ -9,6 +9,40 @@ import api from '@/lib/api';
 import type { Document } from '@/lib/types';
 import { formatCapacityWaitMessage } from '@/lib/capacityWait';
 
+/** The status of one document, shared by the table and the phone cards. */
+function StatusTag({ record }: { record: Document }) {
+  const status = record.status;
+  if (record.waiting_for_capacity) {
+    return (
+      <Tag color="gold" icon={<SyncOutlined spin />}>
+        {formatCapacityWaitMessage(record.capacity_wait_estimated_start).toUpperCase()}
+      </Tag>
+    );
+  }
+
+  // A rejection keeps the status "awaiting_review" (a new status would be a
+  // database change), so the decision is read from human_review_status.
+  if (record.human_review_status === 'rejected' && status === 'awaiting_review') {
+    return (
+      <Tag color="error" icon={<CloseCircleOutlined />}>
+        REJECTED
+      </Tag>
+    );
+  }
+
+  let color = 'default';
+  if (status === 'completed') color = 'success';
+  if (status === 'awaiting_review') color = 'warning';
+  if (status === 'processing') color = 'processing';
+  if (status === 'failed') color = 'error';
+
+  return (
+    <Tag color={color} icon={status === 'processing' ? <SyncOutlined spin /> : null}>
+      {status.replace('_', ' ').toUpperCase()}
+    </Tag>
+  );
+}
+
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,37 +91,7 @@ export default function DocumentsPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: Document) => {
-        if (record.waiting_for_capacity) {
-          return (
-            <Tag color="gold" icon={<SyncOutlined spin />}>
-              {formatCapacityWaitMessage(record.capacity_wait_estimated_start).toUpperCase()}
-            </Tag>
-          );
-        }
-
-        // A rejection keeps the status "awaiting_review" (a new status would be a
-        // database change), so the decision is read from human_review_status.
-        if (record.human_review_status === 'rejected' && status === 'awaiting_review') {
-          return (
-            <Tag color="error" icon={<CloseCircleOutlined />}>
-              REJECTED
-            </Tag>
-          );
-        }
-
-        let color = 'default';
-        if (status === 'completed') color = 'success';
-        if (status === 'awaiting_review') color = 'warning';
-        if (status === 'processing') color = 'processing';
-        if (status === 'failed') color = 'error';
-
-        return (
-          <Tag color={color} icon={status === 'processing' ? <SyncOutlined spin /> : null}>
-            {status.replace('_', ' ').toUpperCase()}
-          </Tag>
-        );
-      },
+      render: (_: string, record: Document) => <StatusTag record={record} />,
     },
     {
       title: 'Confidence',
@@ -139,7 +143,43 @@ export default function DocumentsPage() {
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900">
+      {/* Phones: one card per document, no sideways scrolling. */}
+      <div className="space-y-3 md:hidden" data-testid="documents-cards">
+        {documents.map((doc) => (
+          <div
+            key={doc.id}
+            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900"
+          >
+            <p className="break-all font-medium text-slate-800 dark:text-slate-200">
+              {doc.document_url}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Tag color="default">{doc.document_type.toUpperCase()}</Tag>
+              <StatusTag record={doc} />
+            </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              {new Date(doc.created_at).toLocaleString()}
+            </p>
+            <Link href={`/review/${doc.id}`}>
+              <Button className="mt-3" type="primary" block icon={<EyeOutlined />} ghost>
+                Review
+              </Button>
+            </Link>
+          </div>
+        ))}
+        {!loading && documents.length === 0 && (
+          <Link
+            href="/#upload"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 p-6 text-sm font-medium !text-amber-700 dark:border-white/15 dark:!text-amber-400"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            No documents yet. Upload your first one
+          </Link>
+        )}
+      </div>
+
+      {/* Larger screens: the table. */}
+      <div className="hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900 md:block">
         <Table
           columns={columns}
           dataSource={documents}

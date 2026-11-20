@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { Button } from 'antd';
-import { Sun, Moon, FileText, Code2 } from 'lucide-react';
+import { Button, Drawer } from 'antd';
+import { Sun, Moon, FileText, Code2, Menu } from 'lucide-react';
 import { TourTrigger } from '@/components/AppTour';
 import { UsageBanner } from '@/components/SettingsModal';
 
@@ -22,6 +22,7 @@ const navLinks = [
 export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -29,7 +30,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/70 bg-white/85 backdrop-blur-md dark:border-white/10 dark:bg-slate-950/85">
-      <div className="container mx-auto flex h-[72px] items-center justify-between px-4">
+      <div className="container mx-auto flex h-[72px] items-center justify-between gap-2 px-4">
         <div className="flex items-center gap-8">
           <Link
             href="/"
@@ -69,6 +70,17 @@ export function Navbar() {
           {mounted && <UsageBanner />}
           {mounted && (
             <Button
+              className="md:!hidden"
+              type="text"
+              shape="circle"
+              aria-label="Open menu"
+              data-testid="menu-button"
+              icon={<Menu className="h-4 w-4 text-slate-600 dark:text-slate-300" />}
+              onClick={() => setMenuOpen(true)}
+            />
+          )}
+          {mounted && (
+            <Button
               data-tour="theme-toggle"
               type="text"
               shape="circle"
@@ -83,6 +95,34 @@ export function Navbar() {
           )}
         </div>
       </div>
+      <Drawer
+        title="DocFlow"
+        placement="right"
+        size="default"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      >
+        <nav className="flex flex-col gap-1" data-testid="menu-drawer">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-medium !text-slate-700 hover:bg-slate-100 dark:!text-slate-200 dark:hover:bg-white/10"
+            >
+              {link.label}
+            </Link>
+          ))}
+          <Link
+            href={GITHUB_URL}
+            onClick={() => setMenuOpen(false)}
+            className="mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium !text-slate-700 hover:bg-slate-100 dark:!text-slate-200 dark:hover:bg-white/10"
+          >
+            <Code2 className="h-4 w-4" />
+            Source
+          </Link>
+        </nav>
+      </Drawer>
     </header>
   );
 }
