@@ -216,6 +216,7 @@ export default function ReviewPage() {
           />
         )}
 
+        <div data-tour="review-reason">
         {doc.human_review_status === 'rejected' && (
           <Alert
             className="!mb-4"
@@ -245,6 +246,7 @@ export default function ReviewPage() {
             }
           />
         )}
+        </div>
 
         <ExtractionReview
           doc={doc}

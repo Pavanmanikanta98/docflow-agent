@@ -60,7 +60,7 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
   return (
     <Form layout="vertical" form={form}>
       {/* Status + confidence summary */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div data-tour="review-fields" className="flex gap-2 mb-6 flex-wrap">
         <Tag color="default">{doc.document_type.toUpperCase()}</Tag>
         <Tag color={doc.confidence_score != null && doc.confidence_score >= 0.75 ? 'success' : 'warning'}>
           {doc.confidence_score != null
@@ -116,7 +116,7 @@ export default function ExtractionReview({ doc, onApprove, onReject, submitting 
       })}
 
       {/* Actions */}
-      <div className="flex gap-3 mt-6">
+      <div data-tour="review-decision" className="flex gap-3 mt-6">
         <Button
           type="primary"
           size="large"

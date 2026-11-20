@@ -111,10 +111,16 @@ export default function DocumentsPage() {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: unknown, record: Document) => (
+      render: (_: unknown, record: Document, index: number) => (
         <Space size="middle">
           <Link href={`/review/${record.id}`}>
-            <Button type="primary" size="small" icon={<EyeOutlined />} ghost>
+            <Button
+              data-tour={index === 0 ? 'review-button-table' : undefined}
+              type="primary"
+              size="small"
+              icon={<EyeOutlined />}
+              ghost
+            >
               Review
             </Button>
           </Link>
@@ -143,9 +149,9 @@ export default function DocumentsPage() {
         </Button>
       </div>
 
-      {/* Phones: one card per document, no sideways scrolling. */}
-      <div className="space-y-3 lg:hidden" data-testid="documents-cards">
-        {documents.map((doc) => (
+      {/* Phones and tablets: one card per document, no sideways scrolling. */}
+      <div className="space-y-3 lg:hidden" data-testid="documents-cards" data-tour="documents-cards">
+        {documents.map((doc, index) => (
           <div
             key={doc.id}
             className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900"
@@ -161,7 +167,14 @@ export default function DocumentsPage() {
               {new Date(doc.created_at).toLocaleString()}
             </p>
             <Link href={`/review/${doc.id}`}>
-              <Button className="mt-3" type="primary" block icon={<EyeOutlined />} ghost>
+              <Button
+                data-tour={index === 0 ? 'review-button-cards' : undefined}
+                className="mt-3"
+                type="primary"
+                block
+                icon={<EyeOutlined />}
+                ghost
+              >
                 Review
               </Button>
             </Link>
@@ -179,7 +192,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Larger screens: the table. */}
-      <div className="hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900 lg:block">
+      <div data-tour="documents-table" className="hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-slate-900 lg:block">
         <Table
           columns={columns}
           dataSource={documents}

@@ -52,7 +52,7 @@ export default function ExportPanel({ documentId, disabled = false }: Props) {
   };
 
   return (
-    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/10">
+    <div data-tour="review-export" className="mt-6 pt-6 border-t border-slate-200 dark:border-white/10">
       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
         Export Results
       </p>
