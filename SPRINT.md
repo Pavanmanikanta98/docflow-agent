@@ -38,6 +38,9 @@ One issue = one branch = one PR. Pavan reviews and merges.
       `check_gate.py`; `test_eval_gate.py` (9 tests, incl. a broken field → exit 1).
 - [ ] **#42** `ci/eval-gate` — GitHub Actions eval gate on PRs that touch prompts,
       models or the pipeline. Needs the `GROQ_API_KEY` repo secret (Pavan).
+      *Status:* workflow written (`.github/workflows/eval-gate.yml`); the exact CI
+      command line was run locally with a stand-in model that breaks fields →
+      gate exit 1. Not ticked until the secret exists and one live gate run is green.
 - [ ] **#43** `feat/grader-agreement` — blind-label export + agreement/kappa.
       Needs Pavan's 30 human labels.
 - [ ] **#44** `fix/invoice-subtotal-null` — error analysis of every wrong field +
