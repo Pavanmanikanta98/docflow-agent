@@ -27,8 +27,10 @@ One issue = one branch = one PR. Pavan reviews and merges.
       rate-limited cases as errored instead of wrong.
       *Evidence:* `run_eval.py::scored_fields`, `aggregate`; `retry.py` (shared with
       the judge eval); `test_eval_runner.py` (5 tests).
-- [ ] **#40** `feat/eval-usage-and-run-config` — per-case latency, tokens and cost;
+- [x] **#40** `feat/eval-usage-and-run-config` — per-case latency, tokens and cost;
       p50/p95; run config (model, prompt hash, temperature, library version).
+      *Evidence:* `run_config.py`, `run_stats.py`, result files gain `run_config`
+      and `usage`; `test_eval_usage.py` (8 tests). No numbers until a live run.
 - [ ] **#41** `feat/eval-thresholds-and-repeats` — `evals/thresholds.toml` committed
       before the run, `--runs 3` with mean/min/max, `check_gate.py`.
 - [ ] **#42** `ci/eval-gate` — GitHub Actions eval gate on PRs that touch prompts,

@@ -28,7 +28,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from backend.agents.extractor import extract_fields_with_usage
 from backend.core.llm import llm_client
+from backend.core.metrics import timed
 from backend.plugins import get_plugin
 from backend.tests.evaluation.conftest import (
     CaseResult,
@@ -41,6 +43,8 @@ from backend.tests.evaluation.conftest import (
     null_match,
 )
 from backend.tests.evaluation.retry import with_capacity_retry
+from backend.tests.evaluation.run_config import build_run_config
+from backend.tests.evaluation.run_stats import usage_summary
 
 RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
 UNSCORED_FIELDS = frozenset({"confidence_score"})
@@ -85,16 +89,22 @@ async def evaluate_single_case(
 
     Extraction errors propagate; a capacity wait is retried first.
     """
-    from backend.agents.extractor import extract_fields
-
     plugin = get_plugin(document_type)
-    fields = await with_capacity_retry(
-        lambda: extract_fields(case["input"], plugin, model=model)
-    )
+    timing: dict[str, float] = {}
+
+    async def extract_once() -> tuple[Any, Any]:
+        with timed("extract", timing):  # times the successful attempt only
+            return await extract_fields_with_usage(case["input"], plugin, model)
+
+    fields, usage = await with_capacity_retry(extract_once)
     extraction = fields.model_dump()
 
     result = CaseResult(
-        case_id=case["case_id"], description=case.get("description", "")
+        case_id=case["case_id"],
+        description=case.get("description", ""),
+        latency_ms=timing["extract"] * 1000,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
     )
     for field_name in scored_fields(document_type):
         actual = extraction.get(field_name)
@@ -197,6 +207,8 @@ def write_results(
     data = {
         "model": model_name,
         "date": date_str,
+        "run_config": build_run_config(model_name),
+        "usage": usage_summary(results.cases, model_name),
         "wall_clock_seconds": results.wall_clock_seconds,
         "total_cases": results.total_cases,
         "passed_cases": results.passed_cases,
@@ -223,6 +235,11 @@ def print_summary(results: AggregatedResults, model_name: str) -> None:
         f"({results.accuracy():.1%}) |"
     )
     print(f"| Wall clock time | {results.wall_clock_seconds:.2f}s |")
+    usage = usage_summary(results.cases, model_name)
+    latency = usage["latency_ms"]
+    if latency["p50"] is not None:
+        print(f"| Latency p50 / p95 | {latency['p50']:.0f} / {latency['p95']:.0f} ms |")
+    print(f"| Cost | {usage['cost_usd']} |")
     print("\n| Field | Passed | Total | Accuracy |\n|---|---|---|---|")
     for name in sorted(results.field_results):
         counts = results.field_results[name]
