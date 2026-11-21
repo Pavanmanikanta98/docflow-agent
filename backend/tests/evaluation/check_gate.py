@@ -3,6 +3,7 @@ preregistered thresholds in `evals/thresholds.toml`.
 
 Usage:
     uv run python -m backend.tests.evaluation.check_gate evals/results/<file>.json
+    ... check_gate <file>.json --agreement evals/results/<date>-grader-agreement.json
 
 Exit code 0 = gate passed, 1 = gate failed (each failed rule is printed).
 When GITHUB_STEP_SUMMARY is set (GitHub Actions), the verdict is also
@@ -67,9 +68,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluation gate")
     parser.add_argument("result_file", type=Path)
     parser.add_argument("--thresholds", type=Path, default=THRESHOLDS_PATH)
+    parser.add_argument(
+        "--agreement", type=Path, default=None,
+        help="A grader-agreement report (grader_agreement.py report) to enforce.",
+    )
     args = parser.parse_args(argv)
 
     result = json.loads(args.result_file.read_text())
+    if args.agreement is not None:
+        report = json.loads(args.agreement.read_text())
+        result["grader_agreement"] = report["agreement"]
     failures = evaluate_gate(result, load_thresholds(args.thresholds))
     verdict = _verdict(result, failures)
     print(verdict)

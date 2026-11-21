@@ -43,6 +43,9 @@ One issue = one branch = one PR. Pavan reviews and merges.
       gate exit 1. Not ticked until the secret exists and one live gate run is green.
 - [ ] **#43** `feat/grader-agreement` — blind-label export + agreement/kappa.
       Needs Pavan's 30 human labels.
+      *Status:* tooling done (`grader_agreement.py` export / judge / report,
+      `check_gate --agreement`; `test_grader_agreement.py`, 7 tests). Not ticked
+      until the 30 labels exist and the agreement % is committed.
 - [ ] **#44** `fix/invoice-subtotal-null` — error analysis of every wrong field +
       fix for the top category, before/after on the same 32 documents.
 - [ ] **#45** `docs/readme-evaluation-v1.1` — README Evaluation section; remove
