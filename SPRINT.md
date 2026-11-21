@@ -31,10 +31,16 @@ One issue = one branch = one PR. Pavan reviews and merges.
       p50/p95; run config (model, prompt hash, temperature, library version).
       *Evidence:* `run_config.py`, `run_stats.py`, result files gain `run_config`
       and `usage`; `test_eval_usage.py` (8 tests). No numbers until a live run.
-- [ ] **#41** `feat/eval-thresholds-and-repeats` — `evals/thresholds.toml` committed
+- [x] **#41** `feat/eval-thresholds-and-repeats` — `evals/thresholds.toml` committed
       before the run, `--runs 3` with mean/min/max, `check_gate.py`.
+      *Evidence:* thresholds in their own commit ("evals: preregister thresholds");
+      `thresholds.py`, `run_stats.repeat_summary`, `run_eval --runs/--slice`,
+      `check_gate.py`; `test_eval_gate.py` (9 tests, incl. a broken field → exit 1).
 - [ ] **#42** `ci/eval-gate` — GitHub Actions eval gate on PRs that touch prompts,
       models or the pipeline. Needs the `GROQ_API_KEY` repo secret (Pavan).
+      *Status:* workflow written (`.github/workflows/eval-gate.yml`); the exact CI
+      command line was run locally with a stand-in model that breaks fields →
+      gate exit 1. Not ticked until the secret exists and one live gate run is green.
 - [ ] **#43** `feat/grader-agreement` — blind-label export + agreement/kappa.
       Needs Pavan's 30 human labels.
 - [ ] **#44** `fix/invoice-subtotal-null` — error analysis of every wrong field +

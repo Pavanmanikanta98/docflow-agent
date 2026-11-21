@@ -7,6 +7,10 @@ structured JSON results with per-field accuracy.
 
 Usage:
     uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b
+    uv run python -m backend.tests.evaluation.run_eval --slice ci   # CI gate slice
+
+Each case runs `runs_per_case` times (evals/thresholds.toml) unless --runs
+is given; the result file reports mean/min/max per field.
 
 Scoring rules (shared with the pytest suite in this folder):
 - Every field of the plugin's extraction schema is scored, except
@@ -44,7 +48,8 @@ from backend.tests.evaluation.conftest import (
 )
 from backend.tests.evaluation.retry import with_capacity_retry
 from backend.tests.evaluation.run_config import build_run_config
-from backend.tests.evaluation.run_stats import usage_summary
+from backend.tests.evaluation.run_stats import repeat_summary, usage_summary
+from backend.tests.evaluation.thresholds import load_thresholds
 
 RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
 UNSCORED_FIELDS = frozenset({"confidence_score"})
@@ -198,74 +203,151 @@ def format_model_slug(model_name: str) -> str:
     return model_name.replace("/", "-")
 
 
+async def run_repeated(
+    model: Any,
+    invoice_cases: list[dict],
+    contract_cases: list[dict],
+    runs: int,
+) -> list[AggregatedResults]:
+    """Extract every case `runs` times; one AggregatedResults per run."""
+    results = []
+    for run in range(1, runs + 1):
+        print(f"--- run {run}/{runs} ---", flush=True)
+        results.append(await run_evaluation(model, invoice_cases, contract_cases))
+    return results
+
+
+def select_cases(cases: list[dict], case_ids: list[str] | None) -> list[dict]:
+    """Keep only `case_ids` (all cases when None). An unknown id is an
+    error, so a typo in the slice cannot silently shrink what is measured."""
+    if case_ids is None:
+        return cases
+    known = {c["case_id"] for c in cases}
+    missing = [cid for cid in case_ids if cid not in known]
+    if missing:
+        raise ValueError(f"Unknown case ids: {', '.join(missing)}")
+    wanted = set(case_ids)
+    return [c for c in cases if c["case_id"] in wanted]
+
+
 def write_results(
-    results: AggregatedResults, model_name: str, output_dir: Path
+    runs: list[AggregatedResults],
+    model_name: str,
+    output_dir: Path,
+    label: str | None = None,
 ) -> Path:
-    """Write results to `<output_dir>/<YYYY-MM-DD>-<model-slug>.json`."""
+    """Write `<output_dir>/<YYYY-MM-DD>-<model-slug>[-<label>].json`.
+
+    Top-level `total_fields` / `passed_fields` / `field_results` are sums
+    over runs; `field_accuracy` and `per_field` give mean/min/max.
+    """
     date_str = datetime.now().strftime("%Y-%m-%d")
-    filename = output_dir / f"{date_str}-{format_model_slug(model_name)}.json"
+    suffix = f"-{label}" if label else ""
+    filename = output_dir / f"{date_str}-{format_model_slug(model_name)}{suffix}.json"
+    run_dicts = [_run_summary(r) for r in runs]
+    all_cases = [(i, c) for i, r in enumerate(runs, start=1) for c in r.cases]
     data = {
         "model": model_name,
         "date": date_str,
+        "runs_per_case": len(runs),
         "run_config": build_run_config(model_name),
-        "usage": usage_summary(results.cases, model_name),
-        "wall_clock_seconds": results.wall_clock_seconds,
-        "total_cases": results.total_cases,
-        "passed_cases": results.passed_cases,
-        "total_fields": results.total_fields,
-        "passed_fields": results.passed_fields,
-        "errored_cases": results.errored_cases,
-        "field_results": results.field_results,
-        "cases": [asdict(case) for case in results.cases],
+        "usage": usage_summary([c for _, c in all_cases], model_name),
+        **repeat_summary(run_dicts),
+        "total_fields": sum(r.total_fields for r in runs),
+        "passed_fields": sum(r.passed_fields for r in runs),
+        "field_results": _summed_field_results(runs),
+        "wall_clock_seconds": sum(r.wall_clock_seconds for r in runs),
+        "errored_cases": [
+            {"run": i, **e}
+            for i, r in enumerate(runs, start=1)
+            for e in r.errored_cases
+        ],
+        "runs": [{"run": i, **d} for i, d in enumerate(run_dicts, start=1)],
+        "cases": [{"run": i, **asdict(c)} for i, c in all_cases],
     }
     filename.write_text(json.dumps(data, indent=2))
     return filename
 
 
-def print_summary(results: AggregatedResults, model_name: str) -> None:
-    """Print a markdown summary table to stdout."""
-    print(f"\n# Evaluation Results — {model_name}\n")
+def _run_summary(run: AggregatedResults) -> dict[str, Any]:
+    return {
+        "total_cases": run.total_cases,
+        "passed_cases": run.passed_cases,
+        "total_fields": run.total_fields,
+        "passed_fields": run.passed_fields,
+        "field_results": run.field_results,
+        "wall_clock_seconds": run.wall_clock_seconds,
+    }
+
+
+def _summed_field_results(runs: list[AggregatedResults]) -> dict[str, dict[str, int]]:
+    summed: dict[str, dict[str, int]] = {}
+    for run in runs:
+        for name, counts in run.field_results.items():
+            target = summed.setdefault(name, {"passed": 0, "total": 0})
+            target["passed"] += counts["passed"]
+            target["total"] += counts["total"]
+    return summed
+
+
+def print_summary(result_file: Path) -> None:
+    """Print a markdown summary of a written result file."""
+    data = json.loads(result_file.read_text())
+    acc = data["field_accuracy"]
+    usage = data["usage"]
+    print(f"\n# Evaluation Results — {data['model']} ({data['date']})\n")
     print("| Metric | Value |\n|---|---|")
-    print(f"| Model | {model_name} |")
-    print(f"| Cases scored | {results.total_cases} |")
-    print(f"| Cases errored (not scored) | {len(results.errored_cases)} |")
-    print(f"| Cases with 100% accuracy | {results.passed_cases} |")
-    print(
-        f"| Field-level accuracy | {results.passed_fields}/{results.total_fields} "
-        f"({results.accuracy():.1%}) |"
-    )
-    print(f"| Wall clock time | {results.wall_clock_seconds:.2f}s |")
-    usage = usage_summary(results.cases, model_name)
+    print(f"| Runs per case | {data['runs_per_case']} |")
+    print(f"| Field checks passed (all runs) | {data['passed_fields']}/"
+          f"{data['total_fields']} |")
+    if acc["mean"] is not None:
+        print(f"| Field accuracy mean (min-max) | {acc['mean']:.1%} "
+              f"({acc['min']:.1%}-{acc['max']:.1%}) |")
+    print(f"| Cases errored (not scored) | {len(data['errored_cases'])} |")
     latency = usage["latency_ms"]
     if latency["p50"] is not None:
-        print(f"| Latency p50 / p95 | {latency['p50']:.0f} / {latency['p95']:.0f} ms |")
+        print(f"| Latency p50 / p95 | {latency['p50']:.0f} / "
+              f"{latency['p95']:.0f} ms (n={usage['n']}) |")
     print(f"| Cost | {usage['cost_usd']} |")
-    print("\n| Field | Passed | Total | Accuracy |\n|---|---|---|---|")
-    for name in sorted(results.field_results):
-        counts = results.field_results[name]
-        acc = counts["passed"] / counts["total"] if counts["total"] else 0.0
-        print(f"| {name} | {counts['passed']} | {counts['total']} | {acc:.1%} |")
-    for errored in results.errored_cases:
-        print(f"\nERRORED {errored['case_id']}: {errored['error']}")
+    print("\n| Field | Mean | Min | Max |\n|---|---|---|---|")
+    for name, f in data["per_field"].items():
+        print(f"| {name} | {f['mean']:.1%} | {f['min']:.1%} | {f['max']:.1%} |")
+    for errored in data["errored_cases"]:
+        print(f"\nERRORED run {errored['run']} {errored['case_id']}: "
+              f"{errored['error']}")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     """Run evaluation and write structured results."""
+    thresholds = load_thresholds()
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--model", "-m", default="openai/gpt-oss-20b")
-    args = parser.parse_args()
+    parser.add_argument("--runs", type=int, default=thresholds.runs_per_case)
+    parser.add_argument(
+        "--slice", choices=["ci"], default=None,
+        help="Run only the CI slice listed in evals/thresholds.toml.",
+    )
+    parser.add_argument("--output-dir", type=Path, default=RESULTS_DIR)
+    args = parser.parse_args(argv)
 
-    invoice_cases = load_golden("invoices.json")
-    contract_cases = load_golden("contracts.json")
-    print(f"Loaded {len(invoice_cases)} invoices, {len(contract_cases)} contracts")
+    case_ids = list(thresholds.ci_slice_cases) if args.slice == "ci" else None
+    invoices = select_cases(load_golden("invoices.json"), _ids(case_ids, "inv_"))
+    contracts = select_cases(load_golden("contracts.json"), _ids(case_ids, "con_"))
+    print(f"{len(invoices)} invoices, {len(contracts)} contracts, {args.runs} runs")
 
     model = llm_client.get_model(model_name=args.model)
-    results = asyncio.run(run_evaluation(model, invoice_cases, contract_cases))
+    runs = asyncio.run(run_repeated(model, invoices, contracts, args.runs))
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    output_file = write_results(results, args.model, RESULTS_DIR)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = write_results(runs, args.model, args.output_dir, label=args.slice)
     print(f"Results written to: {output_file}")
-    print_summary(results, args.model)
+    print_summary(output_file)
+
+
+def _ids(case_ids: list[str] | None, prefix: str) -> list[str] | None:
+    if case_ids is None:
+        return None
+    return [cid for cid in case_ids if cid.startswith(prefix)]
 
 
 if __name__ == "__main__":
