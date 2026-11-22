@@ -92,8 +92,24 @@ is ticked. "Verified" says what was run, not what was read.
 - [ ] Walkthrough video — PR #73 (notes + scripts). The video was delivered in chat; upload
       it and link it from the README. Recorded on a local branch merging the fixes above.
 
-Merge notes: #63 and #66 each add a setting at the same place in `core/config.py` and in
-`.env.example`; whichever merges second needs "keep both". #67 and #72 are stacked on #64.
+- [ ] **#76** PR #77 — the frontend build downloaded four Google fonts on every run; one
+      failed download failed PR #52's CI (same commit passed in the push run; the re-run
+      passed) and could fail a Vercel deploy. Now self-hosted (5 woff2 files in `app/`).
+      With the network blocked, `main` fails with the CI error and the branch builds; the
+      landing page is pixel-identical (0 different pixels).
+
+State of the merges, checked 22 Nov 2026 (trial merges and a test run on `main`):
+- Merged into `main`: #47, #49, #50, #51. `main` passes 231 tests, ruff clean.
+- #48 was merged 13 seconds after #47, into #47's side branch, not `main`. Nothing was
+  lost: its commits reached `main` through #49 (the branch it was stacked under).
+- #75 changes no files (empty diff, trial merge leaves `main` identical); close or
+  merge, either is harmless.
+- #52 and #53 merge cleanly into the current `main`. #52's red check was the font
+  download (#76); the re-run is green.
+- Every open PR merges cleanly alone. In order, the one conflict was #63 + #66 (both
+  added a setting at the same spot in `core/config.py`); fixed by moving #66's setting
+  (commit f355ede), and both orders now merge cleanly.
+- #67 and #72 are stacked on #64; merge #64, then #67, then #72.
 
 ## Previous sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
 
