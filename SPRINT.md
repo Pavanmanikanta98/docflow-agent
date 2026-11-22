@@ -58,6 +58,59 @@ One issue = one branch = one PR. Pavan reviews and merges.
       number — gate, 3-run, cost and agreement figures say "not measured yet".
 - [ ] **#46** tracing — waiting for Pavan's OK on the OpenTelemetry dependency.
 
+### Found while testing the full flow with the real model (20 Nov 2026)
+
+Ran the whole app locally (API, worker, frontend, Postgres, Redis, Tesseract) with the
+real `gpt-oss-20b`. Each item is one issue, one branch, one PR; none is merged, so none
+is ticked. "Verified" says what was run, not what was read.
+
+- [ ] **#55** PR #62 — export was broken: `GET /documents/{id}` returned `document_id`
+      while the list returned `id`, so the page called `/documents/undefined/export`.
+- [ ] **#56** PR #63 — the review screen could not show the file: the worker deleted it
+      right after extraction. Now kept in Redis until the review decision (one module,
+      `core/file_buffer.py`; new optional `FILE_BUFFER_TTL_SECONDS`).
+- [ ] **#57** PR #64 — a rejected document looked untouched (REJECTED tag and banner added).
+- [ ] **#58** PR #67 — phones had no menu and the table hid the Review button; the header
+      overflowed at 320 and 768 px. Measured at six widths. Stacked on #64.
+- [ ] **#59** PR #72 — the tour pointed at nothing; rebuilt per page, with a Node test
+      (`pnpm test`, now in CI) that fails if a step targets a missing element. Stacked on #67.
+- [ ] **#65** PR #66 — one malformed model reply failed a whole document (1 in 7 real
+      calls, n too small for a rate); output retries now configurable (`LLM_OUTPUT_RETRIES`).
+- [ ] **#70** PR #71 — **affects the live demo.** The budget copied Groq's *daily* request
+      count into the per-minute counter, so after ~30 requests a day almost every request
+      was refused; 11 documents sat stuck 10+ minutes and drained in 2 min 40 s after the fix.
+- [ ] **#69** — to verify on Render: the per-IP limit may count all visitors as one IP
+      (uvicorn does not trust `X-Forwarded-For`). Also: the validate call's tokens are not
+      recorded, so there is no per-document token figure yet; check `NEXT_PUBLIC_CONTACT_EMAIL`.
+- [ ] **#68** — the site is not indexed and has no sitemap, robots or share card.
+      Code part is mine; Search Console and links are Pavan's.
+- [ ] **#60** — developer page, per-session webhook secret, test event (approved design,
+      not started).
+- [ ] **#61** — small fixes: `GROQ_BASE_URL` instructions double the path (the SDK adds
+      `/openai/v1`), an empty `GROQ_BASE_URL` breaks the SDK, antd `Alert` `message`
+      deprecation, bake the tiktoken file into the image.
+- [ ] Walkthrough video — PR #73 (notes + scripts). The video was delivered in chat; upload
+      it and link it from the README. Recorded on a local branch merging the fixes above.
+
+- [ ] **#76** PR #77 — the frontend build downloaded four Google fonts on every run; one
+      failed download failed PR #52's CI (same commit passed in the push run; the re-run
+      passed) and could fail a Vercel deploy. Now self-hosted (5 woff2 files in `app/`).
+      With the network blocked, `main` fails with the CI error and the branch builds; the
+      landing page is pixel-identical (0 different pixels).
+
+State of the merges, checked 22 Nov 2026 (trial merges and a test run on `main`):
+- Merged into `main`: #47, #49, #50, #51. `main` passes 231 tests, ruff clean.
+- #48 was merged 13 seconds after #47, into #47's side branch, not `main`. Nothing was
+  lost: its commits reached `main` through #49 (the branch it was stacked under).
+- #75 changes no files (empty diff, trial merge leaves `main` identical); close or
+  merge, either is harmless.
+- #52 and #53 merge cleanly into the current `main`. #52's red check was the font
+  download (#76); the re-run is green.
+- Every open PR merges cleanly alone. In order, the one conflict was #63 + #66 (both
+  added a setting at the same spot in `core/config.py`); fixed by moving #66's setting
+  (commit f355ede), and both orders now merge cleanly.
+- #67 and #72 are stacked on #64; merge #64, then #67, then #72.
+
 ## Previous sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
 
 **Goal:** a live, tested, measured, honest demo that holds up when an interviewer
@@ -543,6 +596,8 @@ in their git history, which is why they are never pushed; the release checklist'
       (termination 0.4 vs 0.75, jurisdiction 0.5 vs 0.75), so 18 Sep and 28 Sep
       numbers measure different things. Needs Pavan's decision (see
       `docs/error-analysis.md`, "Open decision").
+- [ ] `DocumentStatusResponse` in `models/schemas.py` is unused since PR #62 (candidate for
+      "Proposed removals"; deleting needs Pavan's OK).
 - [ ] `con_007_minimal` label says no key obligations; the text has one. Suspect
       label (SUMMARY.md's backwards description was corrected in #45).
 
