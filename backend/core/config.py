@@ -53,15 +53,15 @@ class Settings(BaseSettings):
     llm_tpd: int = Field(200000)
     llm_rpd: int = Field(1000)
     llm_max_completion_tokens: int = Field(1024)
-    # How many times a malformed structured reply from the model is retried
-    # before the document fails (issue #65). pydantic-ai's own default is 1.
-    llm_output_retries: int = Field(3)
     # ADR 006 — a request estimated above this share of TPM gets chunked at
     # page boundaries instead of sent as one call.
     llm_max_request_share: float = Field(0.5)
     # How many documents one browser session may have in flight at once,
     # so one visitor's batch upload cannot starve everyone else's queue.
     session_inflight_cap: int = Field(2)
+    # How many times a malformed structured reply from the model is retried
+    # before the document fails (issue #65). pydantic-ai's own default is 1.
+    llm_output_retries: int = Field(3)
 
     # ADR 006 — paid "Developer" tier limits, for scripts/cost_report.py's
     # throughput comparison only (never used to gate the free-tier demo).
