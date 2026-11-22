@@ -81,7 +81,10 @@ correctness.
 
 - A contract worth 0.0 comes back as null (`con_009_zero_value`), for both models. Zero
   is being read as "no value".
-- `con_007_minimal` yields no obligations where the labels expect some.
+- `con_007_minimal`: both models extract an obligation ("weekly lawn maintenance")
+  where the label says there is none. The label is probably wrong, not the models;
+  see `docs/error-analysis.md`. (Corrected 18 Nov 2026: this line first said the
+  reverse.)
 - `inv_005_messy_formatting` gives no currency where the label says USD; the invoice
   writes `$340` with no currency code.
 
