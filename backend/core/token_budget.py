@@ -70,6 +70,10 @@ def estimate_tokens(
     return total + max_completion_tokens
 
 
+# A rate-limit window that resets within this many seconds is the per-minute one.
+_MINUTE_WINDOW_SECONDS = 60.0
+
+
 def _parse_groq_duration(value: str) -> float:
     """Parse Groq's duration strings ("1m26.4s", "585ms", "7.66s") to seconds.
 
@@ -296,8 +300,9 @@ class TokenBudget:
         reset-* values are duration strings ("1m26.4s", "585ms"), not plain
         seconds.
 
-        This overwrites (SET, not INCRBY) the CURRENT minute-window
-        counters with Groq's own view, so drift from our estimate — or from
+        This overwrites (SET, not INCRBY) the CURRENT window's counters
+        (minute for tokens; minute or day for requests, see below)
+        with Groq's own view, so drift from our estimate — or from
         another process sharing the same key — cannot compound.
         """
         limit_tokens = _get_int_header(headers, "x-ratelimit-limit-tokens")
@@ -317,8 +322,22 @@ class TokenBudget:
 
         if limit_requests is not None and remaining_requests is not None:
             used = max(limit_requests - remaining_requests, 0)
-            ttl_ms = int(_parse_groq_duration(reset_requests or "0s") * 1000) + 1000
-            self._redis.set(self._key("rpm", minute_bucket), used, px=max(ttl_ms, 1000))
+            reset_seconds = _parse_groq_duration(reset_requests or "0s")
+            ttl_ms = int(reset_seconds * 1000) + 1000
+            # Which quota the request headers describe depends on the account
+            # and model: for openai/gpt-oss-20b on 20 Nov 2026 they were the
+            # DAILY quota (limit 1000, reset in hours). Writing a daily count
+            # into the per-minute counter refused nearly every request after
+            # ~30 a day (issue #70). The reset time tells the two apart.
+            if reset_seconds <= _MINUTE_WINDOW_SECONDS:
+                self._redis.set(
+                    self._key("rpm", minute_bucket), used, px=max(ttl_ms, 1000)
+                )
+            else:
+                day_bucket = int(now // 86400)
+                self._redis.set(
+                    self._key("rpd", day_bucket), used, px=max(ttl_ms, 1000)
+                )
 
 
 def _get_header(headers: Mapping[str, str], name: str) -> str | None:
