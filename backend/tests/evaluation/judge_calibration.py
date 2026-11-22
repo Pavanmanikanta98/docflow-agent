@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+# A GEval score at or above this counts as "correct". Shared by the judge
+# eval (run_judge_eval.py) and the human-agreement check (grader_agreement.py).
+JUDGE_THRESHOLD = 0.5
+
 
 @dataclass
 class JudgmentRun:

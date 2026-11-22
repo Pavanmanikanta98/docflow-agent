@@ -2,32 +2,40 @@
 """
 Evaluation runner for docflow-agent.
 
-Runs the golden invoice and contract datasets against a specified LLM model
-and produces structured JSON results with per-field accuracy, latency, and token counts.
+Runs the golden invoice and contract datasets against a model and writes
+structured JSON results with per-field accuracy.
 
 Usage:
     uv run python -m backend.tests.evaluation.run_eval --model openai/gpt-oss-20b
+    uv run python -m backend.tests.evaluation.run_eval --slice ci   # CI gate slice
 
-The script will:
-1. Load golden datasets from backend/tests/evaluation/golden/
-2. Run extraction on each case using the specified model
-3. Score each field using deterministic matchers
-4. Write results to evals/results/<YYYY-MM-DD>-<model-slug>.json
-5. Print a markdown summary table to stdout
+Each case runs `runs_per_case` times (evals/thresholds.toml) unless --runs
+is given; the result file reports mean/min/max per field.
+
+Scoring rules (shared with the pytest suite in this folder):
+- Every field of the plugin's extraction schema is scored, except
+  `confidence_score`. A field missing from a golden case's `expected` means
+  the document does not state it, so the right answer is null.
+- A rate limit is retried (`retry.with_capacity_retry`). A case that still
+  cannot be extracted is reported under `errored_cases` and left out of
+  field accuracy: it measures the API, not the extraction.
 """
 
+from __future__ import annotations
+
+import argparse
 import asyncio
 import json
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import typer
-from tqdm import tqdm
-
+from backend.agents.extractor import extract_fields_with_usage
 from backend.core.llm import llm_client
+from backend.core.metrics import timed
+from backend.plugins import get_plugin
 from backend.tests.evaluation.conftest import (
     CaseResult,
     FieldResult,
@@ -38,11 +46,25 @@ from backend.tests.evaluation.conftest import (
     load_golden,
     null_match,
 )
+from backend.tests.evaluation.retry import with_capacity_retry
+from backend.tests.evaluation.run_config import build_run_config
+from backend.tests.evaluation.run_stats import repeat_summary, usage_summary
+from backend.tests.evaluation.thresholds import load_thresholds
+
+RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
+UNSCORED_FIELDS = frozenset({"confidence_score"})
+
+NUMBER_FIELDS = frozenset({"total_amount", "subtotal", "tax_amount", "contract_value"})
+DATE_FIELDS = frozenset({"invoice_date", "due_date", "effective_date", "expiry_date"})
+LIST_FIELDS = frozenset({"line_items", "parties", "key_obligations"})
+LIST_OVERLAP_THRESHOLD = 0.6
+TEXT_MATCH_THRESHOLD = 0.75
 
 
 @dataclass
 class AggregatedResults:
-    """Summary statistics across all cases."""
+    """Summary statistics across all scored (non-errored) cases."""
+
     total_cases: int
     passed_cases: int
     total_fields: int
@@ -50,6 +72,7 @@ class AggregatedResults:
     field_results: dict[str, dict[str, int]]  # {field_name: {passed, total}}
     wall_clock_seconds: float
     cases: list[CaseResult]
+    errored_cases: list[dict[str, str]] = field(default_factory=list)
 
     def accuracy(self) -> float:
         """Overall field-level accuracy."""
@@ -58,322 +81,274 @@ class AggregatedResults:
         return self.passed_fields / self.total_fields
 
 
+def scored_fields(document_type: str) -> list[str]:
+    """The fields scored for a document type: its whole extraction schema."""
+    schema = get_plugin(document_type).extraction_schema
+    return [name for name in schema.model_fields if name not in UNSCORED_FIELDS]
+
+
 async def evaluate_single_case(
     case: dict[str, Any], model: Any, document_type: str
 ) -> CaseResult:
+    """Extract one golden case and score every schema field.
+
+    Extraction errors propagate; a capacity wait is retried first.
     """
-    Run extraction on a single case and score each field.
-
-    Returns:
-        CaseResult with field-level pass/fail for each field.
-    """
-    from backend.agents.extractor import extract_fields
-    from backend.plugins import get_plugin
-
-    case_id = case["case_id"]
-    description = case.get("description", "")
-    input_text = case["input"]
-    expected = case["expected"]
-
     plugin = get_plugin(document_type)
+    timing: dict[str, float] = {}
 
-    try:
-        # Run extraction
-        fields = await extract_fields(input_text, plugin, model=model)
-        extraction = fields.model_dump(exclude={"confidence_score"})
-    except Exception as e:
-        # On error, return a case with all fields failed
-        result = CaseResult(case_id=case_id, description=description)
-        for field_name in expected.keys():
-            result.field_results.append(
-                FieldResult(
-                    field_name=field_name,
-                    passed=False,
-                    detail=f"Extraction error: {str(e)[:50]}",
-                )
-            )
-        return result
+    async def extract_once() -> tuple[Any, Any]:
+        with timed("extract", timing):  # times the successful attempt only
+            return await extract_fields_with_usage(case["input"], plugin, model)
 
-    # Score each field
-    result = CaseResult(case_id=case_id, description=description)
+    fields, usage = await with_capacity_retry(extract_once)
+    extraction = fields.model_dump()
 
-    for field_name, expected_value in expected.items():
-        actual_value = extraction.get(field_name)
-
-        # Choose the right matcher based on field type
-        passed = _score_field(field_name, actual_value, expected_value)
-
-        detail = f"actual={actual_value!r}, expected={expected_value!r}"
+    result = CaseResult(
+        case_id=case["case_id"],
+        description=case.get("description", ""),
+        latency_ms=timing["extract"] * 1000,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+    )
+    for field_name in scored_fields(document_type):
+        actual = extraction.get(field_name)
+        expected = case["expected"].get(field_name)
         result.field_results.append(
             FieldResult(
                 field_name=field_name,
-                passed=passed,
-                detail=detail,
+                passed=_score_field(field_name, actual, expected),
+                actual=actual,
+                expected=expected,
+                detail=f"actual={actual!r}, expected={expected!r}",
             )
         )
-
     return result
 
 
 def _score_field(field_name: str, actual: Any, expected: Any) -> bool:
-    """
-    Score a single field using the appropriate matcher.
-
-    Heuristics:
-    - Numbers (total_amount, contract_value): exact_match_number
-    - Dates (invoice_date, due_date, effective_date, expiry_date): date_match
-    - Lists (line_items, parties, key_obligations): list_overlap_score
-    - Everything else: fuzzy_match or null_match
-    """
-
-    # Null check — if one is None, both must be None
+    """Score one field with the matcher for its type."""
     if not null_match(actual, expected):
         return False
-
-    # If both are None, pass
     if actual is None and expected is None:
         return True
-
-    # Numbers
-    if field_name in {
-        "total_amount",
-        "subtotal",
-        "tax_amount",
-        "contract_value",
-    }:
+    if field_name in NUMBER_FIELDS:
         return exact_match_number(actual, expected)
-
-    # Dates
-    if field_name in {
-        "invoice_date",
-        "due_date",
-        "effective_date",
-        "expiry_date",
-    }:
+    if field_name in DATE_FIELDS:
         return date_match(actual, expected)
-
-    # Lists
-    if field_name in {
-        "line_items",
-        "parties",
-        "key_obligations",
-    }:
-        score = list_overlap_score(actual, expected, threshold=0.6)
-        return score >= 0.6
-
-    # Text fields
-    if field_name in {
-        "vendor_name",
-        "invoice_number",
-        "jurisdiction",
-        "termination_clause",
-        "currency",
-    }:
-        return fuzzy_match(actual, expected, threshold=0.75)
-
-    # Fallback: fuzzy match
-    return fuzzy_match(actual, expected, threshold=0.75)
+    if field_name in LIST_FIELDS:
+        score = list_overlap_score(actual, expected, threshold=LIST_OVERLAP_THRESHOLD)
+        return score >= LIST_OVERLAP_THRESHOLD
+    return fuzzy_match(actual, expected, threshold=TEXT_MATCH_THRESHOLD)
 
 
-def _retry_with_backoff(
-    max_retries: int = 5, initial_delay: float = 5.0
-) -> None:
-    """Context manager / callable to add retry logic for 429 errors."""
-    pass  # Simplified; full version would wrap the call
+async def _evaluate_or_error(
+    case: dict[str, Any], model: Any, document_type: str
+) -> CaseResult:
+    try:
+        return await evaluate_single_case(case, model, document_type)
+    except Exception as exc:  # noqa: BLE001 — any failure is an errored case
+        return CaseResult(
+            case_id=case["case_id"],
+            description=case.get("description", ""),
+            error=f"{type(exc).__name__}: {str(exc)[:200]}",
+        )
 
 
 async def run_evaluation(
-    model_name: str,
+    model: Any,
     invoice_cases: list[dict],
     contract_cases: list[dict],
 ) -> AggregatedResults:
-    """
-    Run evaluation on all cases.
-
-    Handles retries on 429 (rate limit) errors.
-    """
-    model = llm_client.get_model(model_name=model_name)
-
-    all_cases = [
-        ("invoice", case) for case in invoice_cases
-    ] + [("contract", case) for case in contract_cases]
-
+    """Run every case once and aggregate the scored ones."""
+    all_cases = [("invoice", c) for c in invoice_cases] + [
+        ("contract", c) for c in contract_cases
+    ]
     results: list[CaseResult] = []
-    start_time = time.time()
+    start_time = time.perf_counter()
+    for index, (doc_type, case) in enumerate(all_cases, start=1):
+        result = await _evaluate_or_error(case, model, doc_type)
+        score = f"{result.passed_count}/{result.total_count}"
+        status = "ERROR" if result.error else score
+        print(f"[{index}/{len(all_cases)}] {case['case_id']}: {status}", flush=True)
+        results.append(result)
+    return aggregate(results, time.perf_counter() - start_time)
 
-    for doc_type, case in tqdm(all_cases, desc=f"Evaluating with {model_name}"):
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                result = await evaluate_single_case(case, model, doc_type)
-                results.append(result)
-                break
-            except Exception as e:
-                if "429" in str(e) and attempt < max_retries - 1:
-                    # Rate limit — back off and retry
-                    wait_time = (2 ** attempt) * 5  # 5s, 10s, 20s
-                    tqdm.write(
-                        f"[{case['case_id']}] Rate limited, retrying in {wait_time}s..."
-                    )
-                    await asyncio.sleep(wait_time)
-                else:
-                    # Other error or last retry — add to results as failure
-                    result = CaseResult(
-                        case_id=case["case_id"],
-                        description=case.get("description", ""),
-                    )
-                    result.field_results.append(
-                        FieldResult(
-                            field_name="_error",
-                            passed=False,
-                            detail=str(e)[:100],
-                        )
-                    )
-                    results.append(result)
-                    break
 
-    wall_clock = time.time() - start_time
-
-    # Aggregate
-    passed_cases = sum(1 for r in results if r.accuracy == 1.0)
-    total_cases = len(results)
-
-    field_results: dict[str, dict[str, int]] = {}
-    total_fields = 0
-    passed_fields = 0
-
-    for result in results:
-        for field_res in result.field_results:
-            if field_res.field_name.startswith("_"):
-                continue  # Skip metadata fields
-
-            field_name = field_res.field_name
-            if field_name not in field_results:
-                field_results[field_name] = {"passed": 0, "total": 0}
-
-            field_results[field_name]["total"] += 1
-            if field_res.passed:
-                field_results[field_name]["passed"] += 1
-            total_fields += 1
-            if field_res.passed:
-                passed_fields += 1
-
+def aggregate(results: list[CaseResult], wall_clock: float) -> AggregatedResults:
+    """Sum field checks over cases that were scored; list errored ones."""
+    scored = [r for r in results if r.error is None]
+    per_field: dict[str, dict[str, int]] = {}
+    for result in scored:
+        for fr in result.field_results:
+            counts = per_field.setdefault(fr.field_name, {"passed": 0, "total": 0})
+            counts["total"] += 1
+            counts["passed"] += int(fr.passed)
     return AggregatedResults(
-        total_cases=total_cases,
-        passed_cases=passed_cases,
-        total_fields=total_fields,
-        passed_fields=passed_fields,
-        field_results=field_results,
+        total_cases=len(scored),
+        passed_cases=sum(1 for r in scored if r.accuracy == 1.0),
+        total_fields=sum(c["total"] for c in per_field.values()),
+        passed_fields=sum(c["passed"] for c in per_field.values()),
+        field_results=per_field,
         wall_clock_seconds=wall_clock,
-        cases=results,
+        cases=scored,
+        errored_cases=[
+            {"case_id": r.case_id, "error": r.error} for r in results if r.error
+        ],
     )
 
 
 def format_model_slug(model_name: str) -> str:
-    """Convert model name to a slug for filenames."""
-    # e.g. "openai/gpt-oss-20b" -> "openai-gpt-oss-20b"
+    """e.g. "openai/gpt-oss-20b" -> "openai-gpt-oss-20b"."""
     return model_name.replace("/", "-")
 
 
+async def run_repeated(
+    model: Any,
+    invoice_cases: list[dict],
+    contract_cases: list[dict],
+    runs: int,
+) -> list[AggregatedResults]:
+    """Extract every case `runs` times; one AggregatedResults per run."""
+    results = []
+    for run in range(1, runs + 1):
+        print(f"--- run {run}/{runs} ---", flush=True)
+        results.append(await run_evaluation(model, invoice_cases, contract_cases))
+    return results
+
+
+def select_cases(cases: list[dict], case_ids: list[str] | None) -> list[dict]:
+    """Keep only `case_ids` (all cases when None). An unknown id is an
+    error, so a typo in the slice cannot silently shrink what is measured."""
+    if case_ids is None:
+        return cases
+    known = {c["case_id"] for c in cases}
+    missing = [cid for cid in case_ids if cid not in known]
+    if missing:
+        raise ValueError(f"Unknown case ids: {', '.join(missing)}")
+    wanted = set(case_ids)
+    return [c for c in cases if c["case_id"] in wanted]
+
+
 def write_results(
-    results: AggregatedResults,
+    runs: list[AggregatedResults],
     model_name: str,
     output_dir: Path,
+    label: str | None = None,
 ) -> Path:
-    """
-    Write results to a JSON file in evals/results/.
+    """Write `<output_dir>/<YYYY-MM-DD>-<model-slug>[-<label>].json`.
 
-    Returns:
-        Path to the written file.
+    Top-level `total_fields` / `passed_fields` / `field_results` are sums
+    over runs; `field_accuracy` and `per_field` give mean/min/max.
     """
     date_str = datetime.now().strftime("%Y-%m-%d")
-    model_slug = format_model_slug(model_name)
-    filename = output_dir / f"{date_str}-{model_slug}.json"
-
+    suffix = f"-{label}" if label else ""
+    filename = output_dir / f"{date_str}-{format_model_slug(model_name)}{suffix}.json"
+    run_dicts = [_run_summary(r) for r in runs]
+    all_cases = [(i, c) for i, r in enumerate(runs, start=1) for c in r.cases]
     data = {
         "model": model_name,
         "date": date_str,
-        "wall_clock_seconds": results.wall_clock_seconds,
-        "total_cases": results.total_cases,
-        "passed_cases": results.passed_cases,
-        "total_fields": results.total_fields,
-        "passed_fields": results.passed_fields,
-        "field_results": results.field_results,
-        "cases": [
-            {
-                **asdict(case),
-                "field_results": [asdict(fr) for fr in case.field_results],
-            }
-            for case in results.cases
+        "runs_per_case": len(runs),
+        "run_config": build_run_config(model_name),
+        "usage": usage_summary([c for _, c in all_cases], model_name),
+        **repeat_summary(run_dicts),
+        "total_fields": sum(r.total_fields for r in runs),
+        "passed_fields": sum(r.passed_fields for r in runs),
+        "field_results": _summed_field_results(runs),
+        "wall_clock_seconds": sum(r.wall_clock_seconds for r in runs),
+        "errored_cases": [
+            {"run": i, **e}
+            for i, r in enumerate(runs, start=1)
+            for e in r.errored_cases
         ],
+        "runs": [{"run": i, **d} for i, d in enumerate(run_dicts, start=1)],
+        "cases": [{"run": i, **asdict(c)} for i, c in all_cases],
     }
-
-    with open(filename, "w") as f:
-        json.dump(data, f, indent=2)
-
+    filename.write_text(json.dumps(data, indent=2))
     return filename
 
 
-def print_summary(results: AggregatedResults, model_name: str) -> None:
-    """Print a markdown summary table to stdout."""
-    print()
-    print(f"# Evaluation Results — {model_name}")
-    print()
-    print("## Summary")
-    print()
-    print("| Metric | Value |")
-    print("|---|---|")
-    print(f"| Model | {model_name} |")
-    print(f"| Total cases | {results.total_cases} |")
-    print(f"| Cases with 100% accuracy | {results.passed_cases} |")
-    acc_str = f"{results.passed_fields}/{results.total_fields}"
-    acc_pct = f"{results.accuracy():.1%}"
-    print(f"| Field-level accuracy | {acc_str} ({acc_pct}) |")
-    print(f"| Wall clock time | {results.wall_clock_seconds:.2f}s |")
-    print()
-    print("## Per-Field Results")
-    print()
-    print("| Field | Passed | Total | Accuracy |")
-    print("|---|---|---|---|")
-    for field_name in sorted(results.field_results.keys()):
-        field_data = results.field_results[field_name]
-        passed = field_data["passed"]
-        total = field_data["total"]
-        acc = passed / total if total > 0 else 0
-        print(f"| {field_name} | {passed} | {total} | {acc:.1%} |")
-    print()
+def _run_summary(run: AggregatedResults) -> dict[str, Any]:
+    return {
+        "total_cases": run.total_cases,
+        "passed_cases": run.passed_cases,
+        "total_fields": run.total_fields,
+        "passed_fields": run.passed_fields,
+        "field_results": run.field_results,
+        "wall_clock_seconds": run.wall_clock_seconds,
+    }
 
 
-def main(
-    model: str = typer.Option(
-        "openai/gpt-oss-20b",
-        "--model",
-        "-m",
-        help="Model name (e.g., 'openai/gpt-oss-20b')",
-    ),
-) -> None:
-    """Run evaluation and produce structured results."""
-    print("Loading golden datasets...")
-    invoice_cases = load_golden("invoices.json")
-    contract_cases = load_golden("contracts.json")
-    print(f"Loaded {len(invoice_cases)} invoices, {len(contract_cases)} contracts")
-    print()
+def _summed_field_results(runs: list[AggregatedResults]) -> dict[str, dict[str, int]]:
+    summed: dict[str, dict[str, int]] = {}
+    for run in runs:
+        for name, counts in run.field_results.items():
+            target = summed.setdefault(name, {"passed": 0, "total": 0})
+            target["passed"] += counts["passed"]
+            target["total"] += counts["total"]
+    return summed
 
-    print(f"Running evaluation with model: {model}")
-    results = asyncio.run(
-        run_evaluation(model, invoice_cases, contract_cases)
+
+def print_summary(result_file: Path) -> None:
+    """Print a markdown summary of a written result file."""
+    data = json.loads(result_file.read_text())
+    acc = data["field_accuracy"]
+    usage = data["usage"]
+    print(f"\n# Evaluation Results — {data['model']} ({data['date']})\n")
+    print("| Metric | Value |\n|---|---|")
+    print(f"| Runs per case | {data['runs_per_case']} |")
+    print(f"| Field checks passed (all runs) | {data['passed_fields']}/"
+          f"{data['total_fields']} |")
+    if acc["mean"] is not None:
+        print(f"| Field accuracy mean (min-max) | {acc['mean']:.1%} "
+              f"({acc['min']:.1%}-{acc['max']:.1%}) |")
+    print(f"| Cases errored (not scored) | {len(data['errored_cases'])} |")
+    latency = usage["latency_ms"]
+    if latency["p50"] is not None:
+        print(f"| Latency p50 / p95 | {latency['p50']:.0f} / "
+              f"{latency['p95']:.0f} ms (n={usage['n']}) |")
+    print(f"| Cost | {usage['cost_usd']} |")
+    print("\n| Field | Mean | Min | Max |\n|---|---|---|---|")
+    for name, f in data["per_field"].items():
+        print(f"| {name} | {f['mean']:.1%} | {f['min']:.1%} | {f['max']:.1%} |")
+    for errored in data["errored_cases"]:
+        print(f"\nERRORED run {errored['run']} {errored['case_id']}: "
+              f"{errored['error']}")
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Run evaluation and write structured results."""
+    thresholds = load_thresholds()
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--model", "-m", default="openai/gpt-oss-20b")
+    parser.add_argument("--runs", type=int, default=thresholds.runs_per_case)
+    parser.add_argument(
+        "--slice", choices=["ci"], default=None,
+        help="Run only the CI slice listed in evals/thresholds.toml.",
     )
+    parser.add_argument("--output-dir", type=Path, default=RESULTS_DIR)
+    args = parser.parse_args(argv)
 
-    print()
-    output_dir = Path(__file__).parent.parent.parent.parent / "evals" / "results"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    case_ids = list(thresholds.ci_slice_cases) if args.slice == "ci" else None
+    invoices = select_cases(load_golden("invoices.json"), _ids(case_ids, "inv_"))
+    contracts = select_cases(load_golden("contracts.json"), _ids(case_ids, "con_"))
+    print(f"{len(invoices)} invoices, {len(contracts)} contracts, {args.runs} runs")
 
-    output_file = write_results(results, model, output_dir)
+    model = llm_client.get_model(model_name=args.model)
+    runs = asyncio.run(run_repeated(model, invoices, contracts, args.runs))
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = write_results(runs, args.model, args.output_dir, label=args.slice)
     print(f"Results written to: {output_file}")
-    print()
+    print_summary(output_file)
 
-    print_summary(results, model)
+
+def _ids(case_ids: list[str] | None, prefix: str) -> list[str] | None:
+    if case_ids is None:
+        return None
+    return [cid for cid in case_ids if cid.startswith(prefix)]
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    main()

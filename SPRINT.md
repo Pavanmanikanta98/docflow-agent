@@ -16,7 +16,46 @@ Do not merge. I review the diff and open the PR myself.
 
 ---
 
-## Current sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
+## Current sprint — v1.1: an eval gate you can trust
+
+Source: DocFlow spec v1.1 §3 (13 Nov 2026) and the 17 Nov plan delta (R4 item 1:
+preregistered thresholds, 3 runs per case, grader agreement, run config).
+One issue = one branch = one PR. Pavan reviews and merges.
+
+- [x] **#39** `fix/eval-runner-scoring` — the runner scores every schema field
+      (a missing label means null, as the pytest suite already does) and reports
+      rate-limited cases as errored instead of wrong.
+      *Evidence:* `run_eval.py::scored_fields`, `aggregate`; `retry.py` (shared with
+      the judge eval); `test_eval_runner.py` (5 tests).
+- [x] **#40** `feat/eval-usage-and-run-config` — per-case latency, tokens and cost;
+      p50/p95; run config (model, prompt hash, temperature, library version).
+      *Evidence:* `run_config.py`, `run_stats.py`, result files gain `run_config`
+      and `usage`; `test_eval_usage.py` (8 tests). No numbers until a live run.
+- [x] **#41** `feat/eval-thresholds-and-repeats` — `evals/thresholds.toml` committed
+      before the run, `--runs 3` with mean/min/max, `check_gate.py`.
+      *Evidence:* thresholds in their own commit ("evals: preregister thresholds");
+      `thresholds.py`, `run_stats.repeat_summary`, `run_eval --runs/--slice`,
+      `check_gate.py`; `test_eval_gate.py` (9 tests, incl. a broken field → exit 1).
+- [ ] **#42** `ci/eval-gate` — GitHub Actions eval gate on PRs that touch prompts,
+      models or the pipeline. Needs the `GROQ_API_KEY` repo secret (Pavan).
+      *Status:* workflow written (`.github/workflows/eval-gate.yml`); the exact CI
+      command line was run locally with a stand-in model that breaks fields →
+      gate exit 1. Not ticked until the secret exists and one live gate run is green.
+- [ ] **#43** `feat/grader-agreement` — blind-label export + agreement/kappa.
+      Needs Pavan's 30 human labels.
+      *Status:* tooling done (`grader_agreement.py` export / judge / report,
+      `check_gate --agreement`; `test_grader_agreement.py`, 7 tests). Not ticked
+      until the 30 labels exist and the agreement % is committed.
+- [ ] **#44** `fix/invoice-subtotal-null` — error analysis of every wrong field +
+      fix for the top category, before/after on the same 32 documents.
+      *Status:* `docs/error-analysis.md` (65 wrong fields, 9 categories), invoice
+      plugin prompt + field descriptions fixed, `test_invoice_subtotal_rule.py`.
+      Not ticked until the before/after live run is committed.
+- [ ] **#45** `docs/readme-evaluation-v1.1` — README Evaluation section; remove
+      claims the data contradicts.
+- [ ] **#46** tracing — waiting for Pavan's OK on the OpenTelemetry dependency.
+
+## Previous sprint — Ship v1 (target: 27 Sep 2026, about 17 hours)
 
 **Goal:** a live, tested, measured, honest demo that holds up when an interviewer
 opens the repo or asks "how did you measure that?".
@@ -490,6 +529,19 @@ in their git history, which is why they are never pushed; the release checklist'
 ---
 
 ## Open polish — lower priority
+
+- [ ] `tiktoken` downloads its encoding file from `openaipublic.blob.core.windows.net`
+      on first use (`token_budget.estimate_tokens`). With no network to that host,
+      13 unit tests fail and a worker would fail its first job. Bake the encoding into
+      the Docker image (`TIKTOKEN_CACHE_DIR`) so neither depends on that host.
+- [ ] The 28 Sep gpt-oss-20b run followed the prompt injection in `inv_017` (vendor
+      "Refund Services Ltd", total 0.0); the 18 Sep runs did not. Tracked in #44.
+- [ ] The pytest suite and `run_eval.py` use different free-text thresholds
+      (termination 0.4 vs 0.75, jurisdiction 0.5 vs 0.75), so 18 Sep and 28 Sep
+      numbers measure different things. Needs Pavan's decision (see
+      `docs/error-analysis.md`, "Open decision").
+- [ ] `con_007_minimal` label says no key obligations; the text has one. Suspect
+      label, and `evals/results/SUMMARY.md` describes it backwards.
 
 - [ ] `frontend/components/landing/ActionCard.tsx:37-43` uses `next/link` for `mailto:`
       URLs; use `<a>`.
