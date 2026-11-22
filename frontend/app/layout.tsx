@@ -1,32 +1,50 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Source_Serif_4, Caveat } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import { ThemeRegistry } from '@/components/ThemeRegistry';
 import { Navbar } from '@/components/Navbar';
 
 import { AppTour } from '@/components/AppTour';
 
-const geistSans = Geist({
+// Fonts are files in this repo, not downloads. `next/font/google` fetched them
+// from Google on every build, and one failed fetch failed the build (CI and
+// Vercel). Same families, same Latin subset, same weights as before; Google
+// serves one variable file per style and reuses it across weights.
+const geistSans = localFont({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  src: './font-geist.woff2',
+  weight: '100 900',
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
   variable: '--font-geist-mono',
-  subsets: ['latin'],
+  src: './font-geist-mono.woff2',
+  weight: '100 900',
+  display: 'swap',
+  adjustFontFallback: false,
 });
 
-const sourceSerif = Source_Serif_4({
+const sourceSerif = localFont({
   variable: '--font-letter-serif',
-  subsets: ['latin'],
-  weight: ['400', '600'],
-  style: ['normal', 'italic'],
+  src: [
+    { path: './font-source-serif-4.woff2', weight: '400', style: 'normal' },
+    { path: './font-source-serif-4.woff2', weight: '600', style: 'normal' },
+    { path: './font-source-serif-4-italic.woff2', weight: '400', style: 'italic' },
+    { path: './font-source-serif-4-italic.woff2', weight: '600', style: 'italic' },
+  ],
+  display: 'swap',
+  adjustFontFallback: 'Times New Roman',
 });
 
-const caveat = Caveat({
+const caveat = localFont({
   variable: '--font-signature',
-  subsets: ['latin'],
-  weight: ['500', '700'],
+  src: [
+    { path: './font-caveat.woff2', weight: '500', style: 'normal' },
+    { path: './font-caveat.woff2', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
