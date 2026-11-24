@@ -31,7 +31,6 @@ from backend.models.db import Document, DocumentStatus
 from backend.models.schemas import Document as DocumentSchema
 from backend.models.schemas import (
     DocumentListResponse,
-    DocumentStatusResponse,
     DocumentUploadResponse,
 )
 from backend.queue.jobs import enqueue_process_document
@@ -129,6 +128,23 @@ async def upload_document(
     )
 
 
+def _to_schema(doc: Document, estimated_start: float | None) -> DocumentSchema:
+    """One representation of a document, used by the list and the detail route.
+
+    The capacity-wait fields are derived from Redis, not stored on the row.
+    """
+    return DocumentSchema.model_validate(doc).model_copy(
+        update={
+            "waiting_for_capacity": estimated_start is not None,
+            "capacity_wait_estimated_start": (
+                datetime.fromtimestamp(estimated_start, tz=timezone.utc).isoformat()
+                if estimated_start is not None
+                else None
+            ),
+        }
+    )
+
+
 @router.get('', response_model=DocumentListResponse)
 async def list_documents(
     page: int = Query(1, ge=1),
@@ -148,57 +164,19 @@ async def list_documents(
 
     waits = get_capacity_wait_estimated_starts(redis, [doc.id for doc in docs])
 
-    def _to_schema(doc: Document) -> DocumentSchema:
-        estimated_start = waits.get(doc.id)
-        return DocumentSchema.model_validate(doc).model_copy(
-            update={
-                "waiting_for_capacity": estimated_start is not None,
-                "capacity_wait_estimated_start": (
-                    datetime.fromtimestamp(estimated_start, tz=timezone.utc).isoformat()
-                    if estimated_start is not None
-                    else None
-                ),
-            }
-        )
-
     return DocumentListResponse(
-        documents=[_to_schema(doc) for doc in docs],
+        documents=[_to_schema(doc, waits.get(doc.id)) for doc in docs],
         total=total,
         page=page,
         page_size=page_size
     )
 
-@router.get('/{document_id}', response_model=DocumentStatusResponse)
+@router.get('/{document_id}', response_model=DocumentSchema)
 async def get_document(
     doc: Document = Depends(get_owned_document),
     redis: Redis = Depends(get_redis),
-):
-    estimated_start = get_capacity_wait_estimated_start(redis, doc.id)
-    waiting_for_capacity = estimated_start is not None
-
-    return DocumentStatusResponse(
-        status=doc.status.value,
-        message="Document status retrieved",
-        document_type=doc.document_type,
-        document_id=str(doc.id),
-        document_url=doc.document_url,
-        document_size=doc.document_size,
-        document_mime_type=doc.document_mime_type,
-        extraction_results=doc.extraction_results,
-        confidence_score=doc.confidence_score,
-        human_review_required=doc.human_review_required,
-        human_review_comments=doc.human_review_comments,
-        human_review_status=(
-            doc.human_review_status.value if doc.human_review_status else None
-        ),
-        human_review_rejection_reason=doc.human_review_rejection_reason,
-        waiting_for_capacity=waiting_for_capacity,
-        capacity_wait_estimated_start=(
-            datetime.fromtimestamp(estimated_start, tz=timezone.utc).isoformat()
-            if estimated_start is not None
-            else None
-        ),
-    )
+) -> DocumentSchema:
+    return _to_schema(doc, get_capacity_wait_estimated_start(redis, doc.id))
 
 
 @router.get('/{document_id}/file')
