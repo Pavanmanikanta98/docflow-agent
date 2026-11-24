@@ -230,3 +230,62 @@ async def test_session_inflight_cap_allows_when_under_cap(
     await worker.process_document({}, doc.id)
 
     assert doc.status == DocumentStatus.completed
+
+
+async def _run_pipeline_with(
+    monkeypatch: pytest.MonkeyPatch, status: str, reasons: list[str]
+) -> SimpleNamespace:
+    doc = _fake_document(status=DocumentStatus.pending)
+    monkeypatch.setattr(worker, "SessionLocal", lambda: _fake_db(doc))
+
+    async def fake_ainvoke(state):
+        return {
+            "status": status,
+            "extraction_results": {"total_amount": 1.0},
+            "confidence_score": 0.4,
+            "field_confidences": {},
+            "review_reasons": reasons,
+        }
+
+    monkeypatch.setattr(worker.pipeline, "ainvoke", fake_ainvoke)
+    await worker.process_document({}, doc.id)
+    return doc
+
+
+async def test_file_is_kept_for_the_reviewer_when_a_document_awaits_review(
+    monkeypatch: pytest.MonkeyPatch, patched_redis
+) -> None:
+    """Issue #56: the review screen needs the file the extraction came from."""
+    doc = await _run_pipeline_with(monkeypatch, "awaiting_review", ["math_mismatch"])
+
+    assert doc.status == DocumentStatus.awaiting_review
+    deleted_keys = [c.args[0] for c in patched_redis.delete.call_args_list]
+    assert f"doc_bytes:{doc.id}" not in deleted_keys
+    patched_redis.expire.assert_called_with(f"doc_bytes:{doc.id}", 3600)
+
+
+async def test_file_is_deleted_when_no_review_is_needed(
+    monkeypatch: pytest.MonkeyPatch, patched_redis
+) -> None:
+    doc = await _run_pipeline_with(monkeypatch, "completed", [])
+
+    deleted_keys = [c.args[0] for c in patched_redis.delete.call_args_list]
+    assert f"doc_bytes:{doc.id}" in deleted_keys
+
+
+async def test_file_is_deleted_when_processing_fails(
+    monkeypatch: pytest.MonkeyPatch, patched_redis
+) -> None:
+    doc = _fake_document(status=DocumentStatus.pending)
+    monkeypatch.setattr(worker, "SessionLocal", lambda: _fake_db(doc))
+
+    async def boom(state):
+        raise ValueError("bad pdf")
+
+    monkeypatch.setattr(worker.pipeline, "ainvoke", boom)
+
+    with pytest.raises(ValueError):
+        await worker.process_document({}, doc.id)
+
+    deleted_keys = [c.args[0] for c in patched_redis.delete.call_args_list]
+    assert f"doc_bytes:{doc.id}" in deleted_keys

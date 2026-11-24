@@ -395,8 +395,12 @@ def verify(secret: str, body: bytes, timestamp: str, signature: str) -> bool:
 
 ## Data Handling
 
-- Uploaded file bytes are kept in Redis for up to 1 hour so the worker can process them,
-  then deleted. They are not written to the app's disk or database.
+- Uploaded file bytes live only in Redis, never on the app's disk or in the database.
+  They are deleted as soon as nobody needs them: when a document completes without
+  review, when processing fails, or when a reviewer approves or rejects it. While a
+  document is **held for review** the file is kept so the reviewer can see it, for at
+  most `FILE_BUFFER_TTL_SECONDS` (default 3600, one hour) after it was uploaded or
+  last processed, then Redis drops it.
 - Extracted fields and review decisions are stored in PostgreSQL.
 - With the default Groq provider, document text is sent to the Groq API over HTTPS.
   With `LLM_PROVIDER=ollama`, text stays on your own machine.

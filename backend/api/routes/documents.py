@@ -23,6 +23,7 @@ from backend.api.deps import (
 )
 from backend.core.config import settings
 from backend.core.connectors import WebhookURLRejectedError, validate_webhook_url
+from backend.core.file_buffer import buffer_key, store
 from backend.core.token_budget import (
     get_capacity_wait_estimated_start,
     get_capacity_wait_estimated_starts,
@@ -111,8 +112,7 @@ async def upload_document(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-    redis_key = f"doc_bytes:{new_doc.id}"
-    redis.setex(redis_key, 3600, file_bytes)
+    store(redis, new_doc.id, file_bytes)
 
     await enqueue_process_document(new_doc.id)
 
@@ -184,8 +184,7 @@ async def download_document_file(
     doc: Document = Depends(get_owned_document),
     redis: Redis = Depends(get_redis),
 ):
-    redis_key = f"doc_bytes:{doc.id}"
-    file_bytes = redis.get(redis_key)
+    file_bytes = redis.get(buffer_key(doc.id))
 
     if not file_bytes:
         raise HTTPException(

@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     llm_tpd: int = Field(200000)
     llm_rpd: int = Field(1000)
     llm_max_completion_tokens: int = Field(1024)
+    # How long an uploaded file may stay in Redis (issue #56). Held for the
+    # reviewer while a document awaits review, deleted sooner when not needed.
+    file_buffer_ttl_seconds: int = Field(3600)
     # ADR 006 — a request estimated above this share of TPM gets chunked at
     # page boundaries instead of sent as one call.
     llm_max_request_share: float = Field(0.5)
